@@ -1,34 +1,11 @@
 const User = require("../models/user.model");
-const nodemailer = require("nodemailer");
+const sendEmail = require("../utils/sendEmail"); // Import the sendEmail module
 const jwt = require("jsonwebtoken");
 
 // Generate a random 6-digit OTP
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
-
-// Setup mail transporter (use environment variables in production)
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// Verify transporter configuration with detailed logs
-(async () => {
-  try {
-    console.log("Verifying SMTP transporter...");
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("NODE_ENV:", process.env.NODE_ENV);
-    console.log("Transporter options:", transporter.options);
-    await transporter.verify();
-    console.log("SMTP transporter verified successfully.");
-  } catch (verifyError) {
-    console.error("Failed to verify SMTP transporter:", verifyError);
-  }
-})();
 
 // Request OTP
 exports.requestOtp = async (req, res) => {
@@ -46,19 +23,12 @@ exports.requestOtp = async (req, res) => {
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
     await user.save();
 
-    console.log("SMTP transporter config:", transporter.options);
-    console.log("Sending OTP email to:", email);
-
     try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Your OTP Code",
-        text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-      });
+      await sendEmail(email, "Your OTP Code", `Your OTP code is ${otp}. It will expire in 5 minutes.`);
       console.log("OTP email sent successfully to:", email);
     } catch (emailError) {
       console.error(`Failed to send OTP email to ${email}:`, emailError);
+      return res.status(500).json({ message: "Failed to send OTP email" });
     }
 
     return res.json({ message: "OTP sent successfully" });
