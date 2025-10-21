@@ -23,28 +23,28 @@ exports.requestOtp = async (req, res) => {
     if (!email) return res.status(400).json({ message: "Email is required" });
 
     let user = await User.findOne({ email });
-
     if (!user) {
-      user = new User({ email, role: "renter" }); // set valid enum value
+      user = new User({ email, role: "renter" });
     }
 
-      const otp = generateOtp();
-      console.log("Generated OTP:", otp); // Log the generated OTP for debugging
+    const otp = generateOtp();
     user.otp = otp;
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
     await user.save();
 
-    // send OTP via email
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-    });
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Your OTP Code",
+        text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+      });
+    } catch (emailError) {
+      console.error("Failed to send OTP email:", emailError);
+    }
 
     return res.json({ message: "OTP sent successfully" });
   } catch (error) {
-      console.log("Login File");
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
@@ -54,8 +54,8 @@ exports.requestOtp = async (req, res) => {
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp, mobileNumber } = req.body;
-    const user = await User.findOne({ email });
 
+    const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found" });
 
     if (user.otp !== otp || user.otpExpiry < Date.now()) {
@@ -63,36 +63,30 @@ exports.verifyOtp = async (req, res) => {
     }
 
     if (mobileNumber) {
-      console
       user.mobileNumber = mobileNumber;
     }
 
-    // Mark user as verified
     user.isVerified = true;
     user.otp = null;
     user.otpExpiry = null;
 
-    // Generate tokens using model methods
     const accessToken = user.getAccessToken();
     const refreshToken = user.getRefreshToken();
-
-    // Optionally store refresh token in DB
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Set cookies
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Lax",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.json({

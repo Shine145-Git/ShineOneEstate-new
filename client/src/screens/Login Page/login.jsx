@@ -27,7 +27,7 @@ export default function LoginModal() {
       const response = await fetch(`${process.env.REACT_APP_LOGIN_REQUEST_OTP_API}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email  }),
+        body: JSON.stringify({ email }), // only send email for OTP
         credentials: "include" // to send/receive cookies
       });
       const data = await response.json();
@@ -54,7 +54,7 @@ export default function LoginModal() {
       const response = await fetch(`${process.env.REACT_APP_LOGIN_VERIFY_OTP_API}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp , mobileNumber }),
+        body: JSON.stringify({ email, otp , mobileNumber }), // send both email and mobileNumber for verification
         credentials: "include" // to send/receive cookies
       });
       const data = await response.json();
@@ -105,7 +105,6 @@ export default function LoginModal() {
               placeholder="Enter your mobile number"
               value={mobileNumber}
               onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-              required
               style={{
                 width: '100%',
                 padding: '14px 16px',
