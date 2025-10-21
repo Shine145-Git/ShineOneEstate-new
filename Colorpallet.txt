@@ -1,0 +1,35 @@
+#003366 (Prussian Blue)
+#4A6A8A (Slate Blue)
+#00A79D (Teal)
+#22D3EE (Cyan)
+#F4F7F9 (Alabaster)
+#FFFFFF (White)
+#333333 (Dark Charcoal)
+
+
+  const handleLogout = async () => {
+    await fetch("http://localhost:2000/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:2000/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];

@@ -1,0 +1,327 @@
+// import React, { useEffect, useState } from 'react';
+// import axios from 'axios';
+// import { useNavigate, useParams } from 'react-router-dom';
+// import { Search, MapPin, DollarSign, Home, Sparkles, ArrowLeft } from 'lucide-react';
+
+// const Searchproperty = () => {
+//   const { query } = useParams();
+//   const navigate = useNavigate();
+//   const [searchQuery, setSearchQuery] = useState(query || '');
+//   const [payments, setPayments] = useState([]);
+//   const [filteredPayments, setFilteredPayments] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchPayments = async () => {
+//       try {
+//         const res = await axios.get('http://localhost:2000/api/payment', { withCredentials: true });
+//         setPayments(res.data);
+//         setLoading(false);
+//       } catch (error) {
+//         console.error('Error fetching payments:', error);
+//         setLoading(false);
+//       }
+//     };
+//     fetchPayments();
+//   }, []);
+
+//   useEffect(() => {
+//     if (query && payments.length > 0) {
+//       const lowerQuery = query.toLowerCase();
+//       const filtered = payments.filter(
+//         (payment) =>
+//           payment.property &&
+//           (payment.property.address?.toLowerCase().includes(lowerQuery) ||
+//           (payment.property.localAmenities && payment.property.localAmenities.toLowerCase().includes(lowerQuery)))
+//       );
+//       setFilteredPayments(filtered);
+//     } else {
+//       setFilteredPayments(payments.filter(payment => payment.property));
+//     }
+//   }, [query, payments]);
+
+//   return (
+//     <div style={{ minHeight: '100vh', backgroundColor: '#F4F7F9' }}>
+//       {/* Header Section */}
+//       <div style={{ 
+//         background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
+//         padding: '3rem 1.5rem',
+//         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+//       }}>
+//         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+//           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+//             <button
+//               onClick={() => navigate('/')}
+//               style={{
+//                 background: 'transparent',
+//                 border: 'none',
+//                 cursor: 'pointer',
+//                 padding: 0,
+//                 display: 'flex',
+//                 alignItems: 'center'
+//               }}
+//             >
+//               <ArrowLeft size={28} color="#22D3EE" />
+//             </button>
+//             <input
+//               type="text"
+//               value={searchQuery}
+//               onChange={(e) => setSearchQuery(e.target.value)}
+//               onKeyDown={(e) => {
+//                 if (e.key === 'Enter' && searchQuery.trim() !== '') {
+//                   navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
+//                 }
+//               }}
+//               placeholder="Search by location or property type"
+//               style={{
+//                 flex: 1,
+//                 padding: '0.75rem 1rem',
+//                 borderRadius: '12px',
+//                 border: '1px solid #e5e7eb',
+//                 fontSize: '1rem',
+//                 outline: 'none'
+//               }}
+//             />
+//           </div>
+//           <div style={{ 
+//             display: 'flex', 
+//             alignItems: 'center', 
+//             gap: '0.5rem',
+//             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+//             padding: '0.75rem 1.25rem',
+//             borderRadius: '12px',
+//             backdropFilter: 'blur(10px)'
+//           }}>
+//             <span style={{ color: '#22D3EE', fontSize: '0.95rem', fontWeight: '500' }}>
+//               Searching for:
+//             </span>
+//             <span style={{ color: '#FFFFFF', fontSize: '1.1rem', fontWeight: '600' }}>
+//               "{query}"
+//             </span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Results Section */}
+//       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+//         <div style={{ 
+//           display: 'flex', 
+//           justifyContent: 'space-between', 
+//           alignItems: 'center',
+//           marginBottom: '2rem'
+//         }}>
+//           <h2 style={{ 
+//             color: '#003366',
+//             fontSize: '1.5rem',
+//             fontWeight: '600',
+//             margin: 0
+//           }}>
+//             {loading ? 'Loading...' : `Found ${filteredPayments.length} ${filteredPayments.length === 1 ? 'Property' : 'Properties'}`}
+//           </h2>
+//         </div>
+
+//         {loading ? (
+//           <div style={{ 
+//             display: 'flex', 
+//             justifyContent: 'center', 
+//             alignItems: 'center',
+//             minHeight: '300px'
+//           }}>
+//             <div style={{ 
+//               color: '#4A6A8A',
+//               fontSize: '1.2rem',
+//               fontWeight: '500'
+//             }}>
+//               Loading properties...
+//             </div>
+//           </div>
+//         ) : (
+//           <div style={{ 
+//             display: 'grid',
+//             gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+//             gap: '1.5rem'
+//           }}>
+//             {filteredPayments.map((payment) => {
+//               const property = payment.property;
+//               if (!property) return null;
+//               return (
+//               <div 
+//                 key={property._id} 
+//                 style={{ 
+//                   backgroundColor: '#FFFFFF',
+//                   borderRadius: '16px',
+//                   padding: '1.5rem',
+//                   boxShadow: '0 2px 8px rgba(0, 51, 102, 0.08)',
+//                   border: '1px solid rgba(74, 106, 138, 0.1)',
+//                   transition: 'all 0.3s ease',
+//                   cursor: 'pointer',
+//                   position: 'relative',
+//                   overflow: 'hidden'
+//                 }}
+//                 onClick={() => navigate(`/details/${property._id}`)}
+//                 onMouseEnter={(e) => {
+//                   e.currentTarget.style.transform = 'translateY(-4px)';
+//                   e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 167, 157, 0.15)';
+//                   e.currentTarget.style.borderColor = '#00A79D';
+//                 }}
+//                 onMouseLeave={(e) => {
+//                   e.currentTarget.style.transform = 'translateY(0)';
+//                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 51, 102, 0.08)';
+//                   e.currentTarget.style.borderColor = 'rgba(74, 106, 138, 0.1)';
+//                 }}
+//               >
+//                 {/* Status Badge */}
+//                 <div style={{
+//                   position: 'absolute',
+//                   top: '1rem',
+//                   right: '1rem',
+//                   backgroundColor: property.status === 'available' ? '#00A79D' : '#4A6A8A',
+//                   color: '#FFFFFF',
+//                   padding: '0.4rem 0.9rem',
+//                   borderRadius: '20px',
+//                   fontSize: '0.8rem',
+//                   fontWeight: '600',
+//                   textTransform: 'capitalize'
+//                 }}>
+//                   {property.status ?? 'N/A'}
+//                 </div>
+
+//                 {/* Property Icon */}
+//                 <div style={{
+//                   width: '48px',
+//                   height: '48px',
+//                   backgroundColor: 'rgba(34, 211, 238, 0.1)',
+//                   borderRadius: '12px',
+//                   display: 'flex',
+//                   alignItems: 'center',
+//                   justifyContent: 'center',
+//                   marginBottom: '1rem'
+//                 }}>
+//                   <Home size={24} color="#00A79D" />
+//                 </div>
+
+//                 {/* Address */}
+//                 <h3 style={{ 
+//                   color: '#003366',
+//                   fontSize: '1.25rem',
+//                   fontWeight: '700',
+//                   marginBottom: '1rem',
+//                   lineHeight: '1.4',
+//                   paddingRight: '80px'
+//                 }}>
+//                   {property.address ?? 'No Address'}
+//                 </h3>
+
+//                 {/* Price */}
+//                 <div style={{
+//                   display: 'flex',
+//                   alignItems: 'center',
+//                   gap: '0.5rem',
+//                   marginBottom: '1rem',
+//                   padding: '0.75rem',
+//                   backgroundColor: '#F4F7F9',
+//                   borderRadius: '10px'
+//                 }}>
+//                   <DollarSign size={20} color="#00A79D" />
+//                   <span style={{
+//                     color: '#003366',
+//                     fontSize: '1.4rem',
+//                     fontWeight: '700'
+//                   }}>
+//                     ${property.monthlyRent?.toLocaleString() || 'N/A'}
+//                   </span>
+//                   <span style={{
+//                     color: '#4A6A8A',
+//                     fontSize: '0.9rem',
+//                     fontWeight: '500'
+//                   }}>
+//                     / month
+//                   </span>
+//                 </div>
+
+//                 {/* Amenities */}
+//                 {property.localAmenities && (
+//                   <div style={{
+//                     borderTop: '1px solid rgba(74, 106, 138, 0.1)',
+//                     paddingTop: '1rem'
+//                   }}>
+//                     <div style={{
+//                       display: 'flex',
+//                       alignItems: 'flex-start',
+//                       gap: '0.5rem'
+//                     }}>
+//                       <Sparkles size={18} color="#22D3EE" style={{ marginTop: '2px', flexShrink: 0 }} />
+//                       <div>
+//                         <p style={{
+//                           color: '#4A6A8A',
+//                           fontSize: '0.85rem',
+//                           fontWeight: '600',
+//                           marginBottom: '0.35rem',
+//                           textTransform: 'uppercase',
+//                           letterSpacing: '0.5px'
+//                         }}>
+//                           Amenities
+//                         </p>
+//                         <p style={{
+//                           color: '#333333',
+//                           fontSize: '0.95rem',
+//                           lineHeight: '1.5',
+//                           margin: 0
+//                         }}>
+//                           {property.localAmenities}
+//                         </p>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             )})}
+//           </div>
+//         )}
+
+//         {/* No Results Message */}
+//         {!loading && filteredPayments.length === 0 && (
+//           <div style={{
+//             textAlign: 'center',
+//             padding: '4rem 2rem',
+//             backgroundColor: '#FFFFFF',
+//             borderRadius: '16px',
+//             boxShadow: '0 2px 8px rgba(0, 51, 102, 0.08)'
+//           }}>
+//             <div style={{
+//               width: '80px',
+//               height: '80px',
+//               backgroundColor: 'rgba(34, 211, 238, 0.1)',
+//               borderRadius: '50%',
+//               display: 'flex',
+//               alignItems: 'center',
+//               justifyContent: 'center',
+//               margin: '0 auto 1.5rem'
+//             }}>
+//               <Search size={40} color="#4A6A8A" />
+//             </div>
+//             <h3 style={{
+//               color: '#003366',
+//               fontSize: '1.5rem',
+//               fontWeight: '600',
+//               marginBottom: '0.75rem'
+//             }}>
+//               No Properties Found
+//             </h3>
+//             <p style={{
+//               color: '#4A6A8A',
+//               fontSize: '1rem',
+//               lineHeight: '1.6',
+//               maxWidth: '500px',
+//               margin: '0 auto'
+//             }}>
+//               We couldn't find any properties matching "<strong>{query}</strong>". Try adjusting your search terms or browse all available properties.
+//             </p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Searchproperty;

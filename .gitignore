@@ -1,0 +1,15 @@
+# Node / React / Python ignores
+node_modules/
+__pycache__/
+*.pyc
+
+# Env files
+client/.env
+server/.env
+
+# Build / dist folders
+client/build/
+server/__pycache__/
+
+# Optional system files
+.DS_StoreDesktop/Code_files/Neo-Urban/client/public/invideo-ai-1080 Unlock Your Perfect Rental in 90 Seconds 2025-10-04.mp4
