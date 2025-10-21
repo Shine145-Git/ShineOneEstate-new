@@ -34,13 +34,13 @@ exports.requestOtp = async (req, res) => {
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
     await user.save();
 
-    // // send OTP via email
-    // await transporter.sendMail({
-    //   from: process.env.EMAIL_USER,
-    //   to: email,
-    //   subject: "Your OTP Code",
-    //   text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-    // });
+    // send OTP via email
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP Code",
+      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+    });
 
     return res.json({ message: "OTP sent successfully" });
   } catch (error) {
