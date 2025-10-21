@@ -16,6 +16,20 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify transporter configuration with detailed logs
+(async () => {
+  try {
+    console.log("Verifying SMTP transporter...");
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("Transporter options:", transporter.options);
+    await transporter.verify();
+    console.log("SMTP transporter verified successfully.");
+  } catch (verifyError) {
+    console.error("Failed to verify SMTP transporter:", verifyError);
+  }
+})();
+
 // Request OTP
 exports.requestOtp = async (req, res) => {
   try {
@@ -32,6 +46,9 @@ exports.requestOtp = async (req, res) => {
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
     await user.save();
 
+    console.log("SMTP transporter config:", transporter.options);
+    console.log("Sending OTP email to:", email);
+
     try {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -39,8 +56,9 @@ exports.requestOtp = async (req, res) => {
         subject: "Your OTP Code",
         text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
       });
+      console.log("OTP email sent successfully to:", email);
     } catch (emailError) {
-      console.error("Failed to send OTP email:", emailError);
+      console.error(`Failed to send OTP email to ${email}:`, emailError);
     }
 
     return res.json({ message: "OTP sent successfully" });
@@ -58,8 +76,13 @@ exports.verifyOtp = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    if (user.otp !== otp || user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    try {
+      if (user.otp !== otp || user.otpExpiry < Date.now()) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
+      }
+    } catch (otpCheckError) {
+      console.error("Error during OTP verification:", otpCheckError);
+      return res.status(500).json({ message: "Server error during OTP verification" });
     }
 
     if (mobileNumber) {
