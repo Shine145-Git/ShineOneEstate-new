@@ -32,7 +32,7 @@ const {
   getSearchHistory,
   searchPropertiesonLocation,
 } = require("../controllers/Searchproperties.controller");
-const { predictPrice } = require("../controllers/aimodel.Controller");
+const { predictPrice } = require("../controllers/aimodel.controller");
 const {
   distributeReward,
   checkEligibility,
