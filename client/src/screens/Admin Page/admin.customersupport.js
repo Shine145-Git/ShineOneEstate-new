@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Phone, Mail, Clock, User, MessageSquare, Calendar, Filter, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import { useNavigate } from 'react-router-dom';
 export default function CallbackDetailsUI() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
   const [callbackRequests, setCallbackRequests] = useState([]);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
   async function fetchCallbackRequests() {
@@ -38,7 +41,35 @@ export default function CallbackDetailsUI() {
     }
   }
   fetchCallbackRequests();
-}, []);
+  }, []);
+  
+
+  const handleLogout = async () => {
+    await fetch("http://localhost:2000/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:2000/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -92,6 +123,7 @@ export default function CallbackDetailsUI() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)' }}>
+      <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} />
       {/* Header */}
       <div style={{ 
         background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',

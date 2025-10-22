@@ -31,7 +31,7 @@ return (
   <nav
     style={{
       backgroundColor: "#003366",
-      padding: "15px 6%",
+      padding: "10px 4%",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
@@ -56,38 +56,17 @@ return (
           fontSize: "28px",
           fontWeight: "700",
           color: "#FFFFFF",
-          letterSpacing: "-0.3px",
+          letterSpacing: "0.2px",
           marginRight: "2px",
           cursor: "pointer",
           userSelect: "none",
         }}
         onClick={() => navigate("/")}
       >
-        ShineOneEstate
+        ggnRentalDeals
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "7px",
-          backgroundColor: "rgba(255,255,255,0.1)",
-          padding: "6px 12px",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
-      >
-        <span
-          style={{ 
-            color: "#FFFFFF", 
-            fontSize: "14px", 
-            fontWeight: "500",
-            whiteSpace: "nowrap",
-          }}
-        >
-          All India
-        </span>
-        <ChevronDown size={16} color="#FFFFFF" />
-      </div>
+      
+      
     </div>
 
     <div 

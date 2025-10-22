@@ -21,7 +21,6 @@ const savePreferences = (req, res) => {
 
     res.status(200).json({ message: "Preferences saved successfully", preferences });
   } catch (err) {
-    console.error("Error saving preferences:", err);
     res.status(500).json({ message: "Failed to save preferences" });
   }
 };

@@ -22,4 +22,3 @@ exports.getChatResponse = (req, res) => {
     res.json({ reply: "Sorry, I don’t understand that yet. Please contact support or check our FAQ." });
   }
 };
-

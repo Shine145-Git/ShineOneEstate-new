@@ -9,7 +9,6 @@ const getMyProperties = async (req, res) => {
     const myProperties = await Property.find({ owner: req.user._id });
     res.status(200).json(myProperties);
   } catch (error) {
-    console.error("Error fetching user's properties:", error);
     res.status(500).json({
       message: "Server error while fetching user's properties",
       error: error.message,
@@ -63,7 +62,6 @@ const createProperty = async (req, res) => {
       property: savedProperty,
     });
   } catch (error) {
-    console.error("Error creating property:", error);
     res.status(500).json({
       message: "Server error while creating property",
       error: error.message,
@@ -110,7 +108,6 @@ const bulkUploadProperties = async (req, res) => {
       properties: insertedProperties,
     });
   } catch (error) {
-    console.error("Error bulk uploading properties:", error);
     res.status(500).json({
       message: "Server error while bulk uploading properties",
       error: error.message,
@@ -126,7 +123,6 @@ const getAllProperties = async (req, res) => {
     const properties = await Property.find().populate("owner", "name email");
     res.status(200).json(properties);
   } catch (error) {
-    console.error("Error fetching properties:", error);
     res.status(500).json({
       message: "Server error while fetching properties",
       error: error.message,
@@ -149,7 +145,6 @@ const getPropertyById = async (req, res) => {
     }
     res.status(200).json(property);
   } catch (error) {
-    console.error("Error fetching property by ID:", error);
     res.status(500).json({
       message: "Server error while fetching property",
       error: error.message,

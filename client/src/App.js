@@ -16,6 +16,7 @@ import PricePredictor from "./screens/Price Predictor Model/pricepredict";
 import CustomerSupportPage from "./screens/Customer Support/Customersupport";
 import CallbackDetailsUI from "./screens/Admin Page/admin.customersupport";
 import Chatbot from "./screens/Dashboard/ChatBot";
+import AdminEnquiryProperties from "./screens/Admin Page/admin.enquiryproperties";
 
 function App() {
   return (
@@ -32,11 +33,12 @@ function App() {
         <Route path="/my-properties" element={<PropertyCards />} />
         <Route path="/search" element={<Searchproperty />} />
         <Route path="/search/:query" element={<Searchproperty />} />
-        <Route path="/admin/properties" element={<AdminDashboard />} />
         <Route path="/rewards" element={<RewardsPage />} />
         {/* <Route path="/user-details" element={<UserDetailsForm />} /> */}
         <Route path="/price-predictor" element={<PricePredictor />} />
-        <Route path="/support" element={<CustomerSupportPage />} />
+        <Route path="/admin/properties" element={<AdminDashboard />} />
+        <Route path="/admin/support" element={<CustomerSupportPage />} />
+        <Route path="/admin/enquiries" element={<AdminEnquiryProperties />} />
         <Route path="/admin/callback" element={<CallbackDetailsUI />} />
         <Route path="/chatbot" element={<Chatbot />} />
 

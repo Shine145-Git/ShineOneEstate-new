@@ -17,7 +17,6 @@ exports.getUserDetails = async (req, res) => {
 
     return res.status(200).json({ user: userDetails });
   } catch (error) {
-    console.error("Error fetching user details:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -37,7 +36,6 @@ exports.userDetails = async (req, res) => {
       createdAt: req.user.createdAt,
     });
   } catch (err) {
-    console.error("Error fetching user details:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -98,7 +96,6 @@ exports.saveUserDetails = async (req, res) => {
       user: updatedUser
     });
   } catch (error) {
-    console.error("Error saving user details:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -126,7 +123,6 @@ exports.getUserDetailsFromDB = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching user details from DB:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

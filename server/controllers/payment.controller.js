@@ -44,7 +44,6 @@ exports.createPayment = async (req, res) => {
         payment: savedPayment,
       });
   } catch (err) {
-    console.error("Error creating payment:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -58,7 +57,6 @@ exports.getPaymentsForUser = async (req, res) => {
 
     res.status(200).json(payments);
   } catch (err) {
-    console.error("Error fetching payments:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

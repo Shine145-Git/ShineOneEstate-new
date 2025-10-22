@@ -49,16 +49,6 @@ const userSchema = new mongoose.Schema(
 );
 
 const jwt = require("jsonwebtoken");
-console.log('ACCESS_TOKEN_SECRET_EXPIRE:', process.env.ACCESS_TOKEN_SECRET_EXPIRE);
-console.log('REFRESH_TOKEN_SECRET_EXPIRE:', process.env.REFRESH_TOKEN_SECRET_EXPIRE);
-
-// 🔹 Debug token expiry (for testing only)
-const examplePayload = { id: "test_id", email: "test@test.com", name: "Test" };
-const token = jwt.sign(examplePayload, process.env.ACCESS_TOKEN_SECRET, {
-  expiresIn: process.env.ACCESS_TOKEN_SECRET_EXPIRE
-});
-const decoded = jwt.decode(token);
-console.log('Example Access Token expires at:', new Date(decoded.exp * 1000));
 
 // 🔑 Generate Access Token
 userSchema.methods.getAccessToken = function () {

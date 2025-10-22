@@ -233,7 +233,7 @@ export default function LandingPage() {
         <div style={styles.bannerContent}>
           <h1 style={styles.bannerTitle}>
             Plan hassle-free <span style={styles.highlight}>Site Visits & Evaluate Projects</span> with{' '}
-            <span style={styles.brandName}>ShineOneEstate</span>
+            <span style={styles.brandName}>ggnRentalDeals</span>
           </h1>
           <p style={styles.bannerSubtext}>
             Get <strong>Free Cab</strong> for every site visit! <span style={styles.cabEmoji}>🚕</span>
@@ -271,7 +271,7 @@ export default function LandingPage() {
             </div> */}
             <div style={styles.leftContent}>
               <h2 style={{...styles.mainHeading, color: '#FFFFFF', textShadow: '2px 2px 8px rgba(0,0,0,0.7)'}}>Upgrade to Your Dream Home with</h2>
-              <p style={{...styles.subBrand, color: '#22D3EE', textShadow: '1px 1px 4px rgba(0,0,0,0.7)'}}>ShineOneEstate</p>
+              <p style={{...styles.subBrand, color: '#22D3EE', textShadow: '1px 1px 4px rgba(0,0,0,0.7)'}}>ggnRentalDeals</p>
               <img
                 src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800"
                 alt="Modern real estate property"

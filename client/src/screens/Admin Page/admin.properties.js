@@ -237,6 +237,64 @@ export default function AdminDashboard() {
             {tab.label}
           </button>
         ))}
+        {/* Additional Admin Navigation Buttons */}
+        <button
+          onClick={() => navigate("/admin/support")}
+          style={{
+            background: "transparent",
+            color: "#333333",
+            border: "none",
+            padding: "15px 25px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "600",
+            borderBottom: "3px solid transparent",
+            transition: "all 0.3s ease",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          Support
+        </button>
+        <button
+          onClick={() => navigate("/admin/enquiries")}
+          style={{
+            background: "transparent",
+            color: "#333333",
+            border: "none",
+            padding: "15px 25px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "600",
+            borderBottom: "3px solid transparent",
+            transition: "all 0.3s ease",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          Enquiries
+        </button>
+        <button
+          onClick={() => navigate("/admin/callback")}
+          style={{
+            background: "transparent",
+            color: "#333333",
+            border: "none",
+            padding: "15px 25px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "600",
+            borderBottom: "3px solid transparent",
+            transition: "all 0.3s ease",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          Callback
+        </button>
       </div>
 
       {/* Main Content */}

@@ -19,7 +19,6 @@ exports.requestCallback = async (req, res) => {
     await newRequest.save();
     res.status(201).json({ message: "Callback request submitted successfully", data: newRequest });
   } catch (error) {
-    console.error("Error saving callback request:", error);
     res.status(500).json({ message: "Server error while submitting callback request" });
   }
 };
@@ -28,11 +27,8 @@ exports.requestCallback = async (req, res) => {
 exports.getCallbackRequests = async (req, res) => {
   try {
     const requests = await CustomerSupport.find().sort({ createdAt: -1 });
-      console.log(requests);
-      res.status(200).json({ data: requests });
-      
+    res.status(200).json({ data: requests });
   } catch (error) {
-    console.error("Error fetching callback requests:", error);
     res.status(500).json({ message: "Server error while fetching callback requests" });
   }
 };

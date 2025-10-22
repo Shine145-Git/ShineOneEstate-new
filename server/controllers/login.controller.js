@@ -21,18 +21,28 @@ exports.requestOtp = async (req, res) => {
     const otp = generateOtp();
     user.otp = otp;
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
-    console.log(`Generated OTP for ${email}: ${otp}`); // Log OTP for debugging
     await user.save();
 
-    // try {
-    //   await sendEmail(email, "Your OTP Code", `Your OTP code is ${otp}. It will expire in 5 minutes.`);
-    //   console.log("OTP email sent successfully to:", email);
-    // } catch (emailError) {
-    //   console.error(`Failed to send OTP email to ${email}:`, emailError);
-    //   return res.status(500).json({ message: "Failed to send OTP email" });
-    // }
+    const emailParams = {
+      to: email,
+      subject: "Your OTP Code for ggnRentalDeals",
+      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+      html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`
+    };
 
-    return res.json({ message: "OTP sent successfully" });
+    try {
+      await sendEmail(
+        emailParams.to,
+        emailParams.subject,
+        emailParams.text,
+        emailParams.html
+      );
+      console.log(`✅ OTP email successfully sent to ${email}`);
+      return res.status(200).json({ message: "OTP sent successfully" });
+    } catch (emailError) {
+      console.error(`❌ Failed to send OTP email to ${email}: ${emailError.message}`);
+      return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -52,7 +62,6 @@ exports.verifyOtp = async (req, res) => {
         return res.status(400).json({ message: "Invalid or expired OTP" });
       }
     } catch (otpCheckError) {
-      console.error("Error during OTP verification:", otpCheckError);
       return res.status(500).json({ message: "Server error during OTP verification" });
     }
 

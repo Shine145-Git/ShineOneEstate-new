@@ -75,7 +75,6 @@ exports.searchProperties = async (req, res) => {
 
     res.status(200).json(results);
   } catch (error) {
-    console.error("Error searching properties:", error);
     res
       .status(500)
       .json({ message: "Server error while searching properties" });
@@ -95,7 +94,6 @@ exports.getSearchHistory = async (req, res) => {
     });
     res.status(200).json({ history });
   } catch (error) {
-    console.error("Error fetching search history:", error);
     res
       .status(500)
       .json({ message: "Server error while fetching search history" });
@@ -113,8 +111,6 @@ exports.searchPropertiesonLocation = async (req, res) => {
     ) {
       return res.status(400).json({ message: "Search query is required" });
     }
-
-    console.log("Received queryFields for location search:", queryFields);
 
     // Save user search query if logged in
     if (userId) {
@@ -139,12 +135,9 @@ exports.searchPropertiesonLocation = async (req, res) => {
       "name email"
     );
 
-    console.log("Properties found:", results.length);
-
     // Return results (empty array if none found)
     res.status(200).json(results || []);
   } catch (error) {
-    console.error("Error searching properties:", error);
     res
       .status(500)
       .json({ message: "Server error while searching properties" });
@@ -159,26 +152,17 @@ exports.getUserDashboard = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
-    console.log("User ID:", userId);
-    console.log(
-      "Recent searches:",
-      history.map((h) => h.query)
-    );
-
     let recommended = [];
 
     if (history.length > 0) {
       // Take latest search query
       const lastQuery = history[0].query;
-      console.log("Raw last query:", lastQuery);
 
       // Split query into smaller searchable parts
       const queryParts = lastQuery
         .split(",")
         .map((part) => part.trim())
         .filter(Boolean);
-
-      console.log("Search parts:", queryParts);
 
       // Build regex for each sub-part
       const regexArray = queryParts.map((word) => new RegExp(word, "i"));
@@ -193,13 +177,6 @@ exports.getUserDashboard = async (req, res) => {
       recommended = await Property.find({ $or: orConditions })
         .limit(10)
         .populate("owner", "name email");
-
-      console.log(
-        "Recommended query used:",
-        queryParts.join(", "),
-        "\nRecommended properties found:",
-        recommended.map((p) => p.address)
-      );
     }
 
     res.status(200).json({
@@ -207,7 +184,6 @@ exports.getUserDashboard = async (req, res) => {
       recommendedProperties: recommended,
     });
   } catch (error) {
-    console.error("Error fetching personalized dashboard:", error);
     res.status(500).json({
       message: "Server error while fetching dashboard",
       error: error.message,

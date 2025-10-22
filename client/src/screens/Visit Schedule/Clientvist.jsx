@@ -1,21 +1,44 @@
+// React hooks for state and lifecycle
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+// React Router hooks for navigation and params
+import { useParams, useNavigate } from 'react-router-dom';
+// Icon imports
 import { CreditCard, Smartphone, Building2, MapPin, Home, X, ChevronRight, DollarSign, CheckCircle } from 'lucide-react';
+// HTTP client
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+// Top navigation bar component
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
 
+// Main component for property checkout and payment
 export default function PropertyCheckout() {
+  // Get property ID from URL params
   const { id } = useParams();
-  const [showPayment, setShowPayment] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState('');
+  // Modal visibility for payment modal
+  const [showPayment, setShowPayment] = useState(false); // unused, but kept for future use
+  // Tracks selected payment method (future use)
+  const [selectedPayment, setSelectedPayment] = useState(''); // unused, but kept for future use
+  // State for property details
   const [property, setProperty] = useState(null);
+  // State for selected payment option ('both', 'rent', 'deposit', 'none')
   const [paymentOption, setPaymentOption] = useState('both');
+  // Modal visibility for payment modal
   const [showModal, setShowModal] = useState(false);
+  // Modal visibility for payment approval modal
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  // State for current logged-in user
   const [user, setUser] = useState(null);
+  // Navigation hook
   const navigate = useNavigate();
 
+  // Enquiry modal state and confirmation
+  // Modal visibility for enquiry modal
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  // State for enquiry message input
+  const [enquiryMessage, setEnquiryMessage] = useState('');
+  // State for showing enquiry success confirmation
+  const [enquirySuccess, setEnquirySuccess] = useState(false);
+
+  // Fetch property details when component mounts or ID changes
   useEffect(() => {
     const fetchProperty = async () => {
       try {
@@ -29,6 +52,7 @@ export default function PropertyCheckout() {
     fetchProperty();
   }, [id]);
 
+  // Logout handler: clears user and redirects to login
   const handleLogout = async () => {
     // Logout endpoint configurable via .env
     await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
@@ -39,6 +63,7 @@ export default function PropertyCheckout() {
     navigate("/login");
   };
 
+  // Fetch user information on mount
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -56,10 +81,13 @@ export default function PropertyCheckout() {
     fetchUser();
   }, []);
 
+  // Navigation bar items
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
+  // Show loading state if property not loaded yet
   if (!property) return <div style={{ padding: '20px' }}>Loading property details...</div>;
 
+  // Calculate the total amount payable based on payment option
   const calculateTotal = () => {
     if (paymentOption === 'both') return (property.monthlyRent || 0) + (Number(property.securityDeposit) || 0);
     if (paymentOption === 'rent') return property.monthlyRent || 0;
@@ -269,20 +297,23 @@ export default function PropertyCheckout() {
   //   </div>
   // );
 
+  // Main return: property checkout UI
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      {/* Top navigation bar with user info and logout */}
       <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
 
       <div style={{ padding: '24px 16px', maxWidth: '800px', margin: '0 auto' }}>
-        {/* Breadcrumb */}
+        {/* Breadcrumb navigation */}
         <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '20px' }}>
           Home / Properties / <span style={{ color: '#003366', fontWeight: '500' }}>Checkout</span>
         </div>
 
+        {/* Main content grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px', marginBottom: '100px' }}>
-          {/* Left Column - Property & Payment Details */}
+          {/* Main column for property and payment details */}
           <div>
-            {/* Property Card */}
+            {/* Property Card: shows property info */}
             <div style={{ background: '#FFFFFF', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <div style={{ background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)', padding: '16px', color: '#FFFFFF' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -320,7 +351,7 @@ export default function PropertyCheckout() {
               </div>
             </div>
 
-            {/* Payment Options */}
+            {/* Payment Options: choose rent/deposit/both/none */}
             <div style={{ background: '#FFFFFF', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <div style={{ background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', padding: '16px', color: '#FFFFFF' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -366,7 +397,7 @@ export default function PropertyCheckout() {
               </div>
             </div>
 
-            {/* Bill Summary */}
+            {/* Bill Summary: shows breakdown and total */}
             <div style={{ background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <div style={{ background: '#003366', padding: '16px', color: '#FFFFFF' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Payment Summary</h3>
@@ -406,24 +437,24 @@ export default function PropertyCheckout() {
           </div>
         </div>
 
-        {/* Fixed Checkout Bar */}
-        <div style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          background: '#FFFFFF', 
+        {/* Fixed Checkout Bar: always visible at bottom for payment/enquiry */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#FFFFFF',
           borderTop: '2px solid #E5E7EB',
           boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
           zIndex: 999
         }}>
-          <div style={{ 
-            maxWidth: '800px', 
-            margin: '0 auto', 
-            padding: '20px 16px', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center' 
+          <div style={{
+            maxWidth: '800px',
+            margin: '0 auto',
+            padding: '20px 16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
             <div>
               <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '4px' }}>Amount Payable</div>
@@ -431,30 +462,201 @@ export default function PropertyCheckout() {
                 ${calculateTotal()}
               </div>
             </div>
-            <button 
-              style={{ 
-                background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', 
-                color: '#FFFFFF', 
-                padding: '14px 40px', 
-                borderRadius: '8px', 
-                fontSize: '16px', 
-                fontWeight: '600', 
-                border: 'none', 
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                style={{
+                  background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+                  color: '#FFFFFF',
+                  padding: '14px 40px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,167,157,0.3)',
+                  transition: 'transform 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                onClick={() => setShowModal(true)}
+              >
+                Proceed to Pay
+              </button>
+              <button
+                style={{
+                  background: '#FFFFFF',
+                  color: '#00A79D',
+                  padding: '14px 32px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  border: '2px solid #00A79D',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(0,167,157,0.08)',
+                  transition: 'background 0.2s, color 0.2s'
+                }}
+                onMouseOver={e => {
+                  e.target.style.background = '#00A79D';
+                  e.target.style.color = '#FFFFFF';
+                }}
+                onMouseOut={e => {
+                  e.target.style.background = '#FFFFFF';
+                  e.target.style.color = '#00A79D';
+                }}
+                onClick={() => setShowEnquiryModal(true)}
+              >
+                Enquiry
+              </button>
+            </div>
+          </div>
+        </div>
+      {/* Enquiry Modal: allows user to send a message to owner/agent */}
+      {showEnquiryModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1200,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '32px 28px 24px 28px',
+            width: '90%',
+            maxWidth: '420px',
+            position: 'relative',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            textAlign: 'center',
+          }}>
+            <button
+              onClick={() => setShowEnquiryModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#F4F7F9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,167,157,0.3)',
-                transition: 'transform 0.2s'
+                color: '#4A6A8A',
               }}
-              onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-              onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-              onClick={() => setShowModal(true)}
+              aria-label="Close enquiry modal"
             >
-              Proceed to Pay
+              <X size={20} />
+            </button>
+            <h2 style={{ marginBottom: '12px', color: '#003366', fontSize: '22px', fontWeight: '700' }}>
+              Enquire about this Property
+            </h2>
+            <p style={{ color: '#4A6A8A', fontSize: '15px', marginBottom: '16px' }}>
+              Send a message to the property owner or agent. This is optional.
+            </p>
+            <textarea
+              placeholder="Type your message (optional)..."
+              style={{
+                width: '100%',
+                minHeight: '80px',
+                borderRadius: '8px',
+                border: '1.5px solid #E5E7EB',
+                padding: '10px',
+                fontSize: '15px',
+                marginBottom: '18px',
+                resize: 'vertical',
+                color: '#003366'
+              }}
+              value={enquiryMessage}
+              onChange={e => setEnquiryMessage(e.target.value)}
+            />
+            <button
+              style={{
+                background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+                color: '#FFFFFF',
+                padding: '13px 32px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer',
+                width: '100%',
+                boxShadow: '0 4px 12px rgba(0,167,157,0.15)'
+              }}
+              onClick={async () => {
+                if (!property || !user) {
+                  console.error('Property or user info missing');
+                  return;
+                }
+                
+                  
+                try {
+                  const payload = {
+                    propertyId: property._id,
+                    
+                    message: enquiryMessage,
+                  };
+                
+
+                  const res = await axios.post(
+                    process.env.REACT_APP_CREATE_ENQUIRY_API,
+                    payload,
+                    { withCredentials: true }
+                  );
+                  // Optional: could keep minimal success info if needed
+                  // console.log('Enquiry response:', res.data);
+                  setShowEnquiryModal(false);
+                  setEnquiryMessage('');
+                  setEnquirySuccess(true);
+                  setTimeout(() => setEnquirySuccess(false), 2500);
+                } catch (error) {
+                  console.error('Failed to send enquiry:', error);
+                
+                  
+                }
+              }}
+            >
+              Send Enquiry
             </button>
           </div>
         </div>
+      )}
+
+      {/* Enquiry Confirmation: shows success after sending enquiry */}
+      {enquirySuccess && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.0)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          zIndex: 1300,
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            background: '#00A79D',
+            color: '#fff',
+            borderRadius: '8px 8px 0 0',
+            fontSize: '16px',
+            fontWeight: 600,
+            padding: '20px 36px',
+            marginBottom: '60px',
+            boxShadow: '0 4px 16px rgba(0,167,157,0.18)',
+            opacity: 0.96
+          }}>
+            Enquiry sent successfully!
+          </div>
+        </div>
+      )}
       </div>
 
-      {/* Payment Modal */}
+      {/* Payment Modal: for QR code and confirming payment */}
       {showModal && (
         <div style={{
           position: 'fixed',
@@ -533,46 +735,46 @@ export default function PropertyCheckout() {
             </div>
             
             <button
-  onClick={async () => {
-    try {
-      // Payment endpoint configurable via .env
-      const res = await axios.post(
-        `${process.env.REACT_APP_PAYMENT_API}`,
-        {
-          propertyId: property._id,
-          amount: calculateTotal(),
-        },
-        { withCredentials: true }
-      );
-      console.log('Payment response:', res.data);
-      // Show approval modal after success
-      setShowModal(false);
-      setShowApprovalModal(true);
-    } catch (error) {
-      console.error('Error sending payment:', error);
-      alert('Payment failed. Please try again.');
-    }
-  }}
-  style={{
-    background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
-    color: '#FFFFFF',
-    padding: '14px 32px',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: '600',
-    border: 'none',
-    cursor: 'pointer',
-    width: '100%',
-    boxShadow: '0 4px 12px rgba(0,167,157,0.3)'
-  }}
->
-  Confirm Payment
-</button>
+              onClick={async () => {
+                try {
+                  const payload = {
+                    propertyId: property._id,
+                    amount: calculateTotal(),
+                  };
+                  // Payment endpoint configurable via .env
+                  const res = await axios.post(
+                    `${process.env.REACT_APP_PAYMENT_API}`,
+                    payload,
+                    { withCredentials: true }
+                  );
+                  // Show approval modal after success
+                  setShowModal(false);
+                  setShowApprovalModal(true);
+                } catch (error) {
+                  console.error('Error sending payment:', error);
+                  alert('Payment failed. Please try again.');
+                }
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+                color: '#FFFFFF',
+                padding: '14px 32px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer',
+                width: '100%',
+                boxShadow: '0 4px 12px rgba(0,167,157,0.3)'
+              }}
+            >
+              Confirm Payment
+            </button>
           </div>
         </div>
       )}
 
-      {/* Approval Modal */}
+      {/* Approval Modal: shown after payment, waiting for approval */}
       {showApprovalModal && (
         <div style={{
           position: 'fixed',

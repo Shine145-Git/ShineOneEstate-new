@@ -2,9 +2,6 @@ const SaleProperty = require('../models/SaleProperty.model.js');
 
 const createSaleProperty = async (req, res) => {
   try {
-    console.log("BODY:", req.body);
-    console.log("FILES:", req.files);
-
     const { title, description, price, area, bedrooms, bathrooms, location } = req.body;
     const ownerId = req.user?._id || req.user?.id;
 
@@ -29,7 +26,6 @@ const createSaleProperty = async (req, res) => {
     const savedProperty = await newProperty.save();
     res.status(201).json(savedProperty);
   } catch (error) {
-    console.error("Error creating sale property:", error);
     res.status(500).json({ message: "Failed to create property", error: error.message });
   }
 };

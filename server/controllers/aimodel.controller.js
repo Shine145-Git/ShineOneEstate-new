@@ -41,16 +41,13 @@ const predictPrice = async (req, res) => {
       if (response.data && response.data.predicted_price !== undefined) {
         return res.json({ predictedPrice: response.data.predicted_price });
       } else {
-        console.error('Flask API response invalid:', response.data);
         return res.status(500).json({ error: 'Flask API did not return a valid prediction', details: response.data });
       }
     } catch (flaskError) {
-      console.error('Error calling Flask API:', flaskError.response?.data || flaskError.message || flaskError);
       return res.status(500).json({ error: 'Failed to call Flask API', details: flaskError.response?.data || flaskError.message });
     }
 
   } catch (error) {
-    console.error('Prediction controller error:', error);
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };
