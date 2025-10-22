@@ -92,18 +92,18 @@ useEffect(() => {
           method: "GET",
           credentials: "include",
         });
-        console.log("Fetch response status:", res.status);
-        console.log("Fetch response object:", res);
+        // console.log("Fetch response status:", res.status);
+        // console.log("Fetch response object:", res);
 
         const data = await res.json();
-        console.log("Parsed response data:", data);
+        // console.log("Parsed response data:", data);
 
         if (res.ok && data) {
           setUser(data); // use data directly
-          console.log("User set in state:", data);
+          // console.log("User set in state:", data);
         } else {
           setUser(null);
-          console.log("User not set, response data:", data);
+          // console.log("User not set, response data:", data);
         }
       } catch (err) {
         console.error("Fetch error:", err);
@@ -159,7 +159,7 @@ useEffect(() => {
             setRecentSearches(data.recentSearches || []);
             // Use the array directly if backend returns it
 const recommendedProps = data.recommendedProperties || data || [];
-console.log("Recommended properties fetched:", recommendedProps);
+// console.log("Recommended properties fetched:", recommendedProps);
 setRecommended(recommendedProps);
           } else {
             setRecentSearches([]);
@@ -167,7 +167,7 @@ setRecommended(recommendedProps);
           }
         }
       } catch (err) {
-        console.error("Error fetching properties or dashboard data:", err);
+        // console.error("Error fetching properties or dashboard data:", err);
         setProperties([]);
         setRecentSearches([]);
         setRecommended([]);
@@ -183,7 +183,7 @@ setRecommended(recommendedProps);
           method: 'GET',
           credentials: 'include',
         });
-        console.log('Search history sent successfully');
+        // console.log('Search history sent successfully');
       } catch (err) {
         console.error('Error sending search history:', err);
       }
@@ -451,7 +451,7 @@ setRecommended(recommendedProps);
 
     recognition.onresult = (event) => {
       const voiceInput = event.results[0][0].transcript;
-      console.log("Voice input:", voiceInput);
+      // console.log("Voice input:", voiceInput);
       setSearchQuery(voiceInput);
       handleSearch(); // perform search
     };

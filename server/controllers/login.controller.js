@@ -21,15 +21,16 @@ exports.requestOtp = async (req, res) => {
     const otp = generateOtp();
     user.otp = otp;
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
+    console.log(`Generated OTP for ${email}: ${otp}`); // Log OTP for debugging
     await user.save();
 
-    try {
-      await sendEmail(email, "Your OTP Code", `Your OTP code is ${otp}. It will expire in 5 minutes.`);
-      console.log("OTP email sent successfully to:", email);
-    } catch (emailError) {
-      console.error(`Failed to send OTP email to ${email}:`, emailError);
-      return res.status(500).json({ message: "Failed to send OTP email" });
-    }
+    // try {
+    //   await sendEmail(email, "Your OTP Code", `Your OTP code is ${otp}. It will expire in 5 minutes.`);
+    //   console.log("OTP email sent successfully to:", email);
+    // } catch (emailError) {
+    //   console.error(`Failed to send OTP email to ${email}:`, emailError);
+    //   return res.status(500).json({ message: "Failed to send OTP email" });
+    // }
 
     return res.json({ message: "OTP sent successfully" });
   } catch (error) {

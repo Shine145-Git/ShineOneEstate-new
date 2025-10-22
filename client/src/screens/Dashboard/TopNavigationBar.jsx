@@ -39,7 +39,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
             credentials: "include",
           }
         );
-        console.log("Search history sent successfully");
+        // console.log("Search history sent successfully");
       } catch (err) {
         console.error("Error sending search history:", err);
       }

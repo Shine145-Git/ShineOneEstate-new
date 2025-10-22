@@ -37,7 +37,7 @@ const Location = ({ setUserLocation }) => {
             state: data.address.state || null
           };
 
-          console.log("Reverse geocoding full address:", data.address);
+          // console.log("Reverse geocoding full address:", data.address);
 
           if (loc.area || loc.city) {
             if (typeof setUserLocation === "function") {
