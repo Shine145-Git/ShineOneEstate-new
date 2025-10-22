@@ -5,7 +5,6 @@ const cookieParser = require("cookie-parser");
 const db = require("./config/db");
 const routes = require("./Route/route");
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",")
-  
 
 // Initialize Express
 const app = express();
@@ -18,7 +17,13 @@ app.use(express.json());
 app.use(cookieParser()); // must be before routes
 
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -26,19 +31,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests for all routes
+// Log origin middleware for debugging
 app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Origin", corsOptions.origin);
-    res.header("Access-Control-Allow-Methods", corsOptions.methods.join(","));
-    res.header("Access-Control-Allow-Headers", corsOptions.allowedHeaders.join(","));
-    res.header("Access-Control-Allow-Credentials", "true");
-    return res.sendStatus(204);
-  }
+  console.log('Request Origin:', req.headers.origin);
   next();
 });
-
-
 
 // Routes
 app.use("/", routes);
