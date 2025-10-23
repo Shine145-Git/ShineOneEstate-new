@@ -31,12 +31,13 @@ exports.requestOtp = async (req, res) => {
     };
 
     try {
-      await sendEmail(
-        emailParams.to,
-        emailParams.subject,
-        emailParams.text,
-        emailParams.html
-      );
+      console.log("📧 Preparing to send email with:", emailParams);
+      await sendEmail({
+        to: emailParams.to,
+        subject: emailParams.subject,
+        text: emailParams.text,
+        html: emailParams.html
+      });
       console.log(`✅ OTP email successfully sent to ${email}`);
       return res.status(200).json({ message: "OTP sent successfully" });
     } catch (emailError) {

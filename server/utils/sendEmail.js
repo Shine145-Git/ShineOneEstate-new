@@ -1,39 +1,39 @@
-const nodemailer = require('nodemailer');
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 require('dotenv').config();
 
-// Create transporter using Brevo SMTP
-const transporter = nodemailer.createTransport({
-    host: process.env.BREVO_SMTP_HOST,
-    port: process.env.BREVO_SMTP_PORT,
-    secure: false, // Brevo uses STARTTLS (port 587)
-    auth: {
-        user: process.env.BREVO_SMTP_USER,
-        pass: process.env.BREVO_SMTP_PASS,
-    },
-});
+const sendEmail = async ({ to, subject, text, html }) => {
+  try {
+    const defaultClient = SibApiV3Sdk.ApiClient.instance;
+    const apiKey = defaultClient.authentications['api-key'];
+    apiKey.apiKey = process.env.BREVO_API_KEY;
 
-// Send email utility
-async function sendEmail(to, subject = '', text = '', html = '') {
-    if (!to) {
-        console.error('❌ No recipient provided for email. Skipping send.');
-        return;
-    }
+    const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
-    try {
-        console.log(`\n--- Sending Email ---\nTo: ${to}\nSubject: ${subject}\nText: ${text}\nHTML: ${html}\n-------------------`);
+    const sender = {
+      email: process.env.SENDER_EMAIL,
+      name: process.env.SENDER_NAME || "ggnRentalDeals"
+    };
 
-        const info = await transporter.sendMail({
-            from: `"Neo Urban" <${process.env.SENDER_EMAIL}>`,
-            to,
-            subject,
-            text,
-            html,
-        });
+    const receivers = [{ email: to }];
 
-        console.log(`✅ Email sent successfully to ${to}. Message ID: ${info.messageId}`);
-    } catch (error) {
-        console.error(`❌ Error sending email to ${to} with subject "${subject}":`, error.message);
-    }
-}
+    console.log(`📧 Sending email via Brevo API:
+To: ${to}
+Subject: ${subject}
+---------------------`);
+
+    await tranEmailApi.sendTransacEmail({
+      sender,
+      to: receivers,
+      subject,
+      textContent: text,
+      htmlContent: html
+    });
+
+    console.log(`✅ Email successfully sent to ${to}`);
+  } catch (error) {
+    console.error("❌ Error sending email via Brevo API:", error.message);
+    throw new Error(error.message);
+  }
+};
 
 module.exports = sendEmail;
