@@ -23,6 +23,13 @@ exports.requestOtp = async (req, res) => {
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
     await user.save();
 
+    // Development mode: skip sending email, just log OTP
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔑 [DEV] OTP for ${email}: ${otp}`);
+      return res.status(200).json({ message: "OTP sent successfully (DEV mode)", otp }); // optional: send otp in response for dev testing
+    }
+
+    // Production mode: send via Brevo
     const emailParams = {
       to: email,
       subject: "Your OTP Code for ggnRentalDeals",
@@ -31,14 +38,7 @@ exports.requestOtp = async (req, res) => {
     };
 
     try {
-      console.log("📧 Preparing to send email with:", emailParams);
-      await sendEmail({
-        to: emailParams.to,
-        subject: emailParams.subject,
-        text: emailParams.text,
-        html: emailParams.html
-      });
-      console.log(`✅ OTP email successfully sent to ${email}`);
+      await sendEmail(emailParams);
       return res.status(200).json({ message: "OTP sent successfully" });
     } catch (emailError) {
       console.error(`❌ Failed to send OTP email to ${email}: ${emailError.message}`);

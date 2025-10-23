@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import { Menu, ChevronDown, Bell, User, Bot, Square, LogOut } from 'react-icons/your-icon-library';
 import {
   Menu,
   ChevronDown,
@@ -26,7 +25,21 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   const [recommended, setRecommended] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
 
- 
+  // Media query state for responsive design
+  const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
+  const [isMediumScreen, setIsMediumScreen] = useState(window.innerWidth < 1024);
+
+  // Handle window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth < 768);
+      setIsMediumScreen(window.innerWidth < 1024);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
 return (
   <nav
     style={{
@@ -47,13 +60,16 @@ return (
         style={{ cursor: "pointer", display: "block" }}
         onClick={() => setIsSideMenuOpen(!isSideMenuOpen)}
       />
-      {isSideMenuOpen && <SideMenuBar />}
+      {isSideMenuOpen && <SideMenuBar
+        currentUser={user}
+        onLoginClick={() => { navigate('/login'); }}
+      />}
     </div>
 
     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
       <div
         style={{
-          fontSize: "28px",
+          fontSize: isSmallScreen ? "20px" : "28px",
           fontWeight: "700",
           color: "#FFFFFF",
           letterSpacing: "0.2px",
@@ -69,9 +85,10 @@ return (
       
     </div>
 
+    {/* Nav items - hidden on screens smaller than 1024px */}
     <div 
       style={{ 
-        display: "flex", 
+        display: isMediumScreen ? "none" : "flex",
         gap: "28px", 
         alignItems: "center",
       }}
@@ -86,7 +103,6 @@ return (
             fontSize: "14px",
             fontWeight: "400",
             transition: "opacity 0.2s ease",
-            display: window.innerWidth < 1024 ? "none" : "inline-block",
             whiteSpace: "nowrap",
           }}
           onMouseEnter={(e) => {
@@ -101,16 +117,16 @@ return (
       ))}
     </div>
 
-    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: isSmallScreen ? "12px" : "16px" }}>
       {/* AI Search Button */}
       <button
         style={{
-          padding: "8px 20px",
+          padding: isSmallScreen ? "8px 12px" : "8px 20px",
           backgroundColor: "#00A79D",
           color: "#FFFFFF",
           border: "none",
           borderRadius: "6px",
-          fontSize: "13px",
+          fontSize: isSmallScreen ? "12px" : "13px",
           fontWeight: "600",
           cursor: "pointer",
           display: "flex",
@@ -135,7 +151,7 @@ return (
           else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
         }}
       >
-        <span>AI Search</span>
+        <span>{isSmallScreen ? "AI" : "AI Search"}</span>
         <span
           style={{
             backgroundColor: "#FFFFFF",
@@ -150,53 +166,56 @@ return (
         </span>
       </button>
 
-      {/* Post Property Button */}
-      <button
-        style={{
-          padding: "8px 20px",
-          backgroundColor: "#00A79D",
-          color: "#FFFFFF",
-          border: "none",
-          borderRadius: "6px",
-          fontSize: "13px",
-          fontWeight: "600",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          transition: "all 0.3s ease",
-          whiteSpace: "nowrap",
-          outline: "none",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#22D3EE";
-          e.currentTarget.style.transform = "translateY(-1px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#00A79D";
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-        onClick={() => {
-          if (user) navigate(`${process.env.REACT_APP_ADD_PROPERTY_PAGE}`);
-          else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
-        }}
-      >
-        <span>Post property</span>
-        <span
+      {/* Post Property Button - hidden on screens smaller than 768px */}
+      {!isSmallScreen && (
+        <button
           style={{
-            backgroundColor: "#FFFFFF",
-            color: "#00A79D",
-            padding: "2px 6px",
-            borderRadius: "4px",
-            fontSize: "10px",
-            fontWeight: "700",
+            padding: "8px 20px",
+            backgroundColor: "#00A79D",
+            color: "#FFFFFF",
+            border: "none",
+            borderRadius: "6px",
+            fontSize: "13px",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "all 0.3s ease",
+            whiteSpace: "nowrap",
+            outline: "none",
           }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#22D3EE";
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#00A79D";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+          onClick={() => {
+            if (user) navigate(`${process.env.REACT_APP_ADD_PROPERTY_PAGE}`);
+            else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
+          }}
+          
         >
-          FREE
-        </span>
-      </button>
+          <span>Post property</span>
+          <span
+            style={{
+              backgroundColor: "#FFFFFF",
+              color: "#00A79D",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              fontSize: "10px",
+              fontWeight: "700",
+            }}
+          >
+            FREE
+          </span>
+        </button>
+      )}
 
       <Location 
         size={20} 

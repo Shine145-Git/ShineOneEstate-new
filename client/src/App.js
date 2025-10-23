@@ -37,7 +37,7 @@ function App() {
         {/* <Route path="/user-details" element={<UserDetailsForm />} /> */}
         <Route path="/price-predictor" element={<PricePredictor />} />
         <Route path="/admin/properties" element={<AdminDashboard />} />
-        <Route path="/admin/support" element={<CustomerSupportPage />} />
+        <Route path="/support" element={<CustomerSupportPage />} />
         <Route path="/admin/enquiries" element={<AdminEnquiryProperties />} />
         <Route path="/admin/callback" element={<CallbackDetailsUI />} />
         <Route path="/chatbot" element={<Chatbot />} />

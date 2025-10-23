@@ -66,7 +66,9 @@ const PropertyHeroSection = () => {
     fetchArticles();
   }, []);
 
-  const containerStyle = { backgroundColor: "#F4F7F9", padding: "40px 20px" };
+  const isMobile = window.innerWidth < 768;
+
+  const containerStyle = { backgroundColor: "#F4F7F9", padding: isMobile ? "20px 10px" : "40px 20px" };
   const topTagStyle = {
     textAlign: "center",
     color: "#4A6A8A",
@@ -78,10 +80,10 @@ const PropertyHeroSection = () => {
   };
   const mainTitleStyle = {
     textAlign: "center",
-    fontSize: "42px",
+    fontSize: isMobile ? "28px" : "42px",
     fontWeight: "800",
     color: "#003366",
-    marginBottom: "40px",
+    marginBottom: isMobile ? "20px" : "40px",
     lineHeight: "1.2",
     fontFamily: "'Inter', sans-serif",
   };
@@ -91,6 +93,7 @@ const PropertyHeroSection = () => {
     display: "flex",
     gap: "30px",
     alignItems: "flex-start",
+    flexDirection: isMobile ? "column" : "row",
   };
   const leftColumnStyle = {
     flex: "1",
@@ -98,17 +101,22 @@ const PropertyHeroSection = () => {
     flexDirection: "column",
     gap: "0",
   };
-  const rightColumnStyle = { width: "420px", flexShrink: 0 };
+  const rightColumnStyle = {
+    width: isMobile ? "100%" : "420px",
+    maxWidth: isMobile ? "100%" : "420px",
+    flexShrink: 0,
+    marginTop: isMobile ? "30px" : "0",
+  };
   const buyCardStyle = {
     backgroundColor: "#FFFFFF",
     borderRadius: "12px",
     overflow: "hidden",
     boxShadow: "0 2px 16px rgba(0, 51, 102, 0.08)",
-    position: "sticky",
-    top: "20px",
+    position: isMobile ? "static" : "sticky",
+    top: isMobile ? "auto" : "20px",
   };
-  const buyImageStyle = { width: "100%", height: "260px", objectFit: "cover" };
-  const buyContentStyle = { padding: "30px" };
+  const buyImageStyle = { width: "100%", height: isMobile ? "180px" : "260px", objectFit: "cover" };
+  const buyContentStyle = { padding: isMobile ? "20px" : "30px" };
   const buyTagStyle = {
     color: "#4A6A8A",
     fontSize: "12px",
@@ -118,7 +126,7 @@ const PropertyHeroSection = () => {
     textTransform: "uppercase",
   };
   const buyTitleStyle = {
-    fontSize: "28px",
+    fontSize: isMobile ? "20px" : "28px",
     fontWeight: "800",
     color: "#003366",
     marginBottom: "15px",
@@ -127,13 +135,13 @@ const PropertyHeroSection = () => {
   const buyDescStyle = {
     fontSize: "15px",
     color: "#333333",
-    marginBottom: "25px",
+    marginBottom: isMobile ? "15px" : "25px",
     lineHeight: "1.5",
   };
   const exploreButtonStyle = {
     backgroundColor: "#0066CC",
     color: "#FFFFFF",
-    padding: "14px 28px",
+    padding: isMobile ? "12px 20px" : "14px 28px",
     fontSize: "15px",
     fontWeight: "700",
     border: "none",
@@ -149,7 +157,7 @@ const PropertyHeroSection = () => {
   const articlesCardStyle = {
     backgroundColor: "#FFFFFF",
     borderRadius: "12px",
-    padding: "30px",
+    padding: isMobile ? "20px" : "30px",
     boxShadow: "0 2px 16px rgba(0, 51, 102, 0.08)",
   };
   const articlesHeaderStyle = {
@@ -162,7 +170,7 @@ const PropertyHeroSection = () => {
   const articlesSubtitleStyle = {
     fontSize: "14px",
     color: "#4A6A8A",
-    marginBottom: "24px",
+    marginBottom: isMobile ? "16px" : "24px",
     fontWeight: "500",
   };
   const tabsContainerStyle = {
@@ -171,6 +179,7 @@ const PropertyHeroSection = () => {
     marginBottom: "0",
     borderBottom: "1px solid #E5E7EB",
     position: "relative",
+    overflowX: isMobile ? "auto" : "visible",
   };
   const tabStyle = (isActive) => ({
     fontSize: "14px",
@@ -185,7 +194,7 @@ const PropertyHeroSection = () => {
   });
   const articlesGridStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
     gap: "20px",
     marginTop: "20px",
   };

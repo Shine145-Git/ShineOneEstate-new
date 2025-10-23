@@ -45,7 +45,7 @@ const CardSection = () => {
   };
 
   return (
-    <section style={{ padding: '90px', marginTop: '50px', backgroundColor: '#FFFFFF' }}>
+    <section style={{ padding: '90px', marginTop: window.innerWidth < 600 ? '190px' : '80px', backgroundColor: '#FFFFFF' }}>
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
         {cards.map((card) => (
           <div

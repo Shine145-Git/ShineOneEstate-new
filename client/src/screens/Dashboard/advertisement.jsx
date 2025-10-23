@@ -2,18 +2,20 @@ import React from 'react';
 import { Check } from 'lucide-react';
 
 export default function LandingPage() {
+  const isMobile = window.innerWidth < 768;
+
   const styles = {
     container: {
       minHeight: '100vh',
       backgroundColor: '#F4F7F9',
-      padding: '2rem',
+      padding: isMobile ? '1rem' : '2rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     },
     topBanner: {
       backgroundColor: '#22D3EE',
       borderRadius: '12px',
-      padding: '2rem',
-      marginBottom: '2rem',
+      padding: isMobile ? '1rem' : '2rem',
+      marginBottom: isMobile ? '1rem' : '2rem',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -25,7 +27,7 @@ export default function LandingPage() {
       minWidth: '300px',
     },
     bannerTitle: {
-      fontSize: '2rem',
+      fontSize: isMobile ? '1.25rem' : '2rem',
       fontWeight: '700',
       color: '#003366',
       marginBottom: '0.75rem',
@@ -54,8 +56,8 @@ export default function LandingPage() {
       color: '#FFFFFF',
       border: 'none',
       borderRadius: '50px',
-      padding: '1rem 2.5rem',
-      fontSize: '1.125rem',
+      padding: isMobile ? '0.75rem 1.5rem' : '1rem 2.5rem',
+      fontSize: isMobile ? '0.875rem' : '1.125rem',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
@@ -69,17 +71,18 @@ export default function LandingPage() {
     },
     contentWrapper: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
       gap: '0',
       minHeight: '500px',
     },
     leftSection: {
-      padding: '3rem',
+      padding: isMobile ? '1.5rem' : '3rem',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       position: 'relative',
       overflow: 'hidden',
+      height: isMobile ? 'auto' : undefined,
     },
     leftBg: {
       position: 'absolute',
@@ -95,36 +98,36 @@ export default function LandingPage() {
       zIndex: '1',
     },
     mainHeading: {
-      fontSize: '2.5rem',
+      fontSize: isMobile ? '1.75rem' : '2.5rem',
       fontWeight: '700',
       color: '#22D3EE',
       marginBottom: '0.5rem',
       lineHeight: '1.2',
     },
     subBrand: {
-      fontSize: '2rem',
+      fontSize: isMobile ? '1.25rem' : '2rem',
       fontWeight: '300',
       color: '#FFFFFF',
       marginBottom: '2rem',
     },
     interiorImage: {
       width: '100%',
-      height: '100%',
+      height: isMobile ? '250px' : '100%',
       objectFit: 'cover',
       display: 'block',
     },
     rightSection: {
-        backgroundColor: '#FFFFFF',
-        marginTop: '70px',
-        padding: '1rem',
-        height:"500px",
-      width:"900px",
+      backgroundColor: '#FFFFFF',
+      marginTop: isMobile ? '20px' : '70px',
+      padding: isMobile ? '1rem' : '1.5rem 2rem',
+      height: isMobile ? 'auto' : '500px',
+      width: isMobile ? '100%' : '900px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
     },
     whyChoose: {
-      fontSize: '1.75rem',
+      fontSize: isMobile ? '1.25rem' : '1.75rem',
       fontWeight: '700',
       color: '#003366',
       marginBottom: '1.5rem',
@@ -132,13 +135,13 @@ export default function LandingPage() {
     featureList: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '1.25rem',
+      gap: isMobile ? '0.75rem' : '1.25rem',
       marginBottom: '2rem',
     },
     feature: {
       display: 'flex',
       alignItems: 'flex-start',
-      gap: '0.75rem',
+      gap: isMobile ? '0.5rem' : '0.75rem',
     },
     checkIcon: {
       color: '#00A79D',
@@ -146,7 +149,9 @@ export default function LandingPage() {
       marginTop: '0.25rem',
     },
     featureText: {
-      fontSize: '1rem',
+      fontSize: isMobile
+        ? 'clamp(0.85rem, 3vw, 1rem)'
+        : '1rem',
       color: '#333333',
       lineHeight: '1.6',
     },
@@ -178,17 +183,19 @@ export default function LandingPage() {
     brandsLogos: {
       display: 'flex',
       alignItems: 'center',
-      gap: '1.5rem',
+      gap: isMobile ? '0.75rem' : '1.5rem',
       flexWrap: 'wrap',
       marginBottom: '1.5rem',
     },
     brandLogo: {
       padding: '0.5rem 1rem',
       borderRadius: '6px',
-      fontSize: '0.875rem',
+      fontSize: isMobile ? '0.7rem' : '0.875rem',
       fontWeight: '600',
       color: '#4A6A8A',
       border: '1px solid #E5E5E5',
+      height: isMobile ? '40px' : '50px',
+      objectFit: 'contain',
     },
     buttonsRow: {
       display: 'flex',
@@ -200,8 +207,8 @@ export default function LandingPage() {
       color: '#FFFFFF',
       border: 'none',
       borderRadius: '50px',
-      padding: '0.875rem 2rem',
-      fontSize: '1rem',
+      padding: isMobile ? '0.5rem 1.25rem' : '0.875rem 2rem',
+      fontSize: isMobile ? '0.875rem' : '1rem',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
@@ -212,8 +219,8 @@ export default function LandingPage() {
       color: '#003366',
       border: '2px solid #003366',
       borderRadius: '50px',
-      padding: '0.875rem 2rem',
-      fontSize: '1rem',
+      padding: isMobile ? '0.5rem 1.25rem' : '0.875rem 2rem',
+      fontSize: isMobile ? '0.875rem' : '1rem',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
@@ -307,7 +314,7 @@ export default function LandingPage() {
   <div
     style={{
       display: 'flex',
-      gap: '1rem',
+      gap: isMobile ? '0.75rem' : '1rem',
       whiteSpace: 'nowrap',
       animation: 'scrollBrands 40s linear infinite',
     }}
@@ -359,7 +366,7 @@ export default function LandingPage() {
         src={`https://logo.clearbit.com/${brand.domain}`}
         alt={brand.name}
         style={{
-          height: '50px',
+          height: isMobile ? '40px' : '50px',
           borderRadius: '6px',
           border: '1px solid #E5E5E5',
           display: 'inline-block',

@@ -241,7 +241,7 @@ export default function Banners(user) {
               lineHeight: '1',
               marginBottom: '8px'
             }}>
-              ₹50K
+              ₹5K
             </div>
             <div style={{ 
               color: '#00A79D', 
