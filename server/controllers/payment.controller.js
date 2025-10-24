@@ -1,5 +1,6 @@
 const Payment = require("../models/Payment.model");
-const Property = require("../models/Rentalproperty.model");
+const RentalProperty = require("../models/Rentalproperty.model");
+const SaleProperty = require("../models/SaleProperty.model");
 
 // Create a new payment
 exports.createPayment = async (req, res) => {
@@ -18,15 +19,22 @@ exports.createPayment = async (req, res) => {
         .json({ message: "Property ID and amount are required" });
     }
 
-    // Optional: check if property exists
-    const property = await Property.findById(propertyId);
+    // Check if property exists in RentalProperty
+    let property = await RentalProperty.findById(propertyId);
+    let propertyType = "rental";
     if (!property) {
-      return res.status(404).json({ message: "Property not found" });
+      // Check in SaleProperty
+      property = await SaleProperty.findById(propertyId);
+      propertyType = "sale";
+    }
+    if (!property) {
+      return res.status(404).json({ message: "Property not found in rental or sale properties" });
     }
 
     // Create the payment record
     const payment = new Payment({
-      property: propertyId,
+      property: propertyId, // can be rental or sale
+      propertyType, // "rental" or "sale"
       resident: req.user._id, // Assuming req.user is populated by auth middleware
       amount,
       paymentMethod,
@@ -52,7 +60,10 @@ exports.createPayment = async (req, res) => {
 exports.getPaymentsForUser = async (req, res) => {
   try {
     const payments = await Payment.find({ resident: req.user._id })
-      .populate("property", "address monthlyRent")
+      .populate({
+        path: "property",
+        select: "address monthlyRent price",
+      })
       .sort({ paymentDate: -1 });
 
     res.status(200).json(payments);

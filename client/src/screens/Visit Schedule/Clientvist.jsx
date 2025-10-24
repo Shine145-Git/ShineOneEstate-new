@@ -41,36 +41,35 @@ export default function PropertyCheckout() {
   // Fetch property details when component mounts or ID changes
   useEffect(() => {
     const fetchProperty = async () => {
-      try {
-        let res = null;
+      let res = null;
 
-        // Try fetching RentalProperty first
-        if (process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API) {
-          try {
-            res = await axios.get(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
-            if (!res.data || Object.keys(res.data).length === 0) {
-              res = null;
-            }
-          } catch {
-            res = null;
+      // First try fetching from RentalProperty API
+      if (process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API) {
+        try {
+          const rentalRes = await axios.get(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
+          if (rentalRes.data && Object.keys(rentalRes.data).length > 0) {
+            res = rentalRes;
           }
+        } catch (err) {
+          console.warn('Rental property fetch failed or not found, trying sale property...', err);
         }
-
-        // If no RentalProperty found, fetch SaleProperty
-        if (!res && process.env.REACT_APP_SALE_PROPERTY_API1) {
-          try {
-            res = await axios.get(`${process.env.REACT_APP_SALE_PROPERTY_API}/${id}`, { withCredentials: true });
-          } catch {
-            res = null;
-          }
-        }
-
-        setProperty(res ? res.data : null);
-      } catch (err) {
-        console.error('Error fetching property:', err);
-        setProperty(null);
       }
+
+      // If no rental property found, try SaleProperty API
+      if (!res && process.env.REACT_APP_SALE_PROPERTY_DETAIL_API) {
+        try {
+          const saleRes = await axios.get(`${process.env.REACT_APP_SALE_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
+          if (saleRes.data && Object.keys(saleRes.data).length > 0) {
+            res = saleRes;
+          }
+        } catch (err) {
+          console.error('Sale property fetch failed:', err);
+        }
+      }
+
+      setProperty(res ? res.data : null);
     };
+
     fetchProperty();
   }, [id]);
 

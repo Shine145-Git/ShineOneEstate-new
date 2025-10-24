@@ -25,13 +25,17 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/login" element={<LoginModal />} />
+        {/* These two routes basically show the details page of the property by id */}
         <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
         <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
+
         <Route path="/test" element={<TestUser />} />
         <Route path="/AIassistant" element={<AIAssistant />} />
         <Route path="/add-property" element={<PropertyListingForm />} />
         <Route path="/my-properties/:id" element={<MyProperties />} />
+        {/* This property visit page show the client visit page i.e the enquiry and payment page */}
         <Route path="/property-visit/:id" element={<PropertyCheckout />} />
+        
         <Route path="/my-properties" element={<PropertyCards />} />
         <Route path="/search" element={<Searchproperty />} />
         <Route path="/search/:query" element={<Searchproperty />} />

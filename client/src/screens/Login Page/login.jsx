@@ -23,6 +23,7 @@ export default function LoginModal() {
     if (!email) return;
 
     try {
+      console.log("Sending OTP request for email:", email);
       // API endpoint configurable via .env (REACT_APP_LOGIN_REQUEST_OTP_API)
       const response = await fetch(`${process.env.REACT_APP_LOGIN_REQUEST_OTP_API}`, {
         method: "POST",
@@ -31,6 +32,7 @@ export default function LoginModal() {
         credentials: "include" // to send/receive cookies
       });
       const data = await response.json();
+      console.log("OTP response:", data);
       if (response.ok) {
         setStep('otp');
         setTime(180);
@@ -40,6 +42,7 @@ export default function LoginModal() {
       }
     } catch (error) {
       console.error(error);
+      console.log("OTP request error:", error);
       setMessage({ text: "Error sending OTP", type: 'error' });
     }
   };
@@ -50,6 +53,7 @@ export default function LoginModal() {
 
     setLoading(true);
     try {
+      console.log("Verifying OTP for email:", email, "otp:", otp, "mobileNumber:", mobileNumber);
       // API endpoint configurable via .env (REACT_APP_LOGIN_VERIFY_OTP_API)
       const response = await fetch(`${process.env.REACT_APP_LOGIN_VERIFY_OTP_API}`, {
         method: "POST",
@@ -58,6 +62,7 @@ export default function LoginModal() {
         credentials: "include" // to send/receive cookies
       });
       const data = await response.json();
+      console.log("OTP verification response:", data);
       if (response.ok) {
           setMessage({ text: "OTP Verified!", type: 'success' });
           if (data.role === 'admin') {
@@ -74,6 +79,7 @@ export default function LoginModal() {
       }
     } catch (error) {
       console.error(error);
+      console.log("OTP verification error:", error);
       setMessage({ text: "Error verifying OTP", type: 'error' });
     } finally {
       setLoading(false);

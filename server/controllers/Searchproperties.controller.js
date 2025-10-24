@@ -1,4 +1,4 @@
-const Property = require("../models/Rentalproperty.model");
+const RentalProperty = require("../models/Rentalproperty.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const SearchHistory = require("../models/SearchHistory.model");
 
@@ -44,7 +44,7 @@ exports.searchProperties = async (req, res) => {
         { totalArea: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
         { monthlyRent: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
       ]);
-      return await Property.find({ $or: [...orText, ...orNumbers] }).populate("owner", "name email");
+      return await RentalProperty.find({ $or: [...orText, ...orNumbers] }).populate("owner", "name email");
     };
 
     // Helper: search SaleProperty
@@ -137,7 +137,7 @@ exports.searchPropertiesonLocation = async (req, res) => {
       ];
     });
 
-    const results = await Property.find({ $or: orConditions }).populate(
+    const results = await RentalProperty.find({ $or: orConditions }).populate(
       "owner",
       "name email"
     );
@@ -181,7 +181,7 @@ exports.getUserDashboard = async (req, res) => {
         { neighborhoodVibe: r },
       ]);
 
-      recommended = await Property.find({ $or: orConditions })
+      recommended = await RentalProperty.find({ $or: orConditions })
         .limit(10)
         .populate("owner", "name email");
     }

@@ -247,7 +247,7 @@ const RecommendedProperties = ({ properties = [], user, title }) => {
                 style={cardStyle}
                 onClick={() => {
                   if (user) {
-                    navigate(`/details/${property._id}`);
+                    navigate(`/Rentaldetails/${property._id}`);
                   } else {
                     navigate("/login");
                   }
