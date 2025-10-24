@@ -14,19 +14,19 @@ function AdCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      handleNext();
-    }, 500);
+ useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentIndex(prev => (prev + 1) % images.length);
+  }, 4000); // scroll every 1 second
 
-    return () => clearInterval(interval);
-  }, [currentIndex]);
+  return () => clearInterval(interval);
+}, []); // empty dependency array
 
   const handlePrev = () => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setCurrentIndex((currentIndex - 1 + images.length) % images.length);
-    setTimeout(() => setIsTransitioning(false), 500);
+    setTimeout(() => setIsTransitioning(true), 500);
   };
 
   const handleNext = () => {
@@ -46,14 +46,13 @@ function AdCarousel() {
   return (
     <div style={{
       width: '100%',
-      background: 'linear-gradient(to right, rgba(0,51,102,0.7), rgba(74,106,138,0.6)), url("/AdBackground.jpg") no-repeat center / cover',
+      background: 'linear-gradient(to right, rgba(0,51,102,0.7), rgba(74,106,138,0.6))',
       padding: '20px 20px',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       minHeight: '100px'
-      }}>
-          
+    }}>
       <div style={{ 
         position: 'relative', 
         width: '100%', 

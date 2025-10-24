@@ -11,7 +11,8 @@ const { verifyToken } = require("../middleware/auth");
 const { requestOtp, verifyOtp } = require("../controllers/login.controller");
 const { userDetails, saveUserDetails, getUserDetails } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
-const { savePreferences } = require("../controllers/AiUser.controller");
+
+
 const {
   createProperty,
   getAllProperties,
@@ -27,6 +28,7 @@ const { requestCallback, getCallbackRequests } = require("../controllers/Custome
 const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot.controller.js");
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
 const {getRentalPropertyById , getSalePropertyById} = require("../controllers/Viewproperties.controller");
+const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -44,7 +46,7 @@ router.get("/auth/me", verifyToken, userDetails);
 router.post("/auth/logout", verifyToken, logoutUser);
 
 // User routes
-router.post("/save-preferences", savePreferences);
+
 router.post("/api/user/save-details", verifyToken, saveUserDetails);
 router.get("/api/user/details", verifyToken, getUserDetails);
 router.get("/api/user/dashboard", verifyToken, getUserDashboard);
@@ -96,5 +98,9 @@ router.get("/api/chatbot/initial-questions", getInitialQuestions);
 router.get("/api/getSaleproperties/:id", getSalePropertyById);
 router.get("/api/sale-properties", verifyToken, getSaleProperties);
 router.post("/api/sale-properties", verifyToken, upload.array("images", 8), createSaleProperty);
+
+// New AI response routes
+router.post("/api/ai/save", verifyToken, saveAiResponses);
+router.get("/api/ai/get", verifyToken, getAiResponses);
 
 module.exports = router;

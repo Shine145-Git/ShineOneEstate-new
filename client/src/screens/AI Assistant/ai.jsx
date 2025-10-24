@@ -1,71 +1,4 @@
-// import { useRef, useState, useEffect } from "react";
-// import { useNavigate } from "react-router-dom";
-// import TopNavigationBar from "../Dashboard/TopNavigationBar";
 
-// export default function AIAssistant(){
-//   const videoRef=useRef(null);
-//   const [show,setShow]=useState(false);
-//   const [input,setInput]=useState("");
-//   const [inputs,setInputs]=useState([]);
-//   const [current,setCurrent]=useState(0);
-//   const timings = [[30, 45], [46, 65], [70, 90]];
-//   const navigate=useNavigate();
-//   const [user, setUser] = useState(null);
-
-//   useEffect(()=>{
-//     const v=videoRef.current;
-//     const check=()=>{const t=Math.floor(v.currentTime);setCurrent(t);let s=timings.some(([a,b])=>t>=a&&t<=b);setShow(s);}
-//     v.addEventListener("timeupdate",check);
-//     const endListener = async () => {
-//       const userRes = await fetch("http://localhost:2000/auth/me",{method:"GET",credentials:"include"});
-//       const userData = await userRes.json();
-//       const payload = {username: userData.username || userData.name || "",email: userData.email || "",preferences: inputs};
-//       await fetch("http://localhost:2000/save-preferences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-//       setInputs([]);
-//     }
-//     v.addEventListener("ended", endListener);
-//     return()=>{v.removeEventListener("timeupdate",check);v.removeEventListener("ended",endListener);}
-//   }, [inputs]);
-//     const handleLogout = async () => {
-//       await fetch("http://localhost:2000/auth/logout", {
-//         method: "POST",
-//         credentials: "include",
-//       });
-//       setUser(null);
-//       navigate("/login");
-//     };
-
-//     useEffect(() => {
-//       const fetchUser = async () => {
-//         try {
-//           const res = await fetch("http://localhost:2000/auth/me", {
-//             method: "GET",
-//             credentials: "include",
-//           });
-//           const data = await res.json();
-//           if (res.ok) setUser(data);
-//         } catch (err) {
-//           console.error("Error fetching user:", err);
-//         }
-//       };
-//       fetchUser();
-//     }, []);
-
-//     const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
-
-//   const handleInput = () => {
-//     if(input.trim()!==""){setInputs(prev=>[...prev,input]);setInput("");}
-//   }
-
-//   return(
-//     <div style={{ width: "100vw", height: "100vh", margin: 0, padding: 0, position: "relative" }}>
-//       <TopNavigationBar user= {user} navItems={navItems} handleLogout={handleLogout} />
-//       <video ref={videoRef} src="/AI Video.mp4" autoPlay controls style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-//       {show&&<div style={{position:"absolute",top:"50%",left:"30px",transform:"translateY(-50%)",background:"linear-gradient(135deg, #003366 0%, #4A6A8A 100%)",padding:"2px",borderRadius:"16px",boxShadow:"0 10px 30px rgba(34,211,238,0.4), 0 0 20px rgba(0,167,157,0.3)",animation:"slideInLeft 0.4s cubic-bezier(0.34,1.56,0.64,1)",zIndex:1000,width:"320px"}}><div style={{background:"#F4F7F9",borderRadius:"14px",padding:"20px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,bottom:0,background:"radial-gradient(circle at 20% 50%, rgba(34,211,238,0.1) 0%, transparent 50%)",animation:"pulse 3s ease-in-out infinite",pointerEvents:"none"}}/><div style={{marginBottom:"15px",position:"relative",zIndex:1}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"5px"}}><div style={{width:"8px",height:"8px",borderRadius:"50%",background:"#00A79D",animation:"pulseGlow 2s ease-in-out infinite",boxShadow:"0 0 15px rgba(0,167,157,0.6)"}}/><h3 style={{margin:0,color:"#003366",fontSize:"16px",fontWeight:"700"}}>AI is listening...</h3></div></div><div style={{position:"relative",marginBottom:"12px"}}><input value={input} onChange={e=>setInput(e.target.value)} onKeyPress={e=>e.key==='Enter'&&handleInput()} placeholder="Type your answer..." autoFocus style={{width:"100%",padding:"12px 14px",fontSize:"14px",border:"2px solid transparent",borderRadius:"10px",background:"#FFFFFF",color:"#333333",outline:"none",transition:"all 0.3s ease",boxShadow:"0 2px 10px rgba(0,51,102,0.08)",fontFamily:"system-ui,-apple-system,sans-serif"}}/></div><button onClick={handleInput} style={{width:"100%",padding:"12px",fontSize:"14px",fontWeight:"600",color:"#FFFFFF",background:"linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",border:"none",borderRadius:"10px",cursor:"pointer",transition:"all 0.3s ease",boxShadow:"0 3px 15px rgba(0,167,157,0.3)",position:"relative",overflow:"hidden"}}>Submit</button></div></div>}
-//       <style>{`@keyframes slideInLeft{from{opacity:0;transform:translateY(-50%) translateX(-30px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}@keyframes pulseGlow{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:0.7}}input:focus{border-color:#22D3EE!important;box-shadow:0 2px 15px rgba(34,211,238,0.2)!important}button:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,167,157,0.4)!important}button:active{transform:translateY(0)}button::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);transition:left 0.5s}button:hover::before{left:100%}`}</style>
-//     </div>
-//   );
-// }
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
@@ -79,65 +12,270 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+// --- BEGIN AI+MIC ENHANCED IMPLEMENTATION ---
 export default function AIAssistant() {
   const videoRef = useRef(null);
   const [show, setShow] = useState(false);
   const [input, setInput] = useState("");
   const [inputs, setInputs] = useState([]);
-  const [current, setCurrent] = useState(0);
   const [aiQuestion, setAiQuestion] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [askedQuestions, setAskedQuestions] = useState({});
-  const timings = [
-    [30, 45],
-    [46, 65],
-    [70, 90],
-  ];
-  const navigate = useNavigate();
+  const [micActive, setMicActive] = useState(false);
+  const [micListening, setMicListening] = useState(false);
+  // Show the new "Start Consultation" button at page load
+  const [consultationStarted, setConsultationStarted] = useState(false);
+  const [micPromptVisible, setMicPromptVisible] = useState(false);
+  const micButtonRef = useRef(null);
+  const [micAutoFocus, setMicAutoFocus] = useState(false);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(-1);
+  const [questionTimeout, setQuestionTimeout] = useState(null);
+  const [videoWasPaused, setVideoWasPaused] = useState(false);
   const [user, setUser] = useState(null);
   const chatContainerRef = useRef(null);
+  const navigate = useNavigate();
+  const recognitionRef = useRef(null);
+  const questionStartTimeRef = useRef(null);
 
-  // Map: time (seconds) -> question
-  const questionMap = {
-    9: "Which locations are you most interested in?",
-    17: "What is the absolute size of the property?",
-    29: "What is your budget range for this property?",
+  // Questions timeline as per requirements
+  const questionsTimeline = [
+    { start: 12, end: 19, text: "First, could you please tell me your budget range? This helps me filter properties that fit your financial plan." },
+    { start: 20, end: 25, text: "Are you looking to rent a property or buy one? This will help me tailor options for you." },
+    { start: 26, end: 31, text: "Will this property be for personal use or are you planning to share it with roommates/family?" },
+    { start: 32, end: 41, text: "Which location or area are you interested in? You can specify sectors, neighborhoods, or even nearby landmarks." },
+    { start: 42, end: 51, text: "What type of property are you looking for? Options include apartment, villa, independent floor, studio, or commercial space." },
+    { start: 52, end: 57, text: "Do you have a preference for the size of the property (in sq ft or number of bedrooms)?" },
+    { start: 58, end: 66, text: "Which amenities are important to you? For example: parking, gym, swimming pool, security, pet-friendly, etc." },
+    { start: 67, end: 71, text: "Do you have any preference for the floor level or the orientation/view of the property?" },
+    { start: 72, end: 78, text: "When are you looking to move in? Do you need something immediate or flexible over the next few months?" },
+    { start: 79, end: 86, text: "Do you require home loan or financing assistance? We can guide you with verified financial partners if needed." },
+    { start: 87, end: 96, text: "Any other preferences or requirements? For example, eco-friendly properties, furnished options, gated communities, or school proximity?" }
+  ];
+
+  // --- Microphone and Speech Recognition ---
+  // Helper to get SpeechRecognition cross-browser
+  function getSpeechRecognition() {
+    return (
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition ||
+      window.mozSpeechRecognition ||
+      window.msSpeechRecognition
+    );
+  }
+
+  // Manual mic button (one-shot, only on click)
+  const startMic = () => {
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) return false;
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+    let recognition;
+    try {
+      recognition = new SpeechRecognition();
+    } catch (e) {
+      return false;
+    }
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+    recognition.onstart = () => {
+      setMicListening(true);
+      setMicActive(true);
+    };
+    recognition.onend = () => {
+      setMicListening(false);
+      setMicActive(false);
+    };
+    recognition.onerror = (event) => {
+      setMicListening(false);
+      setMicActive(false);
+    };
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      // Use as answer (manual)
+      handleManualSpeechInput(transcript.trim());
+      setMicListening(false);
+      setMicActive(false);
+    };
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      return true;
+    } catch (err) {
+      return false;
+    }
   };
 
+  const stopMic = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+    setMicListening(false);
+    setMicActive(false);
+  };
+
+  // Handle manual mic answer
+  const handleManualSpeechInput = async (text) => {
+    if (text.trim() !== "" && aiQuestion && currentQuestionIdx >= 0) {
+      const capturedAnswer = text.trim();
+      const questionText = aiQuestion;
+      setInputs(prev => [...prev, { question: questionText, answer: capturedAnswer }]);
+      setAiQuestion("");
+      setShow(false);
+      // Resume video
+      if (videoRef.current && videoRef.current.paused) videoRef.current.play();
+      // Clear the 20s timeout
+      if (questionTimeout) {
+        clearTimeout(questionTimeout);
+        setQuestionTimeout(null);
+      }
+      // Send single Q/A to backend
+      if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
+        try {
+          await fetch(process.env.REACT_APP_AI_SAVE_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userEmail: user.email,
+              sendType: "email",
+              responses: [{ question: questionText, answer: capturedAnswer }]
+            }),
+          });
+        } catch (err) {
+          // Silently handle error
+          console.error("Failed to save AI response:", err);
+        }
+      }
+    }
+  };
+
+  // Handle text input (manual)
+  const handleInput = async () => {
+    if (input.trim() !== "" && aiQuestion && currentQuestionIdx >= 0) {
+      const capturedAnswer = input.trim();
+      const questionText = aiQuestion;
+      setInputs((prev) => [
+        ...prev,
+        { question: questionText, answer: capturedAnswer },
+      ]);
+      setInput("");
+      setAiQuestion("");
+      setShow(false);
+      // Resume video
+      if (videoRef.current && videoRef.current.paused) {
+        videoRef.current.play();
+      }
+      // Clear question timeout if any
+      if (questionTimeout) {
+        clearTimeout(questionTimeout);
+        setQuestionTimeout(null);
+      }
+      // Send single Q/A to backend
+      if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
+        try {
+          await fetch(process.env.REACT_APP_AI_SAVE_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userEmail: user.email,
+              sendType: "email",
+              responses: [{ question: questionText, answer: capturedAnswer }]
+            }),
+          });
+        } catch (err) {
+          // Silently handle error
+          console.error("Failed to save AI response:", err);
+        }
+      }
+    }
+  };
+
+  // --- Video & Question Flow ---
+  // Main effect: video time monitoring, triggers
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    const check = () => {
-      const t = Math.floor(v.currentTime);
-      setCurrent(t);
-      // New show calculation: show if any questionMap key has t >= time
-      const s = Object.keys(questionMap).some(
-        (time) => t >= parseInt(time, 10)
+    // Handler for video time update
+    function handleTimeUpdate() {
+      const t = v.currentTime;
+      // Find if a question is being asked (for overlay only)
+      const idx = questionsTimeline.findIndex(
+        (q) => t >= q.start && t <= q.end
       );
-      setShow(s);
+      // Show overlay when question is being asked
+      if (idx !== -1 && !askedQuestions[idx] && idx !== currentQuestionIdx) {
+        setCurrentQuestionIdx(idx);
+        setIsTyping(true);
+        setTimeout(() => {
+          setAiQuestion(questionsTimeline[idx].text);
+          setIsTyping(false);
+          setShow(true);
+          setAskedQuestions(prev => ({ ...prev, [idx]: true }));
+        }, 600);
+      }
 
-      // Loop through questionMap keys in order
-      for (const [timeStr, question] of Object.entries(questionMap)) {
-        const time = parseInt(timeStr, 10);
-        // If this question has not been asked and current time >= its trigger
-        if (!askedQuestions[time] && t >= time) {
-          setIsTyping(true);
-          // Delay to show typing animation, then show question and mark as asked
-          setTimeout(() => {
-            setAiQuestion(question);
-            setIsTyping(false);
-            setAskedQuestions((prev) => ({ ...prev, [time]: true }));
-          }, 800);
-          break; // Only trigger one question at a time
+      // Detect when question ends (video crosses a question end time)
+      // and only once per question
+      for (let i = 0; i < questionsTimeline.length; i++) {
+        const q = questionsTimeline[i];
+        // If just crossed the end boundary (with some tolerance)
+        if (
+          t >= q.end &&
+          !inputs.find((item) => item.question === q.text)
+        ) {
+          // Pause video
+          v.pause();
+          // Set up 20s timeout for answer
+          if (questionTimeout) clearTimeout(questionTimeout);
+          const timeout = setTimeout(async () => {
+            // On timeout, submit "(No answer given)" if still not answered
+            if (!inputs.find((item) => item.question === q.text)) {
+              setInputs((prev) => [
+                ...prev,
+                { question: q.text, answer: "(No answer given)" },
+              ]);
+              // Immediately POST single Q/A to backend
+              if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
+                try {
+                  await fetch(process.env.REACT_APP_AI_SAVE_API, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      userEmail: user.email,
+                      sendType: "email",
+                      responses: [{ question: q.text, answer: "(No answer given)" }]
+                    }),
+                  });
+                } catch (err) {
+                  // Silently handle error
+                  console.error("Failed to save AI response:", err);
+                }
+              }
+            }
+            setAiQuestion("");
+            setShow(false);
+            if (v.paused) v.play();
+          }, 20000);
+          setQuestionTimeout(timeout);
+          break; // Only trigger for one question at a time
         }
       }
-    };
-    v.addEventListener("timeupdate", check);
+    }
 
+    v.addEventListener("timeupdate", handleTimeUpdate);
+
+    // If video is ended, save preferences and redirect
     const endListener = async () => {
       try {
-        // 1. Save preferences as before
+        // Save preferences
         const userRes = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
           method: "GET",
           credentials: "include",
@@ -153,18 +291,12 @@ export default function AIAssistant() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
-        // 2. Generate a search query from answers
-        // We'll join the answers with spaces, fallback to empty string if no answers
+        // Build query
         const searchQuery = inputs
           .map((item) => (typeof item === "string" ? item : (item && item.answer) || ""))
           .filter(Boolean)
           .join(" ");
-
-        // 3. Clear the inputs state before redirecting
         setInputs([]);
-
-        // 4. Redirect to /search/:query with encoded query
         if (searchQuery.trim()) {
           navigate(`/search/${encodeURIComponent(searchQuery)}`);
         }
@@ -174,12 +306,16 @@ export default function AIAssistant() {
     };
     v.addEventListener("ended", endListener);
 
+    // Cleanup
     return () => {
-      v.removeEventListener("timeupdate", check);
+      v.removeEventListener("timeupdate", handleTimeUpdate);
       v.removeEventListener("ended", endListener);
+      if (questionTimeout) clearTimeout(questionTimeout);
     };
-  }, [inputs, askedQuestions]);
+    // eslint-disable-next-line
+  }, [inputs, askedQuestions, currentQuestionIdx, consultationStarted]);
 
+  // Scroll chat to bottom on new message/question
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -189,19 +325,20 @@ export default function AIAssistant() {
     }
   }, [inputs, aiQuestion, isTyping]);
 
-  const handleLogout = async () => {
-    try {
-      await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
-        method: "POST",
-        credentials: "include",
-      });
-      setUser(null);
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
+  // Cleanup mic and pause video on unmount
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      stopMic();
+    };
+    // eslint-disable-next-line
+  }, []);
 
+  // Remove fallback mic prompt logic for every question
+
+  // Fetch user
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -226,17 +363,20 @@ export default function AIAssistant() {
     "Insights",
   ];
 
-  const handleInput = () => {
-    if (input.trim() !== "") {
-      setInputs((prev) => [
-        ...prev,
-        { question: aiQuestion, answer: input.trim() },
-      ]);
-      setInput("");
-      setAiQuestion("");
+  const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
+  // --- UI ---
   return (
     <div className="app-container">
       <TopNavigationBar
@@ -244,7 +384,6 @@ export default function AIAssistant() {
         navItems={navItems}
         handleLogout={handleLogout}
       />
-
       <div className="main-content">
         {/* Video Section */}
         <div className="video-section">
@@ -255,16 +394,19 @@ export default function AIAssistant() {
             controls
             className="video-player"
           />
-
           {/* AI Status Badge */}
           <div className="status-badge">
-            <div className={`status-indicator ${show ? "active" : ""}`} />
+            <div className={`status-indicator ${show ? "active" : ""} ${micActive ? "mic-on" : ""}`} />
             <span className="status-text">
-              {show ? "AI Assistant Active" : "Standby Mode"}
+              {show
+                ? micActive
+                  ? "Listening..."
+                  : "AI Assistant Active"
+                : "Standby Mode"}
             </span>
+            {(show || micActive) && <Mic size={14} className={`mic-icon ${micActive ? "mic-on" : ""}`} />}
             {show && <Sparkles size={14} className="sparkle-icon" />}
           </div>
-
           {/* Video Overlay Info */}
           <div className="video-overlay">
             <div className="overlay-content">
@@ -274,8 +416,7 @@ export default function AIAssistant() {
             </div>
           </div>
         </div>
-
-        {/* Enhanced Chat Panel */}
+        {/* Chat Panel */}
         <div className="chat-panel">
           {/* Chat Header */}
           <div className="chat-header">
@@ -287,7 +428,7 @@ export default function AIAssistant() {
               <div className="header-text">
                 <h2>AI Property Consultant</h2>
                 <p className="header-subtitle">
-                  {show ? (
+                  {show || micActive ? (
                     <span className="status-live">
                       <span className="live-dot" />
                       Live Session
@@ -299,10 +440,10 @@ export default function AIAssistant() {
               </div>
             </div>
           </div>
-
           {/* Chat Messages Container */}
           <div ref={chatContainerRef} className="chat-messages">
-            {inputs.length === 0 && !show && !isTyping && (
+            {/* Show Start Consultation button if not started */}
+            {!consultationStarted && (
               <div className="welcome-screen">
                 <div className="welcome-icon-wrapper">
                   <div className="welcome-icon">
@@ -330,132 +471,160 @@ export default function AIAssistant() {
                     <span>Real-time Interaction</span>
                   </div>
                 </div>
+                <button
+                  className="mic-prompt-btn"
+                  style={{ marginTop: 28 }}
+                  onClick={() => {
+                    setConsultationStarted(true);
+                  }}
+                >
+                  <Mic size={20} style={{ marginRight: 8 }} />
+                  Start Consultation
+                </button>
               </div>
             )}
-
-            {/* Conversation History */}
-            {inputs.map((item, idx) => (
-              <div key={idx} className="message-group">
-                {/* AI Question */}
-                <div className="message-wrapper ai-message">
-                  <div className="message-avatar ai-avatar-small">
-                    <Bot size={16} />
-                  </div>
-                  <div className="message-bubble ai-bubble">
-                    <div className="message-header">
-                      <span className="message-sender">AI Consultant</span>
-                      <span className="message-time">Question {idx + 1}</span>
+            {consultationStarted && (
+              <>
+                {/* Conversation History */}
+                {inputs.map((item, idx) => (
+                  <div key={idx} className="message-group">
+                    {/* AI Question */}
+                    <div className="message-wrapper ai-message">
+                      <div className="message-avatar ai-avatar-small">
+                        <Bot size={16} />
+                      </div>
+                      <div className="message-bubble ai-bubble">
+                        <div className="message-header">
+                          <span className="message-sender">ggnRentalDeals AI</span>
+                          <span className="message-time">Question {idx + 1}</span>
+                        </div>
+                        <p className="message-text">{item.question}</p>
+                      </div>
                     </div>
-                    <p className="message-text">{item.question}</p>
-                  </div>
-                </div>
-
-                {/* User Answer */}
-                <div className="message-wrapper user-message">
-                  <div className="message-bubble user-bubble">
-                    <div className="message-header">
-                      <span className="message-sender">You</span>
+                    {/* User Answer */}
+                    <div className="message-wrapper user-message">
+                      <div className="message-bubble user-bubble">
+                        <div className="message-header">
+                          <span className="message-sender">You</span>
+                        </div>
+                        <p className="message-text">{item.answer}</p>
+                      </div>
+                      <div className="message-avatar user-avatar-small">
+                        <User size={16} />
+                      </div>
                     </div>
-                    <p className="message-text">{item.answer}</p>
                   </div>
-                  <div className="message-avatar user-avatar-small">
-                    <User size={16} />
+                ))}
+                {/* Current AI Question */}
+                {show && aiQuestion && !isTyping && (
+                  <div className="message-wrapper ai-message current-question">
+                    <div className="message-avatar ai-avatar-small">
+                      <Bot size={16} />
+                    </div>
+                    <div className="message-bubble ai-bubble">
+                      <div className="message-header">
+                        <span className="message-sender">AI Consultant</span>
+                        <span className="message-badge">New</span>
+                      </div>
+                      <p className="message-text">{aiQuestion}</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Current AI Question */}
-            {show && aiQuestion && !isTyping && (
-              <div className="message-wrapper ai-message current-question">
-                <div className="message-avatar ai-avatar-small">
-                  <Bot size={16} />
-                </div>
-                <div className="message-bubble ai-bubble">
-                  <div className="message-header">
-                    <span className="message-sender">AI Consultant</span>
-                    <span className="message-badge">New</span>
+                )}
+                {/* Typing Indicator */}
+                {isTyping && (
+                  <div className="message-wrapper ai-message">
+                    <div className="message-avatar ai-avatar-small">
+                      <Bot size={16} />
+                    </div>
+                    <div className="message-bubble ai-bubble typing-bubble">
+                      <div className="typing-indicator">
+                        <span className="dot" />
+                        <span className="dot" />
+                        <span className="dot" />
+                      </div>
+                    </div>
                   </div>
-                  <p className="message-text">{aiQuestion}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="message-wrapper ai-message">
-                <div className="message-avatar ai-avatar-small">
-                  <Bot size={16} />
-                </div>
-                <div className="message-bubble ai-bubble typing-bubble">
-                  <div className="typing-indicator">
-                    <span className="dot" />
-                    <span className="dot" />
-                    <span className="dot" />
+                )}
+                {/* Scroll to Bottom Hint */}
+                {inputs.length > 2 && (
+                  <div className="scroll-hint">
+                    <ChevronDown size={16} />
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Scroll to Bottom Hint */}
-            {inputs.length > 2 && (
-              <div className="scroll-hint">
-                <ChevronDown size={16} />
-              </div>
+                )}
+              </>
             )}
           </div>
-
           {/* Enhanced Input Area */}
           <div className="input-container">
-            {show && aiQuestion && !isTyping ? (
-              <div className="input-wrapper">
-                <div className="input-field-wrapper">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && !e.shiftKey && handleInput()
-                    }
-                    placeholder="Type your response here..."
-                    className="chat-input"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleInput}
-                    disabled={!input.trim()}
-                    className={`send-button ${
-                      input.trim() ? "active" : "disabled"
-                    }`}
-                  >
-                    <Send size={20} />
-                  </button>
-                </div>
-                <div className="input-hint">
-                  Press Enter to send • {input.length}/500
-                </div>
-              </div>
-            ) : (
-              <div className="waiting-state">
-                <div className="waiting-content">
-                  {inputs.length === 0 ? (
-                    <>
-                      <Sparkles size={18} className="waiting-icon" />
-                      <span>Start the video to begin your consultation</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="pulse-dot" />
-                      <span>Awaiting next question...</span>
-                    </>
+            {/* Only show input controls if consultation started */}
+            {consultationStarted ? (
+              show && aiQuestion && !isTyping ? (
+                <div className="input-wrapper">
+                  <div className="input-field-wrapper">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && !e.shiftKey && handleInput()
+                      }
+                      placeholder="Type your response here or speak..."
+                      className="chat-input"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleInput}
+                      disabled={!input.trim()}
+                      className={`send-button ${
+                        input.trim() ? "active" : "disabled"
+                      }`}
+                    >
+                      <Send size={20} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!micActive) startMic();
+                        else stopMic();
+                      }}
+                      className={`send-button mic-btn ${micActive ? "active" : ""}`}
+                      title={micActive ? "Stop mic" : "Start mic"}
+                      style={{ marginLeft: 8, background: micActive ? "#06b6d4" : "#e2e8f0", color: micActive ? "#fff" : "#64748b" }}
+                    >
+                      <Mic size={20} className={micActive ? "mic-on" : ""} />
+                    </button>
+                  </div>
+                  <div className="input-hint">
+                    Speak or type your answer • {input.length}/500
+                  </div>
+                  {(micActive || micListening) && (
+                    <div className="mic-visualizer">
+                      <div className="mic-dot mic-dot-1" />
+                      <div className="mic-dot mic-dot-2" />
+                      <div className="mic-dot mic-dot-3" />
+                    </div>
                   )}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="waiting-state">
+                  <div className="waiting-content">
+                    {inputs.length === 0 ? (
+                      <>
+                        <Sparkles size={18} className="waiting-icon" />
+                        <span>Start the video to begin your consultation</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="pulse-dot" />
+                        <span>Awaiting next question...</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            ) : null}
           </div>
         </div>
       </div>
-
       <style>{`
         * {
           box-sizing: border-box;
@@ -521,17 +690,53 @@ export default function AIAssistant() {
         }
 
         .status-indicator {
-          width: 10px;
-          height: 10px;
+          width: 12px;
+          height: 12px;
           border-radius: 50%;
           background: #64748b;
           transition: all 0.3s ease;
+          border: 2px solid #fff;
+          position: relative;
         }
-
         .status-indicator.active {
           background: #06b6d4;
           box-shadow: 0 0 20px rgba(6, 182, 212, 0.8), 0 0 40px rgba(6, 182, 212, 0.4);
           animation: pulse-glow 2s ease-in-out infinite;
+        }
+        .status-indicator.mic-on {
+          background: #22d3ee;
+          box-shadow: 0 0 20px #22d3ee, 0 0 40px #06b6d4;
+          animation: pulse-glow-mic 1.2s infinite;
+        }
+        .mic-icon {
+          color: #64748b;
+          margin-left: 2px;
+        }
+        .mic-icon.mic-on {
+          color: #22d3ee;
+          animation: pulse-glow-mic 1.2s infinite;
+        }
+        .mic-btn {
+          margin-left: 0;
+        }
+        .mic-visualizer {
+          display: flex;
+          gap: 4px;
+          margin-top: 8px;
+        }
+        .mic-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #22d3ee;
+          opacity: 0.8;
+          animation: mic-dot-bounce 1s infinite;
+        }
+        .mic-dot-2 {
+          animation-delay: 0.2s;
+        }
+        .mic-dot-3 {
+          animation-delay: 0.4s;
         }
 
         .status-text {
@@ -1069,6 +1274,15 @@ export default function AIAssistant() {
             box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
           }
         }
+        @keyframes pulse-glow-mic {
+          0% { box-shadow: 0 0 0 0 #22d3ee; }
+          50% { box-shadow: 0 0 0 8px #22d3ee33; }
+          100% { box-shadow: 0 0 0 0 #22d3ee; }
+        }
+        @keyframes mic-dot-bounce {
+          0%, 100% { transform: translateY(0); opacity: 0.7; }
+          50% { transform: translateY(-8px); opacity: 1; }
+        }
 
         @keyframes sparkle {
           0% {
@@ -1098,3 +1312,42 @@ export default function AIAssistant() {
     </div>
   );
 }
+// --- END AI+MIC ENHANCED IMPLEMENTATION ---
+<style>{`
+  .mic-prompt-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px 0 18px 0;
+  }
+  .mic-prompt-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(6,182,212,0.25);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .mic-prompt-btn:focus {
+    box-shadow: 0 0 0 3px #22d3ee90;
+  }
+  .mic-prompt-btn:hover {
+    background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+    transform: scale(1.04);
+  }
+  .mic-prompt-desc {
+    color: #64748b;
+    font-size: 13px;
+    text-align: center;
+  }
+`}</style>
