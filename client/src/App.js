@@ -1,12 +1,13 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Dashboard from "./screens/Dashboard/dashboard";
 import LoginModal from "./screens/Login Page/login";
-import PropertyDetails from "./screens/Property View/propertypage";
+import RentalPropertydetails from "./screens/Property View/RentalPropertyPageView";
+import SalePropertyPage from "./screens/Property View/SalePropertyPageView";
 import PropertyCheckout from "./screens/Visit Schedule/Clientvist";
 import TestUser from "./screens/Testing/test";
 import AIAssistant from "./screens/AI Assistant/ai";
 import PropertyListingForm from "./screens/Add property/Propertyadd";
-import MyProperties from "./screens/Property View/propertypage";
+import MyProperties from "./screens/Property View/RentalPropertyPageView";
 import PropertyCards from "./screens/User-Properties/propertiesuser";
 import Searchproperty from "./screens/Searches/Searchproperty";
 import AdminDashboard from "./screens/Admin Page/admin.properties";
@@ -24,7 +25,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/login" element={<LoginModal />} />
-        <Route path="/details/:id" element={<PropertyDetails />} />
+        <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
+        <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
         <Route path="/test" element={<TestUser />} />
         <Route path="/AIassistant" element={<AIAssistant />} />
         <Route path="/add-property" element={<PropertyListingForm />} />

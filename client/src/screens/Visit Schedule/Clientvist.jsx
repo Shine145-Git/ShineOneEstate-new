@@ -42,11 +42,33 @@ export default function PropertyCheckout() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        // Property detail endpoint configurable via .env
-        const res = await axios.get(`${process.env.REACT_APP_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
-        setProperty(res.data);
+        let res = null;
+
+        // Try fetching RentalProperty first
+        if (process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API) {
+          try {
+            res = await axios.get(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
+            if (!res.data || Object.keys(res.data).length === 0) {
+              res = null;
+            }
+          } catch {
+            res = null;
+          }
+        }
+
+        // If no RentalProperty found, fetch SaleProperty
+        if (!res && process.env.REACT_APP_SALE_PROPERTY_API) {
+          try {
+            res = await axios.get(`${process.env.REACT_APP_SALE_PROPERTY_API}/${id}`, { withCredentials: true });
+          } catch {
+            res = null;
+          }
+        }
+
+        setProperty(res ? res.data : null);
       } catch (err) {
         console.error('Error fetching property:', err);
+        setProperty(null);
       }
     };
     fetchProperty();
@@ -89,9 +111,17 @@ export default function PropertyCheckout() {
 
   // Calculate the total amount payable based on payment option
   const calculateTotal = () => {
-    if (paymentOption === 'both') return (property.monthlyRent || 0) + (Number(property.securityDeposit) || 0);
-    if (paymentOption === 'rent') return property.monthlyRent || 0;
-    if (paymentOption === 'deposit') return Number(property.securityDeposit) || 0;
+    // Use monthlyRent for rentals, price for sales
+    const mainAmount = property.monthlyRent || property.price || 0;
+    const deposit = Number(property.securityDeposit) || 0;
+    if (property.monthlyRent) {
+      if (paymentOption === 'both') return mainAmount + deposit;
+      if (paymentOption === 'rent') return mainAmount;
+      if (paymentOption === 'deposit') return deposit;
+      if (paymentOption === 'none') return 0;
+    } else if (property.price) {
+      return mainAmount; // For SaleProperty
+    }
     return 0;
   };
 
@@ -330,99 +360,115 @@ export default function PropertyCheckout() {
                   />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <h3 style={{ color: '#003366', fontSize: '16px', fontWeight: '600', margin: 0, lineHeight: '1.4' }}>
-                      {property.address}
+                      {property.address || property.location || 'N.A'}
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4A6A8A', fontSize: '14px' }}>
                       <MapPin size={16} strokeWidth={2} />
-                      {property.localAmenities || 'N.A'}
+                      {property.localAmenities || ''}
                     </div>
                     <div style={{ display: 'inline-block', background: '#F4F7F9', color: '#003366', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', width: 'fit-content' }}>
-                      {property.propertyType || 'N.A'}
+                      {property.propertyType || property.title || 'N.A'}
                     </div>
                   </div>
                 </div>
 
                 <div style={{ borderTop: '2px dashed #F4F7F9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Monthly Rent</span>
+                  <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>
+                    {property.monthlyRent ? 'Monthly Rent' : 'Sale Price'}
+                  </span>
                   <span style={{ color: '#00A79D', fontSize: '24px', fontWeight: '700' }}>
-                    {property.monthlyRent ? `$${property.monthlyRent}` : 'N.A'}
+                    {property.monthlyRent
+                      ? `$${property.monthlyRent}`
+                      : property.price
+                        ? `$${property.price}`
+                        : 'N.A'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Payment Options: choose rent/deposit/both/none */}
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-              <div style={{ background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', padding: '16px', color: '#FFFFFF' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <DollarSign size={20} /> Select Payment Option
-                </h3>
-              </div>
-              
-              <div style={{ padding: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  {[
-                    { value: 'both', label: 'Rent + Deposit' },
-                    { value: 'rent', label: 'Rent Only' },
-                    { value: 'deposit', label: 'Deposit Only' },
-                    { value: 'none', label: 'None' }
-                  ].map(option => (
-                    <label 
-                      key={option.value}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        padding: '14px', 
-                        border: `2px solid ${paymentOption === option.value ? '#00A79D' : '#E5E7EB'}`,
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        background: paymentOption === option.value ? '#F0FDFA' : '#FFFFFF',
-                        transition: 'all 0.2s',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: paymentOption === option.value ? '#003366' : '#4A6A8A'
-                      }}
-                    >
-                      <input 
-                        type="radio" 
-                        value={option.value} 
-                        checked={paymentOption === option.value}
-                        onChange={(e) => setPaymentOption(e.target.value)}
-                        style={{ marginRight: '8px', accentColor: '#00A79D' }}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
+            {/* Payment Options: choose rent/deposit/both/none (only for Rental properties) */}
+            {property.monthlyRent && (
+              <div style={{ background: '#FFFFFF', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+                <div style={{ background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', padding: '16px', color: '#FFFFFF' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <DollarSign size={20} /> Select Payment Option
+                  </h3>
+                </div>
+                
+                <div style={{ padding: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {[
+                      { value: 'both', label: 'Rent + Deposit' },
+                      { value: 'rent', label: 'Rent Only' },
+                      { value: 'deposit', label: 'Deposit Only' },
+                      { value: 'none', label: 'None' }
+                    ].map(option => (
+                      <label 
+                        key={option.value}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          padding: '14px', 
+                          border: `2px solid ${paymentOption === option.value ? '#00A79D' : '#E5E7EB'}`,
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          background: paymentOption === option.value ? '#F0FDFA' : '#FFFFFF',
+                          transition: 'all 0.2s',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: paymentOption === option.value ? '#003366' : '#4A6A8A'
+                        }}
+                      >
+                        <input 
+                          type="radio" 
+                          value={option.value} 
+                          checked={paymentOption === option.value}
+                          onChange={(e) => setPaymentOption(e.target.value)}
+                          style={{ marginRight: '8px', accentColor: '#00A79D' }}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Bill Summary: shows breakdown and total */}
             <div style={{ background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <div style={{ background: '#003366', padding: '16px', color: '#FFFFFF' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Payment Summary</h3>
               </div>
-              
               <div style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {(paymentOption === 'both' || paymentOption === 'rent') && (
+                  {property.monthlyRent ? (
+                    <>
+                      {(paymentOption === 'both' || paymentOption === 'rent') && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F4F7F9', borderRadius: '6px' }}>
+                          <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Monthly Rent</span>
+                          <span style={{ color: '#333333', fontSize: '16px', fontWeight: '600' }}>
+                            {property.monthlyRent ? `$${property.monthlyRent}` : 'N.A'}
+                          </span>
+                        </div>
+                      )}
+                      {(paymentOption === 'both' || paymentOption === 'deposit') && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F4F7F9', borderRadius: '6px' }}>
+                          <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Security Deposit</span>
+                          <span style={{ color: '#333333', fontSize: '16px', fontWeight: '600' }}>
+                            {property.securityDeposit ? `$${property.securityDeposit}` : 'N.A'}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : property.price ? (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F4F7F9', borderRadius: '6px' }}>
-                      <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Monthly Rent</span>
+                      <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Sale Price</span>
                       <span style={{ color: '#333333', fontSize: '16px', fontWeight: '600' }}>
-                        {property.monthlyRent ? `$${property.monthlyRent}` : 'N.A'}
+                        {property.price ? `$${property.price}` : 'N.A'}
                       </span>
                     </div>
-                  )}
-                  
-                  {(paymentOption === 'both' || paymentOption === 'deposit') && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F4F7F9', borderRadius: '6px' }}>
-                      <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Security Deposit</span>
-                      <span style={{ color: '#333333', fontSize: '16px', fontWeight: '600' }}>
-                        {property.securityDeposit ? `$${property.securityDeposit}` : 'N.A'}
-                      </span>
-                    </div>
-                  )}
-                  
+                  ) : null}
                   <div style={{ borderTop: '2px solid #F4F7F9', paddingTop: '16px', marginTop: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '16px', fontWeight: '600', color: '#003366' }}>Total Amount</span>

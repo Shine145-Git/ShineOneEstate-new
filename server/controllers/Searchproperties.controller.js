@@ -1,83 +1,90 @@
 const Property = require("../models/Rentalproperty.model");
+const SaleProperty = require("../models/SaleProperty.model");
 const SearchHistory = require("../models/SearchHistory.model");
 
 // Search for properties by address or area and save search history if user is logged in
 exports.searchProperties = async (req, res) => {
   try {
-    const { query } = req.query;
+    const { query, type } = req.query; // type can be 'rent', 'sale', or undefined
     const userId = req.user?._id;
 
     if (!query) {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // Save search history if user logged in
     if (userId) {
       await SearchHistory.create({ user: userId, query });
     }
 
-    // Split query into individual parts (by space or comma)
     const parts = query
       .split(/[, ]+/)
       .map((p) => p.trim())
       .filter(Boolean);
 
-    // Separate numeric and text parts
     const numbers = parts.filter((p) => !isNaN(p));
     const texts = parts.filter((p) => isNaN(p));
-
-    // Regex for text parts (address search)
     const regexArray = texts.map((word) => new RegExp(word, "i"));
 
-    // Build OR conditions for text fields
-    const textFields = [
-      "address",
-      "propertyType",
-      "purpose",
-      "layoutFeatures",
-      "appliances",
-      "conditionAge",
-      "renovations",
-      "parking",
-      "outdoorSpace",
-      "neighborhoodVibe",
-      "transportation",
-      "localAmenities",
-      "communityFeatures",
-      "petPolicy",
-      "smokingPolicy",
-      "maintenance",
-      "insurance",
-    ];
+    let results = [];
 
-    const orConditionsText = regexArray.flatMap((r) =>
-      textFields.map((field) => ({ [field]: r }))
-    );
+    // Helper: search RentalProperty
+    const searchRental = async () => {
+      const rentalTextFields = [
+        "address", "propertyType", "purpose", "layoutFeatures", "appliances",
+        "conditionAge", "renovations", "parking", "outdoorSpace",
+        "neighborhoodVibe", "transportation", "localAmenities",
+        "communityFeatures", "petPolicy", "smokingPolicy", "maintenance", "insurance"
+      ];
+      const orText = regexArray.flatMap(r =>
+        rentalTextFields.map(field => ({ [field]: r }))
+      );
+      const orNumbers = numbers.flatMap(num => [
+        { bedrooms: Number(num) },
+        { bathrooms: Number(num) },
+        { totalArea: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
+        { monthlyRent: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
+      ]);
+      return await Property.find({ $or: [...orText, ...orNumbers] }).populate("owner", "name email");
+    };
 
-    // Build OR conditions for numeric fields
-    const orConditionsNumbers = numbers.flatMap((num) => [
-      { bedrooms: Number(num) },
-      { bathrooms: Number(num) },
-      { totalArea: { $gte: Number(num) - 100, $lte: Number(num) + 100 } }, // ±100 sqft range
-      { monthlyRent: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } }, // ±₹2000 range
-    ]);
+    // Helper: search SaleProperty
+    const searchSale = async () => {
+      const saleTextFields = ["title", "description", "location"];
+      const orText = regexArray.flatMap(r =>
+        saleTextFields.map(field => ({ [field]: r }))
+      );
+      const orNumbers = numbers.flatMap(num => [
+        { bedrooms: Number(num) },
+        { bathrooms: Number(num) },
+        { area: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
+        { price: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
+      ]);
 
-    const orConditions = [...orConditionsText, ...orConditionsNumbers];
+      try {
+        return await SaleProperty.find({ $or: [...orText, ...orNumbers] })
+          .populate({ path: "ownerId", select: "name email", strictPopulate: false });
+      } catch (err) {
+        console.error("SaleProperty search error:", err);
+        return [];
+      }
+    };
 
-    const results = await Property.find({ $or: orConditions }).populate(
-      "owner",
-      "name email"
-    );
-
-    if (!results.length) {
-      return res.status(404).json({ message: "No properties found" });
+    if (type === "rent") {
+      results = await searchRental();
+    } else if (type === "sale") {
+      results = await searchSale();
+    } else {
+      const [rentalResults, saleResults] = await Promise.all([
+        searchRental(),
+        searchSale(),
+      ]);
+      results = [...rentalResults, ...saleResults];
     }
 
+    // Always return array, even if empty
     res.status(200).json(results);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Server error while searching properties" });
+    res.status(500).json({ message: "Server error while searching properties", error: error.message });
   }
 };
 

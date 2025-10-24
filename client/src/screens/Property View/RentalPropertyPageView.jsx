@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Home, Bed, Bath, Maximize, Car, DollarSign, MapPin, Calendar, Shield, Wrench, Flame, Wind, Zap, Droplet, Users, AlertCircle, PawPrint, Cigarette, Share2 } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
-export default function PropertyPage() {
+export default function RentalPropertyPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [property, setProperty] = useState(null);
@@ -12,17 +12,14 @@ export default function PropertyPage() {
   useEffect(() => {
     async function fetchProperty() {
       try {
-        console.log("Fetching property with id:", id);
         // Property detail endpoint is configurable via .env
-        const response = await fetch(`${process.env.REACT_APP_PROPERTY_DETAIL_API}/${id}`, {
+        const response = await fetch(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`, {
           credentials: 'include',
         });
-        console.log("Response:", response);
         if (!response.ok) {
           throw new Error('Property not found');
         }
         const data = await response.json();
-        console.log("Property data received:", data);
         setProperty(data);
       } catch (error) {
         console.error('Error fetching property:', error);
@@ -98,7 +95,6 @@ export default function PropertyPage() {
     return <div style={{fontFamily:'system-ui,-apple-system,sans-serif',padding:'20px'}}>Property not found.</div>;
   }
 
-  console.log("Rendering property:", property);
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
       <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />

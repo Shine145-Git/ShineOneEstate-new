@@ -1,6 +1,13 @@
 // @desc Get all properties owned by the logged-in user
 // @route GET /api/properties/my
 // @access Private (owner only)
+const SearchHistory = require("../models/SearchHistory.model.js");
+
+const cloudinary = require("cloudinary").v2;
+const multer = require("multer");
+const excelStorage = multer.memoryStorage();
+const excelUpload = multer({ storage: excelStorage });
+const xlsx = require("xlsx");
 const getMyProperties = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -15,13 +22,7 @@ const getMyProperties = async (req, res) => {
     });
   }
 };
-const SearchHistory = require("../models/SearchHistory.model.js");
-const Property = require("../models/Rentalproperty.model.js");
-const cloudinary = require("cloudinary").v2;
-const multer = require("multer");
-const excelStorage = multer.memoryStorage();
-const excelUpload = multer({ storage: excelStorage });
-const xlsx = require("xlsx");
+
 
 // Configure Cloudinary (ensure your credentials are set in environment variables)
 cloudinary.config({
@@ -133,24 +134,7 @@ const getAllProperties = async (req, res) => {
 // @desc Get a property by ID with populated owner details
 // @route GET /api/properties/:id
 // @access Public
-const getPropertyById = async (req, res) => {
-  try {
-    const propertyId = req.params.id;
-    const property = await Property.findById(propertyId).populate(
-      "owner",
-      "name email"
-    );
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-    res.status(200).json(property);
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error while fetching property",
-      error: error.message,
-    });
-  }
-};
+
 
 // @desc Get personalized dashboard for a logged-in user
 // @route GET /api/user/dashboard
@@ -160,7 +144,6 @@ const getPropertyById = async (req, res) => {
 module.exports = {
   createProperty,
   getAllProperties,
-  getPropertyById,
   bulkUploadProperties,
   getMyProperties,
 };

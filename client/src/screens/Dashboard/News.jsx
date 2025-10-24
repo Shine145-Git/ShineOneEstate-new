@@ -80,7 +80,7 @@ const PropertyHeroSection = () => {
   };
   const mainTitleStyle = {
     textAlign: "center",
-    fontSize: isMobile ? "28px" : "42px",
+    fontSize: isMobile ? "24px" : "42px",
     fontWeight: "800",
     color: "#003366",
     marginBottom: isMobile ? "20px" : "40px",
@@ -157,18 +157,19 @@ const PropertyHeroSection = () => {
   const articlesCardStyle = {
     backgroundColor: "#FFFFFF",
     borderRadius: "12px",
-    padding: isMobile ? "20px" : "30px",
+    padding: isMobile ? "40px" : "30px",
+    width: isMobile ? "100%" : "90%",
     boxShadow: "0 2px 16px rgba(0, 51, 102, 0.08)",
   };
   const articlesHeaderStyle = {
-    fontSize: "24px",
+    fontSize: isMobile ? "20px" : "24px",
     fontWeight: "800",
     color: "#003366",
     marginBottom: "8px",
     lineHeight: "1.3",
   };
   const articlesSubtitleStyle = {
-    fontSize: "14px",
+    fontSize: isMobile ? "12px" : "14px",
     color: "#4A6A8A",
     marginBottom: isMobile ? "16px" : "24px",
     fontWeight: "500",
@@ -180,9 +181,10 @@ const PropertyHeroSection = () => {
     borderBottom: "1px solid #E5E7EB",
     position: "relative",
     overflowX: isMobile ? "auto" : "visible",
+    paddingBottom: "8px",
   };
   const tabStyle = (isActive) => ({
-    fontSize: "14px",
+    fontSize: isMobile ? "12px" : "14px",
     fontWeight: isActive ? "700" : "600",
     color: isActive ? "#003366" : "#4A6A8A",
     padding: "0 0 14px 0",
@@ -191,10 +193,11 @@ const PropertyHeroSection = () => {
     transition: "all 0.3s ease",
     position: "relative",
     whiteSpace: "nowrap",
+    flexShrink: 0,
   });
   const articlesGridStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))",
     gap: "20px",
     marginTop: "20px",
   };

@@ -1,810 +1,600 @@
-
-
 [
   {
     "id": 1,
-    "question": "How can I buy a property on your website?",
-    "response": "To buy a property, you can start by browsing our listings, filter by your preferences, and contact the seller or our agent directly from the property page.",
+    "question": "Hello, how can I use ggnRentalDeals chatbot?",
+    "response": "Hi! You can ask me any questions related to renting properties, legal advice, property types, prices, and more. Just type your query and I'll assist you.",
     "followUps": [
       {
-        "question": "What documents do I need to buy a house?",
-        "id": 2
+        "id": 2,
+        "question": "What kind of questions can I ask?",
+        "response": "You can ask about property listings, rental prices, legal documentation, amenities, local laws, and the advantages of using ggnRentalDeals.",
+        "followUps": [
+          {
+            "id": 3,
+            "question": "Can you help me with legal documentation?",
+            "response": "Yes, I can guide you through the necessary documents required for renting or buying properties, including lease agreements and property registration papers.",
+            "followUps": [
+              {
+                "id": 4,
+                "question": "What documents do I need for renting a property?",
+                "response": "Typically, you'll need identity proof, address proof, passport-sized photographs, and a signed rental agreement. I can provide a detailed checklist if you want.",
+                "followUps": [
+                  {
+                    "id": 5,
+                    "question": "Yes, please provide the checklist.",
+                    "response": "Sure! The checklist includes: 1) Valid ID proof (Aadhar, Passport), 2) Address proof, 3) Passport size photos, 4) Security deposit receipt, 5) Signed rental agreement, and 6) NOC from society if applicable."
+                  },
+                  {
+                    "id": 6,
+                    "question": "Are there any legal protections for tenants?",
+                    "response": "Yes, ggnRentalDeals ensures legal protection by verifying property documents and offering assistance with agreements to protect tenants' rights."
+                  }
+                ]
+              },
+              {
+                "id": 7,
+                "question": "Can you assist with property registration?",
+                "response": "Absolutely, I can guide you through the registration process, required documents, and fees applicable in Gurgaon."
+              }
+            ]
+          },
+          {
+            "id": 8,
+            "question": "Can I get help with property prices?",
+            "response": "Yes, I can provide current rental and sale price trends based on property type and location in Gurgaon.",
+            "followUps": [
+              {
+                "id": 9,
+                "question": "What are the average rental prices in Gurgaon?",
+                "response": "Rental prices vary by area and property type. For example, a 2BHK apartment in sectors like 56 or 57 typically ranges from ₹15,000 to ₹25,000 per month."
+              },
+              {
+                "id": 10,
+                "question": "How do prices differ for villas and apartments?",
+                "response": "Villas tend to be more expensive due to larger space and amenities, often starting around ₹40,000 per month, whereas apartments are more affordable."
+              }
+            ]
+          }
+        ]
       },
       {
-        "question": "Can I schedule a property visit?",
-        "id": 3
-      }
-    ]
-  },
-  {
-    "id": 2,
-    "question": "What documents do I need to buy a house?",
-    "response": "You'll typically need identification, proof of funds, loan approval, and a signed purchase agreement. Our agents can guide you through the exact requirements.",
-    "followUps": [
-      {
-        "question": "Can you help me with loan approval?",
-        "id": 4
-      }
-    ]
-  },
-  {
-    "id": 3,
-    "question": "Can I schedule a property visit?",
-    "response": "Absolutely! You can request a property visit by clicking 'Schedule Visit' on the listing page or contacting our agent directly.",
-    "followUps": [
-      {
-        "question": "Are virtual tours available?",
-        "id": 5
-      }
-    ]
-  },
-  {
-    "id": 4,
-    "question": "Can you help me with loan approval?",
-    "response": "Yes, we work with several partner banks and can assist you in getting pre-approved for a home loan.",
-    "followUps": [
-      {
-        "question": "What are the current interest rates?",
-        "id": 6
-      },
-      {
-        "question": "What documents are needed for loan approval?",
-        "id": 7
-      }
-    ]
-  },
-  {
-    "id": 5,
-    "question": "Are virtual tours available?",
-    "response": "Many of our listings include virtual tours. Look for the 'Virtual Tour' button on the property page.",
-    "followUps": [
-      {
-        "question": "Can I request a live video walkthrough?",
-        "id": 8
-      }
-    ]
-  },
-  {
-    "id": 6,
-    "question": "What are the current interest rates?",
-    "response": "Interest rates vary based on the lender and your eligibility. We can connect you with our finance partners for the latest rates.",
-    "followUps": [
-      {
-        "question": "How do I check my loan eligibility?",
-        "id": 9
-      }
-    ]
-  },
-  {
-    "id": 7,
-    "question": "What documents are needed for loan approval?",
-    "response": "You'll need ID proof, income statements, bank statements, and property documents. Our team can give you a detailed checklist.",
-    "followUps": [
-      {
-        "question": "Where can I upload my documents?",
-        "id": 10
-      }
-    ]
-  },
-  {
-    "id": 8,
-    "question": "Can I request a live video walkthrough?",
-    "response": "Yes, contact the assigned agent for the property and schedule a live video walkthrough at your convenience.",
-    "followUps": [
-      {
-        "question": "Can I invite my family to join the video walkthrough?",
-        "id": 11
-      }
-    ]
-  },
-  {
-    "id": 9,
-    "question": "How do I check my loan eligibility?",
-    "response": "You can use our online loan eligibility calculator or speak with our finance advisors for a personalized assessment.",
-    "followUps": [
-      {
-        "question": "Where is the loan calculator?",
-        "id": 12
-      }
-    ]
-  },
-  {
-    "id": 10,
-    "question": "Where can I upload my documents?",
-    "response": "You can upload your documents securely through your account dashboard under 'My Applications'.",
-    "followUps": [
-      {
-        "question": "Is my data safe and encrypted?",
-        "id": 13
-      }
-    ]
-  },
-  {
-    "id": 11,
-    "question": "Can I invite my family to join the video walkthrough?",
-    "response": "Yes, you can share the meeting link with your family or friends so they can join the walkthrough remotely.",
-    "followUps": []
-  },
-  {
-    "id": 12,
-    "question": "Where is the loan calculator?",
-    "response": "You can find the loan calculator in the 'Finance Tools' section of our website.",
-    "followUps": [
-      {
-        "question": "Can I save my calculations?",
-        "id": 14
-      }
-    ]
-  },
-  {
-    "id": 13,
-    "question": "Is my data safe and encrypted?",
-    "response": "Yes, we use advanced encryption and security protocols to ensure your data remains safe and confidential.",
-    "followUps": []
-  },
-  {
-    "id": 14,
-    "question": "Can I save my calculations?",
-    "response": "Yes, you can save your calculations by logging in to your account. They will be available in your dashboard.",
-    "followUps": [
-      {
-        "question": "How do I create an account?",
-        "id": 15
-      }
-    ]
-  },
-  {
-    "id": 15,
-    "question": "How do I create an account?",
-    "response": "Click on the 'Sign Up' button at the top-right corner and fill in your details. You'll receive a verification email to activate your account.",
-    "followUps": [
-      {
-        "question": "I'm not receiving the verification email.",
-        "id": 16
+        "id": 11,
+        "question": "How do I start searching for properties?",
+        "response": "You can specify your preferences like location, budget, property type, and I will help you find suitable listings on ggnRentalDeals.",
+        "followUps": [
+          {
+            "id": 12,
+            "question": "Can you explain property types available?",
+            "response": "Sure! We have apartments, villas, independent floors, studio apartments, and commercial spaces.",
+            "followUps": [
+              {
+                "id": 13,
+                "question": "What is an independent floor?",
+                "response": "An independent floor is a single-floor unit in a building, giving more privacy than an apartment but less than a villa."
+              },
+              {
+                "id": 14,
+                "question": "Are studio apartments available?",
+                "response": "Yes, studio apartments are compact units ideal for singles or couples, often with combined living and sleeping areas."
+              }
+            ]
+          },
+          {
+            "id": 15,
+            "question": "Can I filter properties by amenities?",
+            "response": "Yes, you can filter by amenities such as parking, gym, swimming pool, security, and more."
+          }
+        ]
       }
     ]
   },
   {
     "id": 16,
-    "question": "I'm not receiving the verification email.",
-    "response": "Please check your spam folder. If you still can't find it, request a new verification email or contact our support team.",
+    "question": "What are the advantages of using ggnRentalDeals?",
+    "response": "ggnRentalDeals offers verified listings, legal document checks, PPR verification, and customer support to ensure a secure and hassle-free rental experience.",
     "followUps": [
       {
-        "question": "How do I contact support?",
-        "id": 17
-      }
-    ]
-  },
-  {
-    "id": 17,
-    "question": "How do I contact support?",
-    "response": "You can contact our support team via the 'Help' section on our website or by emailing support@neourban.com.",
-    "followUps": []
-  },
-  {
-    "id": 18,
-    "question": "I want to sell my property. How do I list it?",
-    "response": "To list your property, log in to your account and click on 'Sell Property'. Fill in the property details and upload photos to complete your listing.",
-    "followUps": [
-      {
-        "question": "Are there any listing fees?",
-        "id": 19
+        "id": 17,
+        "question": "What is PPR verification?",
+        "response": "PPR stands for Property Possession Record. Our PPR verification confirms the legal ownership and possession status of the property.",
+        "followUps": [
+          {
+            "id": 18,
+            "question": "Why is PPR verification important?",
+            "response": "It protects you from fraudulent listings and ensures the property is legally owned and available for rent or sale.",
+            "followUps": [
+              {
+                "id": 19,
+                "question": "How does ggnRentalDeals perform PPR checks?",
+                "response": "We collaborate with local authorities to verify property records and cross-check ownership documents before listing."
+              },
+              {
+                "id": 20,
+                "question": "Can I get a copy of the PPR report?",
+                "response": "Yes, upon request, we can provide you with a verified PPR report for your selected property."
+              }
+            ]
+          }
+        ]
       },
       {
-        "question": "Can I edit my property listing later?",
-        "id": 20
-      }
-    ]
-  },
-  {
-    "id": 19,
-    "question": "Are there any listing fees?",
-    "response": "We offer both free and premium listing options. Premium listings get more visibility. See our pricing page for details.",
-    "followUps": [
+        "id": 21,
+        "question": "Does ggnRentalDeals offer legal protection?",
+        "response": "Yes, we assist with drafting and reviewing rental agreements to ensure compliance with local laws and protect your rights.",
+        "followUps": [
+          {
+            "id": 22,
+            "question": "Are rental agreements customized?",
+            "response": "Yes, agreements are tailored to the specifics of the property and the parties involved, ensuring clarity and legal compliance."
+          },
+          {
+            "id": 23,
+            "question": "Can ggnRentalDeals help resolve disputes?",
+            "response": "We provide guidance and support for dispute resolution between tenants and landlords when required."
+          }
+        ]
+      },
       {
-        "question": "What are the benefits of premium listings?",
-        "id": 21
+        "id": 24,
+        "question": "What other goodies does ggnRentalDeals offer?",
+        "response": "We offer customer support, easy search filters, verified agents, and timely updates on new listings.",
+        "followUps": [
+          {
+            "id": 25,
+            "question": "Are there any discounts or offers?",
+            "response": "Occasionally, we have special promotions on brokerage fees or documentation services. Keep an eye on our updates."
+          },
+          {
+            "id": 26,
+            "question": "Is there support for first-time renters?",
+            "response": "Yes, we provide detailed guides and assistance to help first-time renters understand the process fully."
+          }
+        ]
       }
     ]
-  },
-  {
-    "id": 20,
-    "question": "Can I edit my property listing later?",
-    "response": "Yes, you can edit your listing anytime from your dashboard under 'My Listings'.",
-    "followUps": []
-  },
-  {
-    "id": 21,
-    "question": "What are the benefits of premium listings?",
-    "response": "Premium listings appear at the top of search results, include featured badges, and receive promotional boosts.",
-    "followUps": []
-  },
-  {
-    "id": 22,
-    "question": "How do I rent a property?",
-    "response": "Browse available rental listings, filter by your preferences, and contact the landlord or our agent to arrange a visit.",
-    "followUps": [
-      {
-        "question": "What is the minimum lease period?",
-        "id": 23
-      }
-    ]
-  },
-  {
-    "id": 23,
-    "question": "What is the minimum lease period?",
-    "response": "The minimum lease period depends on the property and landlord, but it's typically 6 to 12 months.",
-    "followUps": [
-      {
-        "question": "Are short-term rentals available?",
-        "id": 24
-      }
-    ]
-  },
-  {
-    "id": 24,
-    "question": "Are short-term rentals available?",
-    "response": "Yes, some properties offer short-term rental options. Use the 'Lease Duration' filter to find them.",
-    "followUps": []
-  },
-  {
-    "id": 25,
-    "question": "What amenities are available in listed properties?",
-    "response": "Amenities vary by property and may include parking, gym, pool, security, and more. Check the property details for a full list.",
-    "followUps": [
-      {
-        "question": "Can I search for properties with specific amenities?",
-        "id": 26
-      }
-    ]
-  },
-  {
-    "id": 26,
-    "question": "Can I search for properties with specific amenities?",
-    "response": "Yes, use the 'Amenities' filter on the search page to find properties that match your requirements.",
-    "followUps": []
   },
   {
     "id": 27,
-    "question": "What types of properties are available?",
-    "response": "We list apartments, villas, independent houses, commercial spaces, and plots. Use filters to narrow down your search.",
+    "question": "How do I convert area units for properties?",
+    "response": "I can help convert common area units like square feet, square meters, and acres used in property measurements.",
     "followUps": [
       {
-        "question": "Do you have luxury properties?",
-        "id": 28
-      }
-    ]
-  },
-  {
-    "id": 28,
-    "question": "Do you have luxury properties?",
-    "response": "Yes, we have a curated collection of luxury properties. Look for the 'Luxury' tag or visit our Luxury Properties section.",
-    "followUps": []
-  },
-  {
-    "id": 29,
-    "question": "How do I find properties near schools?",
-    "response": "You can search for properties by proximity to schools using our map view or by applying the 'Nearby Schools' filter.",
-    "followUps": [
+        "id": 28,
+        "question": "How do I convert square feet to square meters?",
+        "response": "To convert square feet to square meters, multiply the area in square feet by 0.092903.",
+        "followUps": [
+          {
+            "id": 29,
+            "question": "Can you convert 1000 sq ft to sq meters?",
+            "response": "1000 sq ft equals approximately 92.9 square meters."
+          }
+        ]
+      },
       {
-        "question": "Can you provide school ratings?",
-        "id": 30
-      }
-    ]
-  },
-  {
-    "id": 30,
-    "question": "Can you provide school ratings?",
-    "response": "Yes, we display ratings and reviews for nearby schools on the property details page.",
-    "followUps": []
-  },
-  {
-    "id": 31,
-    "question": "What are the best neighborhoods for families?",
-    "response": "Some of the most family-friendly neighborhoods include Greenfield, Oakridge, and Maple Heights. These areas have good schools and parks.",
-    "followUps": [
+        "id": 30,
+        "question": "What is the conversion from acres to square feet?",
+        "response": "1 acre equals 43,560 square feet."
+      },
       {
-        "question": "What are the average property prices in Greenfield?",
-        "id": 32
+        "id": 31,
+        "question": "How many square feet are in 1 square meter?",
+        "response": "1 square meter equals approximately 10.764 square feet."
       }
     ]
   },
   {
     "id": 32,
-    "question": "What are the average property prices in Greenfield?",
-    "response": "The average property price in Greenfield is around $350,000, but it varies based on property type and size.",
-    "followUps": []
-  },
-  {
-    "id": 33,
-    "question": "How do I compare properties?",
-    "response": "You can add properties to your comparison list and view them side-by-side for features, prices, and amenities.",
+    "question": "What types of properties are available on ggnRentalDeals?",
+    "response": "We list apartments, villas, independent floors, studio apartments, and commercial properties.",
     "followUps": [
       {
-        "question": "Can I share my comparison with others?",
-        "id": 34
-      }
-    ]
-  },
-  {
-    "id": 34,
-    "question": "Can I share my comparison with others?",
-    "response": "Yes, you can generate a shareable link to your comparison and send it to friends or family.",
-    "followUps": []
-  },
-  {
-    "id": 35,
-    "question": "Do you offer any promotions or discounts?",
-    "response": "We frequently offer promotions on select properties and reduced fees for new users. Check our 'Offers' section for the latest deals.",
-    "followUps": [
+        "id": 33,
+        "question": "What is the difference between an apartment and a villa?",
+        "response": "Apartments are units in a multi-story building, while villas are independent houses with private gardens and more space.",
+        "followUps": [
+          {
+            "id": 34,
+            "question": "Are villas more expensive than apartments?",
+            "response": "Generally, yes, due to larger size, privacy, and amenities."
+          }
+        ]
+      },
       {
-        "question": "How do I apply a promo code?",
-        "id": 36
+        "id": 35,
+        "question": "Do you have commercial properties listed?",
+        "response": "Yes, we list shops, offices, and warehouses for rent and sale."
       }
     ]
   },
   {
     "id": 36,
-    "question": "How do I apply a promo code?",
-    "response": "You can enter your promo code at checkout when making a payment for services or premium listings.",
-    "followUps": []
-  },
-  {
-    "id": 37,
-    "question": "Do you have a referral program?",
-    "response": "Yes, refer friends and earn rewards when they complete a transaction. Find your referral link in your account dashboard.",
+    "question": "What amenities can I expect in rental properties?",
+    "response": "Common amenities include parking, security, power backup, gym, swimming pool, and children's play area.",
     "followUps": [
       {
-        "question": "How much can I earn from referrals?",
-        "id": 38
+        "id": 37,
+        "question": "Are amenities included in the rent?",
+        "response": "Usually yes, but it depends on the property. Always confirm with the landlord or agent.",
+        "followUps": [
+          {
+            "id": 38,
+            "question": "Can I request specific amenities?",
+            "response": "You can specify your preferences when searching, and I will filter listings accordingly."
+          }
+        ]
       }
     ]
-  },
-  {
-    "id": 38,
-    "question": "How much can I earn from referrals?",
-    "response": "You can earn up to $500 for each successful referral. See our Referral Program page for details.",
-    "followUps": []
   },
   {
     "id": 39,
-    "question": "How do I reset my password?",
-    "response": "Click on 'Forgot Password' on the login page and follow the instructions to reset your password.",
+    "question": "What is RERA and how does it affect property rentals in Gurgaon?",
+    "response": "RERA is the Real Estate Regulatory Authority, a government body that regulates real estate transactions to protect buyers and tenants.",
     "followUps": [
       {
-        "question": "I'm not receiving the reset email.",
-        "id": 40
-      }
-    ]
-  },
-  {
-    "id": 40,
-    "question": "I'm not receiving the reset email.",
-    "response": "Check your spam or junk folder. If the email isn't there, request another reset or contact our support team.",
-    "followUps": []
-  },
-  {
-    "id": 41,
-    "question": "How do I update my profile information?",
-    "response": "Go to your account dashboard and click 'Edit Profile' to update your personal information.",
-    "followUps": []
-  },
-  {
-    "id": 42,
-    "question": "Can I save my favorite properties?",
-    "response": "Yes, click the heart icon on any property to add it to your favorites. Access them anytime from your dashboard.",
-    "followUps": []
-  },
-  {
-    "id": 43,
-    "question": "How do I contact a property owner?",
-    "response": "Use the 'Contact Owner' button on the property page to send a message or request a call.",
-    "followUps": [
+        "id": 40,
+        "question": "Is RERA applicable to rental properties?",
+        "response": "RERA primarily regulates sale properties, but many rental agreements benefit from its guidelines for transparency and fairness.",
+        "followUps": [
+          {
+            "id": 41,
+            "question": "How can I check if a property is RERA registered?",
+            "response": "You can check the RERA registration number on the official Haryana RERA website or ask us to verify it for you."
+          },
+          {
+            "id": 42,
+            "question": "Does ggnRentalDeals verify RERA registration?",
+            "response": "Yes, we verify RERA registration for listed properties to ensure legitimacy."
+          }
+        ]
+      },
       {
-        "question": "Can I chat with the owner directly?",
-        "id": 44
+        "id": 43,
+        "question": "What are the benefits of RERA registration?",
+        "response": "It ensures project transparency, timely possession, and protects you from fraud."
       }
     ]
   },
   {
     "id": 44,
-    "question": "Can I chat with the owner directly?",
-    "response": "Yes, our platform offers secure in-app chat to connect with property owners and agents.",
-    "followUps": []
-  },
-  {
-    "id": 45,
-    "question": "What safety measures are in place for property visits?",
-    "response": "We verify all property listings and encourage safe meeting practices. Agents can accompany you on visits upon request.",
+    "question": "What are the common steps in buying a property?",
+    "response": "The steps include property search, verification, negotiation, agreement signing, payment, and registration.",
     "followUps": [
       {
-        "question": "Do you offer virtual property verification?",
-        "id": 46
-      }
-    ]
-  },
-  {
-    "id": 46,
-    "question": "Do you offer virtual property verification?",
-    "response": "Yes, we offer virtual verification for select properties. Look for the 'Verified' badge on the listing.",
-    "followUps": []
-  },
-  {
-    "id": 47,
-    "question": "What is the process for renting out my property?",
-    "response": "List your property, set your rental terms, and respond to tenant inquiries. Our agents can help with tenant screening and agreements.",
-    "followUps": [
+        "id": 45,
+        "question": "What documents are needed for buying?",
+        "response": "You'll need ID proof, sale deed, property tax receipts, encumbrance certificate, and NOCs.",
+        "followUps": [
+          {
+            "id": 46,
+            "question": "What is an encumbrance certificate?",
+            "response": "It certifies the property is free from legal dues or mortgages."
+          }
+        ]
+      },
       {
-        "question": "Do you help with rental agreements?",
-        "id": 48
+        "id": 47,
+        "question": "How long does registration take?",
+        "response": "Usually it takes 1-2 weeks after payment and document submission."
       }
     ]
   },
   {
     "id": 48,
-    "question": "Do you help with rental agreements?",
-    "response": "Yes, we provide rental agreement templates and legal support to ensure everything is in order.",
-    "followUps": []
-  },
-  {
-    "id": 49,
-    "question": "How can I get a property valuation?",
-    "response": "Request a free valuation by submitting your property details on our 'Valuation' page. Our experts will contact you soon.",
+    "question": "What is the process for renting a property?",
+    "response": "The process involves property search, document verification, agreement signing, security deposit payment, and possession.",
     "followUps": [
       {
-        "question": "How long does the valuation process take?",
-        "id": 50
+        "id": 49,
+        "question": "What is usually the security deposit amount?",
+        "response": "Typically 2-3 months' rent, but it can vary based on landlord agreement."
+      },
+      {
+        "id": 50,
+        "question": "Can I negotiate rent?",
+        "response": "Yes, negotiations are common before finalizing the agreement."
       }
     ]
-  },
-  {
-    "id": 50,
-    "question": "How long does the valuation process take?",
-    "response": "Valuations typically take 2-3 business days after you submit your property details.",
-    "followUps": []
   },
   {
     "id": 51,
-    "question": "What are the payment options for booking a property?",
-    "response": "We accept bank transfers, credit/debit cards, and online payment gateways for property bookings and service fees.",
+    "question": "What are the local property regulations in Gurgaon?",
+    "response": "Gurgaon follows Haryana government property laws including RERA, property tax rules, and building codes.",
     "followUps": [
       {
-        "question": "Is there a payment receipt?",
-        "id": 52
+        "id": 52,
+        "question": "Are there restrictions on property resale?",
+        "response": "Some properties have resale lock-in periods depending on the developer's agreement."
+      },
+      {
+        "id": 53,
+        "question": "Is property tax applicable on rentals?",
+        "response": "Yes, property tax is levied on owners but may affect rental pricing."
       }
     ]
-  },
-  {
-    "id": 52,
-    "question": "Is there a payment receipt?",
-    "response": "Yes, a digital payment receipt will be emailed to you and available in your account's transaction history.",
-    "followUps": []
-  },
-  {
-    "id": 53,
-    "question": "How do I report a suspicious listing?",
-    "response": "Click the 'Report' button on the listing page and provide details. Our team will review and take appropriate action.",
-    "followUps": []
   },
   {
     "id": 54,
-    "question": "What is the refund policy for service fees?",
-    "response": "Refunds are available for cancellations within 24 hours of payment, subject to our refund policy. Check the policy page for details.",
+    "question": "What financial documents do I need for property transactions?",
+    "response": "You'll need bank statements, income proof, PAN card, and credit history for loan or rental approvals.",
     "followUps": [
       {
-        "question": "How long do refunds take to process?",
-        "id": 55
+        "id": 55,
+        "question": "Can ggnRentalDeals help with loan documentation?",
+        "response": "We can guide you through the required documents and connect you with financial partners."
+      },
+      {
+        "id": 56,
+        "question": "What is the typical loan approval time?",
+        "response": "It varies but generally takes 7-15 working days after document submission."
       }
     ]
-  },
-  {
-    "id": 55,
-    "question": "How long do refunds take to process?",
-    "response": "Refunds are usually processed within 5-7 business days, depending on your payment method.",
-    "followUps": []
-  },
-  {
-    "id": 56,
-    "question": "Can I schedule a call with an agent?",
-    "response": "Yes, use the 'Schedule a Call' option on our website to book a time with one of our agents.",
-    "followUps": []
   },
   {
     "id": 57,
-    "question": "How do I filter properties by price?",
-    "response": "Use the price slider or input your desired range on the search page to filter listings by price.",
-    "followUps": []
-  },
-  {
-    "id": 58,
-    "question": "Are pets allowed in rental properties?",
-    "response": "Pet policies vary by property. Check the 'Pet Policy' section on the listing or ask the landlord directly.",
-    "followUps": []
+    "question": "How do I verify property ownership?",
+    "response": "You can check ownership via sale deed, PPR records, and RERA registration status.",
+    "followUps": [
+      {
+        "id": 58,
+        "question": "Can ggnRentalDeals verify ownership for me?",
+        "response": "Yes, we perform ownership verification as part of our listing process."
+      }
+    ]
   },
   {
     "id": 59,
-    "question": "How do I check property ownership history?",
-    "response": "Ownership history is available for select properties. Contact our legal team for a detailed background check.",
+    "question": "Are brokerage fees applicable on ggnRentalDeals?",
+    "response": "Brokerage fees vary; some listings are direct from owners with no brokerage, while others involve agent fees.",
     "followUps": [
       {
-        "question": "Is there a fee for ownership verification?",
-        "id": 60
+        "id": 60,
+        "question": "What is the typical brokerage percentage?",
+        "response": "Usually 1 month's rent or 1-2% of the sale price."
       }
     ]
-  },
-  {
-    "id": 60,
-    "question": "Is there a fee for ownership verification?",
-    "response": "A small fee may apply for detailed ownership verification. Our team will inform you of any applicable charges.",
-    "followUps": []
   },
   {
     "id": 61,
-    "question": "What is stamp duty and who pays it?",
-    "response": "Stamp duty is a government tax paid on property transactions. Usually, the buyer pays it at the time of registration.",
+    "question": "How can I list my property on ggnRentalDeals?",
+    "response": "You can register as a property owner or agent and submit your property details through our platform.",
     "followUps": [
       {
-        "question": "How much is the stamp duty?",
-        "id": 62
+        "id": 62,
+        "question": "Is there a fee for listing?",
+        "response": "Basic listings are free; premium listings with more visibility may have charges."
+      },
+      {
+        "id": 63,
+        "question": "How long does it take for my listing to go live?",
+        "response": "After verification, listings typically go live within 24-48 hours."
       }
     ]
-  },
-  {
-    "id": 62,
-    "question": "How much is the stamp duty?",
-    "response": "Stamp duty rates vary by location and property value. Use our online calculator or consult our legal team for specifics.",
-    "followUps": []
-  },
-  {
-    "id": 63,
-    "question": "How do I get legal advice for my property transaction?",
-    "response": "We offer access to legal experts who can advise you on property transactions. Request a consultation through our 'Legal Support' page.",
-    "followUps": []
   },
   {
     "id": 64,
-    "question": "Can I get notifications for new listings?",
-    "response": "Yes, set up custom alerts in your account to receive notifications for new listings that match your criteria.",
-    "followUps": []
-  },
-  {
-    "id": 65,
-    "question": "How do I unsubscribe from emails?",
-    "response": "Click the 'Unsubscribe' link at the bottom of our emails or update your notification preferences in your account settings.",
-    "followUps": []
+    "question": "What is the minimum lease period for rentals?",
+    "response": "Minimum lease periods generally range from 11 months to 3 years, depending on landlord preference.",
+    "followUps": [
+      {
+        "id": 65,
+        "question": "Can I get a short-term rental?",
+        "response": "Short-term rentals are available but may be limited and costlier."
+      }
+    ]
   },
   {
     "id": 66,
-    "question": "How do I delete my account?",
-    "response": "Go to your account settings and select 'Delete Account'. Please note this action is irreversible.",
+    "question": "How do I terminate a rental agreement?",
+    "response": "Termination depends on the agreement terms; usually requires prior notice and settlement of dues.",
     "followUps": [
       {
-        "question": "Can I recover my account after deletion?",
-        "id": 67
+        "id": 67,
+        "question": "What is the usual notice period?",
+        "response": "Typically 1-3 months' written notice is required."
       }
     ]
-  },
-  {
-    "id": 67,
-    "question": "Can I recover my account after deletion?",
-    "response": "No, once your account is deleted, it cannot be recovered. You can create a new account if needed.",
-    "followUps": []
   },
   {
     "id": 68,
-    "question": "What are the common property buying mistakes to avoid?",
-    "response": "Avoid skipping legal checks, not inspecting the property, and ignoring market research. Our guides can help you make informed decisions.",
-    "followUps": []
-  },
-  {
-    "id": 69,
-    "question": "Can I negotiate property prices?",
-    "response": "Yes, you can negotiate with sellers or landlords. Our agents can assist in the negotiation process.",
-    "followUps": []
+    "question": "Are pets allowed in rental properties?",
+    "response": "Pet policies vary by landlord; you should confirm before finalizing the rental.",
+    "followUps": [
+      {
+        "id": 69,
+        "question": "Can ggnRentalDeals filter pet-friendly properties?",
+        "response": "Yes, you can specify pet-friendly as a filter in your property search."
+      }
+    ]
   },
   {
     "id": 70,
-    "question": "Are there any hidden charges in property transactions?",
-    "response": "We believe in transparency. All charges are listed upfront. Always review the agreement for any additional fees.",
-    "followUps": []
-  },
-  {
-    "id": 71,
-    "question": "Can I get assistance moving into my new home?",
-    "response": "Yes, we partner with moving companies and can help you arrange moving services.",
-    "followUps": []
+    "question": "What is the process for renewing a lease?",
+    "response": "Lease renewal involves mutual agreement, signing a renewal document, and updating rent if applicable.",
+    "followUps": [
+      {
+        "id": 71,
+        "question": "Can rent be increased on renewal?",
+        "response": "Yes, landlords may increase rent as per agreement and local laws."
+      }
+    ]
   },
   {
     "id": 72,
-    "question": "How do I check the status of my application?",
-    "response": "Log in to your account and go to 'My Applications' to view the current status and any pending actions.",
-    "followUps": []
-  },
-  {
-    "id": 73,
-    "question": "Do you offer property management services?",
-    "response": "Yes, we offer property management for landlords, including tenant screening, rent collection, and maintenance.",
-    "followUps": []
+    "question": "How do I report a problem with my rental property?",
+    "response": "You can contact the landlord or ggnRentalDeals customer support for assistance.",
+    "followUps": [
+      {
+        "id": 73,
+        "question": "Does ggnRentalDeals offer maintenance services?",
+        "response": "We can connect you with trusted service providers for repairs and maintenance."
+      }
+    ]
   },
   {
     "id": 74,
-    "question": "What should I do if I forget my username?",
-    "response": "Use the 'Forgot Username' option on the login page. We'll send your username to your registered email.",
-    "followUps": []
-  },
-  {
-    "id": 75,
-    "question": "How do I report a technical issue?",
-    "response": "Report technical issues via the 'Help' section or email us at support@neourban.com with details of the problem.",
-    "followUps": []
+    "question": "What safety measures are in place for tenants?",
+    "response": "Properties listed with ggnRentalDeals undergo verification, and many have security features like CCTV and guards.",
+    "followUps": [
+      {
+        "id": 75,
+        "question": "Can I verify safety features before renting?",
+        "response": "Yes, property details include information on safety and security amenities."
+      }
+    ]
   },
   {
     "id": 76,
-    "question": "Are there any eco-friendly homes available?",
-    "response": "Yes, we have a selection of eco-friendly homes. Use the 'Eco-Friendly' filter to find them.",
-    "followUps": []
-  },
-  {
-    "id": 77,
-    "question": "How do I verify my phone number?",
-    "response": "Go to your account settings and add your phone number. We'll send a verification code via SMS.",
-    "followUps": []
+    "question": "Can I get help with property tax queries?",
+    "response": "Yes, I can provide information on property tax rates, payment schedules, and exemptions.",
+    "followUps": [
+      {
+        "id": 77,
+        "question": "How do I pay property tax in Gurgaon?",
+        "response": "You can pay online on the Municipal Corporation Gurgaon website or at designated offices."
+      }
+    ]
   },
   {
     "id": 78,
-    "question": "Can I get a list of hospitals near a property?",
-    "response": "Yes, nearby hospitals are listed on each property page, along with contact details and distance.",
-    "followUps": []
-  },
-  {
-    "id": 79,
-    "question": "How do I request a property brochure?",
-    "response": "Click 'Download Brochure' on the property page or request one from the agent.",
-    "followUps": []
+    "question": "What is the role of a property agent?",
+    "response": "Agents help find properties, negotiate deals, and assist with documentation.",
+    "followUps": [
+      {
+        "id": 79,
+        "question": "Are agents on ggnRentalDeals verified?",
+        "response": "Yes, all agents are verified to ensure trustworthy service."
+      }
+    ]
   },
   {
     "id": 80,
-    "question": "Is there a mobile app for Neo-Urban?",
-    "response": "Yes, our mobile app is available for iOS and Android. Download it from the App Store or Google Play.",
+    "question": "How do I know if a property is ready to move in?",
+    "response": "Property listings specify if they are ready to move or under construction.",
     "followUps": [
       {
-        "question": "Can I use all website features on the app?",
-        "id": 81
+        "id": 81,
+        "question": "Can I get possession dates for properties?",
+        "response": "Yes, possession dates are provided in the property details."
       }
     ]
-  },
-  {
-    "id": 81,
-    "question": "Can I use all website features on the app?",
-    "response": "Most features are available on the app, with more being added regularly. Let us know if you need a specific feature.",
-    "followUps": []
   },
   {
     "id": 82,
-    "question": "How do I apply for a home loan?",
-    "response": "Visit our 'Finance' section and fill out the loan application form. Our partners will contact you with next steps.",
-    "followUps": []
-  },
-  {
-    "id": 83,
-    "question": "Can I get pre-approved for a mortgage?",
-    "response": "Yes, pre-approval is available. Fill out the pre-approval form in our Finance section.",
-    "followUps": []
-  },
-  {
-    "id": 84,
-    "question": "Where can I find property tax information?",
-    "response": "Property tax details are available on each listing and in our 'Resources' section.",
-    "followUps": []
-  },
-  {
-    "id": 85,
-    "question": "What is the difference between carpet area and built-up area?",
-    "response": "Carpet area is the usable floor area inside the apartment. Built-up area includes the carpet area plus walls and balconies.",
-    "followUps": []
-  },
-  {
-    "id": 86,
-    "question": "Can I get a property inspection before buying?",
-    "response": "Yes, we recommend property inspections. We can arrange a professional inspection for you.",
+    "question": "What is the importance of a No Objection Certificate (NOC)?",
+    "response": "NOC certifies that the property has no legal or financial dues and is clear for sale or rent.",
     "followUps": [
       {
-        "question": "Is there a fee for property inspection?",
-        "id": 87
+        "id": 83,
+        "question": "Who issues the NOC?",
+        "response": "The local municipal authority or society management issues the NOC."
       }
     ]
   },
   {
-    "id": 87,
-    "question": "Is there a fee for property inspection?",
-    "response": "Inspection fees depend on the property size and location. Our team will provide a quote upon request.",
-    "followUps": []
+    "id": 84,
+    "question": "How can I dispute a property-related issue?",
+    "response": "You can approach consumer courts, RERA authorities, or seek legal advice for disputes.",
+    "followUps": [
+      {
+        "id": 85,
+        "question": "Does ggnRentalDeals offer legal support?",
+        "response": "We provide guidance and connect you with legal experts when needed."
+      }
+    ]
+  },
+  {
+    "id": 86,
+    "question": "What are common property scams to watch out for?",
+    "response": "Beware of fake listings, forged documents, and unverified agents.",
+    "followUps": [
+      {
+        "id": 87,
+        "question": "How does ggnRentalDeals prevent scams?",
+        "response": "We verify all listings and documents before publishing and monitor agent activities."
+      }
+    ]
   },
   {
     "id": 88,
-    "question": "How do I get notified about price drops?",
-    "response": "Set up alerts for your favorite properties or search filters to get notified when prices change.",
-    "followUps": []
-  },
-  {
-    "id": 89,
-    "question": "Can I buy property as a non-resident?",
-    "response": "Yes, non-residents can buy property, subject to local laws. Our legal team can guide you through the process.",
+    "question": "Can I get assistance with property valuation?",
+    "response": "Yes, we provide estimated market values based on recent transactions and property features.",
     "followUps": [
       {
-        "question": "What documents do non-residents need?",
-        "id": 90
+        "id": 89,
+        "question": "Is property valuation free?",
+        "response": "Basic valuation is free; detailed reports may involve a fee."
       }
     ]
   },
   {
     "id": 90,
-    "question": "What documents do non-residents need?",
-    "response": "Non-residents usually need a valid passport, visa, proof of funds, and sometimes additional approvals. Contact us for a detailed checklist.",
-    "followUps": []
-  },
-  {
-    "id": 91,
-    "question": "How do I renew my rental agreement?",
-    "response": "Contact your landlord or agent to initiate the renewal. We can help draft and sign digital agreements.",
-    "followUps": []
+    "question": "What is the importance of a rent agreement?",
+    "response": "It legally binds tenant and landlord, specifying terms and protecting both parties.",
+    "followUps": [
+      {
+        "id": 91,
+        "question": "Can ggnRentalDeals help draft rent agreements?",
+        "response": "Yes, we provide templates and legal review services."
+      }
+    ]
   },
   {
     "id": 92,
-    "question": "Can I list commercial properties?",
-    "response": "Yes, we support commercial property listings. Choose 'Commercial' when creating your listing.",
-    "followUps": []
-  },
-  {
-    "id": 93,
-    "question": "How do I request maintenance for my rental?",
-    "response": "Submit a maintenance request via your tenant dashboard or contact your landlord directly.",
-    "followUps": []
+    "question": "How do I renew my rent agreement?",
+    "response": "Renewal involves mutual consent and signing a new or extended agreement.",
+    "followUps": [
+      {
+        "id": 93,
+        "question": "Is registration required for rent agreement renewal?",
+        "response": "Registration is recommended for agreements longer than 11 months."
+      }
+    ]
   },
   {
     "id": 94,
-    "question": "What should I look for during a property visit?",
-    "response": "Check the condition, ventilation, water supply, security, and neighborhood. Our checklist can help you cover all important aspects.",
-    "followUps": []
-  },
-  {
-    "id": 95,
-    "question": "Can I negotiate rent with the landlord?",
-    "response": "Yes, rent is often negotiable. Our agents can help you with negotiation tips.",
-    "followUps": []
+    "question": "Can I sublet a rental property?",
+    "response": "Subletting depends on landlord permission and terms in the rental agreement.",
+    "followUps": [
+      {
+        "id": 95,
+        "question": "What are the risks of subletting without permission?",
+        "response": "It can lead to eviction or legal action from the landlord."
+      }
+    ]
   },
   {
     "id": 96,
-    "question": "How do I book a property for rent?",
-    "response": "Click 'Book Now' on the rental listing and follow the steps to complete your booking.",
-    "followUps": []
-  },
-  {
-    "id": 97,
-    "question": "Do you offer furnished apartments?",
-    "response": "Yes, you can filter listings by 'Furnished', 'Semi-Furnished', or 'Unfurnished' options.",
-    "followUps": []
+    "question": "What is the process to transfer property ownership?",
+    "response": "It involves sale deed execution, payment of stamp duty, and registration at the sub-registrar office.",
+    "followUps": [
+      {
+        "id": 97,
+        "question": "How much is the stamp duty in Gurgaon?",
+        "response": "Stamp duty varies but is typically around 5-7% of the property value."
+      }
+    ]
   },
   {
     "id": 98,
-    "question": "Can I transfer my lease to someone else?",
-    "response": "Lease transfers are subject to landlord approval. Contact us for assistance with the process.",
-    "followUps": []
-  },
-  {
-    "id": 99,
-    "question": "How do I get alerts for open houses?",
-    "response": "Subscribe to our newsletter or enable alerts in your account to get notified about upcoming open houses.",
-    "followUps": []
+    "question": "Can I get a property inspection before renting?",
+    "response": "Yes, we recommend inspecting the property physically or via a trusted agent.",
+    "followUps": [
+      {
+        "id": 99,
+        "question": "Does ggnRentalDeals arrange inspections?",
+        "response": "We can connect you with professionals for property inspections."
+      }
+    ]
   },
   {
     "id": 100,
-    "question": "Where can I find FAQs?",
-    "response": "Visit our 'FAQs' section for answers to common questions about buying, selling, and renting properties.",
+    "question": "How do I update my profile on ggnRentalDeals?",
+    "response": "You can update your profile details by logging into your account and editing your information.",
     "followUps": [
       {
-        "question": "I can't find my question in the FAQs.",
-        "id": 17
+        "id": 101,
+        "question": "Can I change my contact details?",
+        "response": "Yes, contact details can be updated anytime in your profile settings."
       }
     ]
   }

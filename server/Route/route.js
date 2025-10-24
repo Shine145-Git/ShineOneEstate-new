@@ -15,7 +15,6 @@ const { savePreferences } = require("../controllers/AiUser.controller");
 const {
   createProperty,
   getAllProperties,
-  getPropertyById,
   bulkUploadProperties,
   getMyProperties,
 } = require("../controllers/Rentalproperty.controller.js");
@@ -25,8 +24,9 @@ const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
 const { createPayment, getPaymentsForUser } = require("../controllers/payment.controller");
 const { requestCallback, getCallbackRequests } = require("../controllers/Customersupport.js");
-const { getChatResponse } = require("../controllers/ChatBot.controller.js");
+const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot.controller.js");
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
+const {getRentalPropertyById , getSalePropertyById} = require("../controllers/Viewproperties.controller");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -55,7 +55,8 @@ router.post("/api/properties/bulk-upload", verifyToken, excelUpload.single("file
 router.post("/api/properties/bulk-upload-csv", verifyToken, excelUpload.single("file"), bulkUploadProperties);
 router.get("/api/properties", verifyToken, getAllProperties);
 router.get("/api/properties/my", verifyToken, getMyProperties);
-router.get("/api/properties/:id", getPropertyById);
+router.get("/api/getRentalproperties/:id", getRentalPropertyById);
+router.get("/api/getSaleproperties/:id", getSalePropertyById);
 
 // Search routes
 router.get("/api/search-properties", searchProperties);
@@ -88,9 +89,11 @@ router.post("/api/enquiry", verifyToken, createEnquiry);
 router.get("/api/enquiry", verifyToken, checkAdminEmail, getEnquiries);
 
 // Chat routes
-router.post("/api/chat", getChatResponse);
+router.post("/api/chatbot", getChatResponse);
+router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
 // Sale property routes
+router.get("/api/getSaleproperties/:id", getSalePropertyById);
 router.get("/api/sale-properties", verifyToken, getSaleProperties);
 router.post("/api/sale-properties", verifyToken, upload.array("images", 8), createSaleProperty);
 

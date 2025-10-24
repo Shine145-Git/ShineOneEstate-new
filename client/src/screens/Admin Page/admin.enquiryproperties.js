@@ -42,7 +42,7 @@ const AdminEnquiryProperties = () => {
     }
   };
     const handleLogout = async () => {
-    await fetch("http://localhost:2000/auth/logout", {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
       method: "POST",
       credentials: "include",
     });
@@ -53,7 +53,7 @@ const AdminEnquiryProperties = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:2000/auth/me", {
+        const res = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
           method: "GET",
           credentials: "include",
         });
@@ -378,7 +378,33 @@ const AdminEnquiryProperties = () => {
                       {enquiry.propertyId ? (
                         <button
                           style={styles.viewDetailsButton}
-                          onClick={() => navigate(`/details/${enquiry.propertyId}`)}
+                          onClick={async () => {
+                            try {
+                              // Try fetching from RentalProperty API
+                              let res = await fetch(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${enquiry.propertyId}`, { credentials: 'include' });
+                              let property = null;
+                              if (res.ok) {
+                                property = await res.json();
+                                if (property && property.monthlyRent != null) {
+                                  navigate(`/Rentaldetails/${enquiry.propertyId}`);
+                                  return;
+                                }
+                              }
+                              // If not rental, try SaleProperty API
+                              res = await fetch(`${process.env.REACT_APP_SALE_PROPERTY_API}/${enquiry.propertyId}`, { credentials: 'include' });
+                              if (res.ok) {
+                                property = await res.json();
+                                if (property && property.price != null) {
+                                  navigate(`/Saledetails/${enquiry.propertyId}`);
+                                  return;
+                                }
+                              }
+                              alert("Property type could not be determined.");
+                            } catch (err) {
+                              console.error("Error fetching property details:", err);
+                              alert("Failed to fetch property details");
+                            }
+                          }}
                         >
                           View Details
                         </button>

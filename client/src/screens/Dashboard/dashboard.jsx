@@ -49,6 +49,13 @@ export default function RealEstateDashboard() {
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
   const [propertiesInArea, setPropertiesInArea] = useState([]);
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+useEffect(() => {
+  const handleResize = () => setIsMobile(window.innerWidth < 768);
+  window.addEventListener("resize", handleResize);
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
   useEffect(() => {
     const fetchPropertiesByLocation = async () => {
       if (!userLocation) {
@@ -245,6 +252,11 @@ export default function RealEstateDashboard() {
     { name: "Projects", new: false },
     { name: "Post Property", new: false, free: true },
   ];
+  const mobiletabs = [
+    { name: "Buy", new: false },
+    { name: "Rent", new: false },
+    { name: "New Launch", new: true },
+  ]
 
   return (
     <div
@@ -412,32 +424,61 @@ export default function RealEstateDashboard() {
     }}
   >
     {/* Tabs */}
-    <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-      {tabs.map(tab => (
-        <button
-          key={tab.name}
-          onClick={() => setActiveTab(tab.name)}
-          style={{
-            padding: '16px 24px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            color: activeTab === tab.name ? '#003366' : '#4A6A8A',
-            fontSize: '14px',
-            fontWeight: activeTab === tab.name ? '600' : '500',
-            cursor: 'pointer',
-            borderBottom: activeTab === tab.name ? '3px solid #00A79D' : '3px solid transparent',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            position: 'relative',
-          }}
-        >
-          {tab.name}
-          {tab.new && <span style={{ backgroundColor: '#FF4757', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>NEW</span>}
-          {tab.free && <span style={{ backgroundColor: '#00A79D', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>FREE</span>}
-        </button>
-      ))}
-    </div>
+   {/* Tabs Section */}
+{!isMobile ? (
+  // Desktop tabs
+  <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
+    {tabs.map(tab => (
+      <button
+        key={tab.name}
+        onClick={() => setActiveTab(tab.name)}
+        style={{
+          padding: '16px 24px',
+          border: 'none',
+          backgroundColor: 'transparent',
+          color: activeTab === tab.name ? '#003366' : '#4A6A8A',
+          fontSize: '14px',
+          fontWeight: activeTab === tab.name ? '600' : '500',
+          cursor: 'pointer',
+          borderBottom: activeTab === tab.name ? '3px solid #00A79D' : '3px solid transparent',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          position: 'relative',
+        }}
+      >
+        {tab.name}
+        {tab.new && <span style={{ backgroundColor: '#FF4757', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>NEW</span>}
+        {tab.free && <span style={{ backgroundColor: '#00A79D', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>FREE</span>}
+      </button>
+    ))}
+  </div>
+) : (
+  // Mobile tabs (scrollable horizontal)
+  <div style={{ display: 'flex', overflowX: 'auto', padding: '8px 0', gap: '8px', backgroundColor: '#FFFFFF' }}>
+    {tabs.map(tab => (
+      <button
+        key={tab.name}
+        onClick={() => setActiveTab(tab.name)}
+        style={{
+          padding: '12px 16px',
+          border: 'none',
+          borderRadius: '8px',
+          backgroundColor: activeTab === tab.name ? '#00A79D' : '#F4F7F9',
+          color: activeTab === tab.name ? '#FFFFFF' : '#4A6A8A',
+          fontSize: '14px',
+          fontWeight: '500',
+          cursor: 'pointer',
+          flex: '0 0 auto',
+        }}
+      >
+        {tab.name}
+        {tab.new && <span style={{ backgroundColor: '#FF4757', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700', marginLeft: '4px' }}>NEW</span>}
+        {tab.free && <span style={{ backgroundColor: '#00A79D', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700', marginLeft: '4px' }}>FREE</span>}
+      </button>
+    ))}
+  </div>
+)}
 
     {/* Detailed Search Input */}
     <div style={{ padding: '20px 24px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
