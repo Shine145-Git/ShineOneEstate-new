@@ -57,7 +57,7 @@ export default function PropertyCheckout() {
         }
 
         // If no RentalProperty found, fetch SaleProperty
-        if (!res && process.env.REACT_APP_SALE_PROPERTY_API) {
+        if (!res && process.env.REACT_APP_SALE_PROPERTY_API1) {
           try {
             res = await axios.get(`${process.env.REACT_APP_SALE_PROPERTY_API}/${id}`, { withCredentials: true });
           } catch {

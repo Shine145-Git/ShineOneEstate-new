@@ -12,7 +12,7 @@ export default function SalePropertyPage() {
   useEffect(() => {
     async function fetchProperty() {
       try {
-        const response = await fetch(`${process.env.REACT_APP_SALE_PROPERTY_API}/${id}`, {
+        const response = await fetch(`${process.env.REACT_APP_SALE_PROPERTY_API1}/${id}`, {
           credentials: 'include',
         });
         if (!response.ok) throw new Error('Property not found');
