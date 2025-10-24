@@ -58,7 +58,7 @@ router.post("/api/properties/bulk-upload-csv", verifyToken, excelUpload.single("
 router.get("/api/properties", verifyToken, getAllProperties);
 router.get("/api/properties/my", verifyToken, getMyProperties);
 router.get("/api/getRentalproperties/:id", getRentalPropertyById);
-router.get("/api/getSaleproperties/:id", getSalePropertyById);
+
 
 // Search routes
 router.get("/api/search-properties", searchProperties);
@@ -74,6 +74,7 @@ router.get("/api/admin/pending-payments", verifyToken, checkAdminEmail, getPendi
 router.post("/api/admin/update-payment-status", verifyToken, checkAdminEmail, updatePaymentStatus);
 router.get("/api/admin/approved-payments", verifyToken, checkAdminEmail, getApprovedPayments);
 router.get("/api/get-callback-requests", verifyToken, checkAdminEmail, getCallbackRequests);
+
 
 // AI routes
 router.post("/api/predict-price", verifyToken, predictPrice);
