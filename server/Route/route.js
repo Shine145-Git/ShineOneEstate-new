@@ -32,7 +32,7 @@ const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
-  const adminEmails = ["tanushchawla16@gmail.com", "superuser@example.com"];
+  const adminEmails = ["tanushchawla16@gmail.com", "bharatchawla2002@yahoo.com"];
   if (!req.user || !adminEmails.includes(req.user.email)) {
     return res.status(403).json({ message: "Access denied: Admins only" });
   }

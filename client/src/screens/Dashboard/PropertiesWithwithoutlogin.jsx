@@ -275,9 +275,14 @@ const PropertyDashboard = ({ properties = [], user, title }) => {
               >
                 <div style={imageContainerStyle}>
                   <img
-                    src={property.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'}
+                    src={property.images?.[0] ? property.images[0] : '/default-property.jpg'}
                     alt={property.type}
                     style={imageStyle}
+                    onError={(e) => {
+                      if (e.target.src !== window.location.origin + '/default-property.jpg') {
+                        e.target.src = '/default-property.jpg';
+                      }
+                    }}
                   />
                   <div style={imageCountStyle}>
                     <Image size={14} /> {property.images?.length || 0}

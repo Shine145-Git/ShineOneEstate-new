@@ -15,7 +15,7 @@ const getMyProperties = async (req, res) => {
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized: User not logged in" });
     }
-    const myProperties = await Property.find({ owner: req.user._id });
+    const myProperties = await RentalProperty.find({ owner: req.user._id });
     res.status(200).json(myProperties);
   } catch (error) {
     res.status(500).json({

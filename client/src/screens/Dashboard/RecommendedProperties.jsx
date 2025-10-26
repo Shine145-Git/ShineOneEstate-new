@@ -275,9 +275,10 @@ const RecommendedProperties = ({ properties = [], user, title }) => {
               >
                 <div style={imageContainerStyle}>
                   <img
-                    src={property.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'}
+                    src={property.images?.[0] || '/default-property.jpg'}
                     alt={property.type}
                     style={imageStyle}
+                    onError={(e) => { e.target.src = '/default-property.jpg'; }}
                   />
                   <div style={imageCountStyle}>
                     <Image size={14} /> {property.images?.length || 0}

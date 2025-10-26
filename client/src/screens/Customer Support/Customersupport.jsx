@@ -169,7 +169,7 @@ export default function CustomerSupportPage() {
                 display: 'block',
                 marginBottom: '10px'
               }}>
-                1-800-555-1234
+                9310994032
               </a>
               <p style={{ color: '#4A6A8A', fontSize: '14px', margin: 0 }}>
                 Toll-free • Available 24/7
@@ -212,7 +212,7 @@ export default function CustomerSupportPage() {
                   fontSize: '14px',
                   textDecoration: 'none'
                 }}>
-                  support@company.com
+                  ggnrentaldeals@gmail.com
                 </a>
               </div>
             </div>

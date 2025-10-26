@@ -111,7 +111,19 @@ export default function PropertyCards() {
                 cursor: 'pointer',
                 position: 'relative'
               }}
-              onClick={() => navigate(`/details/${property._id}`)}
+              onClick={async () => {
+                try {
+                  const res = await axios.get(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${property._id}`, { withCredentials: true });
+                  if (res.status === 200) {
+                    navigate(`/Rentaldetails/${property._id}`);
+                  } else {
+                    navigate(`/Saledetails/${property._id}`);
+                  }
+                } catch (err) {
+                  // If rental property not found, go to sale property
+                  navigate(`/Saledetails/${property._id}`);
+                }
+              }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
                 e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 51, 102, 0.15)';
@@ -121,27 +133,18 @@ export default function PropertyCards() {
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 51, 102, 0.1)';
               }}
             >
-              {property.images && property.images.length > 0 ? (
-                <img
-                  src={property.images[0]}
-                  alt={property.name}
-                  style={{
-                    width: '100%',
-                    height: '160px',
-                    borderRadius: '8px',
-                    objectFit: 'cover',
-                    marginBottom: '16px'
-                  }}
-                />
-              ) : (
-                <div style={{
+              <img
+                src={property.images && property.images.length > 0 ? property.images[0] : '/default-property.jpg'}
+                alt={property.name || 'Property Image'}
+                onError={(e) => { e.target.src = '/default-property.jpg'; }}
+                style={{
                   width: '100%',
                   height: '160px',
                   borderRadius: '8px',
-                  backgroundColor: '#e0e0e0',
+                  objectFit: 'cover',
                   marginBottom: '16px'
-                }} />
-              )}
+                }}
+              />
               {property.status === 'approved' && (
                 <div style={{
                   position: 'absolute',
