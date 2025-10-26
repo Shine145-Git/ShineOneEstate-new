@@ -216,8 +216,13 @@ const PropertyDashboard = ({ properties = [], user, title }) => {
           onMouseLeave={(e) => {
             e.target.style.color = '#00A79D';
           }}
-          // The login page URL is now configurable via .env
-          onClick={() => { navigate(`${process.env.REACT_APP_LOGIN_PAGE}`); }}
+          onClick={() => {
+            if (user) {
+              navigate('/seeAllproperties', { state: { recommendedProperties: properties } });
+            } else {
+              navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
+            }
+          }}
         >
           See all Properties <ChevronRight size={20} />
         </a>

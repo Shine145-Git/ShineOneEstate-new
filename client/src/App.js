@@ -18,6 +18,7 @@ import CustomerSupportPage from "./screens/Customer Support/Customersupport";
 import CallbackDetailsUI from "./screens/Admin Page/admin.customersupport";
 import Chatbot from "./screens/Dashboard/ChatBot";
 import AdminEnquiryProperties from "./screens/Admin Page/admin.enquiryproperties";
+import SeeAllProperties from "./screens/Dashboard/SeeAllProperties";
 
 function App() {
   return (
@@ -47,6 +48,8 @@ function App() {
         <Route path="/admin/enquiries" element={<AdminEnquiryProperties />} />
         <Route path="/admin/callback" element={<CallbackDetailsUI />} />
         <Route path="/chatbot" element={<Chatbot />} />
+        <Route path="/seeAllproperties" element={<SeeAllProperties />} />
+        
 
       </Routes>
     </Router>

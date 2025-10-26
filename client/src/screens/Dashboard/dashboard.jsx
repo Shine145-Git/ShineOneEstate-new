@@ -57,11 +57,10 @@ useEffect(() => {
   return () => window.removeEventListener("resize", handleResize);
 }, []);
   useEffect(() => {
-    const fetchPropertiesByLocation = async () => {
-      if (!userLocation) {
-        // console.log("userLocation not ready yet");
-        return;
-      }
+    if (!userLocation) return;
+
+    // Debounce API call to avoid duplicate consecutive searches
+    const debounceTimeout = setTimeout(async () => {
       try {
         const fields = [
           userLocation.area,
@@ -72,39 +71,29 @@ useEffect(() => {
           userLocation.state,
         ].filter(Boolean);
 
-        // console.log("Raw userLocation object:", userLocation);
-        // console.log("Filtered fields to send to backend:", fields);
-
         const resProps = await fetch(
           `${process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API}`,
           {
             method: "POST",
-            credentials: "include", // ✅ valid
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ queryFields: fields }),
           }
         );
 
-        // console.log("Raw response object from backend:", resProps);
-
         const text = await resProps.text();
-        // console.log("Backend response text:", text);
-
         if (resProps.ok) {
           const propsData = JSON.parse(text);
-          // console.log("Properties fetched by location:", propsData);
           setPropertiesInArea(propsData);
         } else {
-          // console.log("Failed to fetch properties, status:", resProps.status);
           setPropertiesInArea([]);
         }
       } catch (err) {
-        // console.error("Error fetching properties by location:", err);
         setPropertiesInArea([]);
       }
-    };
+    }, 300); // 300ms debounce
 
-    fetchPropertiesByLocation();
+    return () => clearTimeout(debounceTimeout);
   }, [userLocation]);
 
   useEffect(() => {
@@ -147,7 +136,7 @@ useEffect(() => {
           const data = await res.json();
           // Take the last 5 searches
           // console.log("Recent searches:", data.history.slice(0, 5));
-          setRecentSearches(data.history.slice(0, 5));
+          setRecentSearches(data.history.slice(0, 10));
         }
       } catch (err) {
         console.error("Error fetching search history:", err);
@@ -162,7 +151,7 @@ useEffect(() => {
       try {
         if (!user) {
           const res = await fetch(
-            `${process.env.REACT_APP_RENT_PROPERTY_API}`,
+            `${process.env.REACT_APP_ALL_RENT_PROPERTY_FETCH_API}`,
             {
               method: "GET",
               credentials: "include",

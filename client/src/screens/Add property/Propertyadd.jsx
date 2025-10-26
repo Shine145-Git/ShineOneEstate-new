@@ -187,8 +187,8 @@ export default function PropertyListingForm() {
       });
       const url =
         formData.purpose === "Sale"
-          ? `${process.env.REACT_APP_SALE_PROPERTY_API}`
-          : `${process.env.REACT_APP_RENT_PROPERTY_API}`;
+          ? `${process.env.REACT_APP_ADD_SALE_PROPERTY_API}`
+          : `${process.env.REACT_APP_ADD_RENT_PROPERTY_API}`;
       const res = await fetch(url, {
         method: "POST",
         body: form,

@@ -1,3 +1,4 @@
+// Properties in your area component
 import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, Image, MapPin, Home, Maximize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -215,6 +216,13 @@ const RecommendedProperties = ({ properties = [], user, title }) => {
           }}
           onMouseLeave={(e) => {
             e.target.style.color = '#00A79D';
+          }}
+          onClick={() => {
+            if (user) {
+              navigate('/seeAllproperties', { state: { recommendedProperties: properties } });
+            } else {
+              navigate('/login');
+            }
           }}
         >
           See all Properties <ChevronRight size={20} />

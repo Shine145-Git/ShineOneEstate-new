@@ -14,7 +14,7 @@ const { logoutUser } = require("../controllers/logout.controller");
 
 
 const {
-  createProperty,
+  createRentalProperty,
   getAllProperties,
   bulkUploadProperties,
   getMyProperties,
@@ -52,7 +52,7 @@ router.get("/api/user/details", verifyToken, getUserDetails);
 router.get("/api/user/dashboard", verifyToken, getUserDashboard);
 
 // Property routes
-router.post("/api/properties", verifyToken, upload.array("images", 8), createProperty);
+
 router.post("/api/properties/bulk-upload", verifyToken, excelUpload.single("file"), bulkUploadProperties);
 router.post("/api/properties/bulk-upload-csv", verifyToken, excelUpload.single("file"), bulkUploadProperties);
 router.get("/api/properties", verifyToken, getAllProperties);
@@ -61,7 +61,7 @@ router.get("/api/getRentalproperties/:id", getRentalPropertyById);
 
 
 // Search routes
-router.get("/api/search-properties", searchProperties);
+router.get("/api/search-properties",verifyToken, searchProperties);
 router.get("/api/search-history", verifyToken, getSearchHistory);
 router.post("/api/search-properties-on-location", verifyToken, searchPropertiesonLocation);
 
@@ -97,8 +97,9 @@ router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
 // Sale property routes
 router.get("/api/getSaleproperties/:id", getSalePropertyById);
-router.get("/api/sale-properties", verifyToken, getSaleProperties);
-router.post("/api/sale-properties", verifyToken, upload.array("images", 8), createSaleProperty);
+router.post("/api/addsaleproperties", verifyToken, upload.array("images", 8), createSaleProperty);
+router.post("/api/addrentproperties", verifyToken, upload.array("images", 8), createRentalProperty);
+
 
 // New AI response routes
 router.post("/api/ai/save", verifyToken, saveAiResponses);

@@ -13,72 +13,118 @@ exports.searchProperties = async (req, res) => {
     }
 
     if (userId) {
-      await SearchHistory.create({ user: userId, query });
+      const lastEntry = await SearchHistory.findOne({ user: userId }).sort({ createdAt: -1 });
+      if (!lastEntry || lastEntry.query !== query) {
+        await SearchHistory.create({ user: userId, query });
+      }
     }
-
-    const parts = query
-      .split(/[, ]+/)
-      .map((p) => p.trim())
-      .filter(Boolean);
-
-    const numbers = parts.filter((p) => !isNaN(p));
-    const texts = parts.filter((p) => isNaN(p));
-    const regexArray = texts.map((word) => new RegExp(word, "i"));
+    console.log("Search query:", query, "Type:", type);
 
     let results = [];
 
-    // Helper: search RentalProperty
-    const searchRental = async () => {
-      const rentalTextFields = [
-        "address", "propertyType", "purpose", "layoutFeatures", "appliances",
-        "conditionAge", "renovations", "parking", "outdoorSpace",
-        "neighborhoodVibe", "transportation", "localAmenities",
-        "communityFeatures", "petPolicy", "smokingPolicy", "maintenance", "insurance"
-      ];
-      const orText = regexArray.flatMap(r =>
-        rentalTextFields.map(field => ({ [field]: r }))
-      );
-      const orNumbers = numbers.flatMap(num => [
-        { bedrooms: Number(num) },
-        { bathrooms: Number(num) },
-        { totalArea: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
-        { monthlyRent: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
-      ]);
-      return await RentalProperty.find({ $or: [...orText, ...orNumbers] }).populate("owner", "name email");
-    };
+    // First, try searching full query as regex on main text fields
+    const fullQueryRegex = new RegExp(query, "i");
 
-    // Helper: search SaleProperty
-    const searchSale = async () => {
-      const saleTextFields = ["title", "description", "location"];
-      const orText = regexArray.flatMap(r =>
-        saleTextFields.map(field => ({ [field]: r }))
-      );
-      const orNumbers = numbers.flatMap(num => [
-        { bedrooms: Number(num) },
-        { bathrooms: Number(num) },
-        { area: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
-        { price: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
-      ]);
+    let fullQueryRental = [];
+    let fullQuerySale = [];
 
-      try {
-        return await SaleProperty.find({ $or: [...orText, ...orNumbers] })
-          .populate({ path: "ownerId", select: "name email", strictPopulate: false });
-      } catch (err) {
-        console.error("SaleProperty search error:", err);
-        return [];
-      }
-    };
+    try {
+      fullQueryRental = await RentalProperty.find({
+        $or: [
+          { address: fullQueryRegex },
+          { localAmenities: fullQueryRegex },
+          { propertyType: fullQueryRegex },
+        ],
+      }).populate("owner", "name email");
+    } catch (err) {
+      console.error("RentalProperty full query search error:", err);
+    }
 
+    try {
+      fullQuerySale = await SaleProperty.find({
+        $or: [
+          { title: fullQueryRegex },
+          { description: fullQueryRegex },
+          { location: fullQueryRegex },
+        ],
+      }).populate({ path: "ownerId", select: "name email", strictPopulate: false });
+    } catch (err) {
+      console.error("SaleProperty full query search error:", err);
+    }
+
+    results = [];
     if (type === "rent") {
-      results = await searchRental();
+      results = fullQueryRental;
     } else if (type === "sale") {
-      results = await searchSale();
+      results = fullQuerySale;
     } else {
-      const [rentalResults, saleResults] = await Promise.all([
-        searchRental(),
-        searchSale(),
-      ]);
-      results = [...rentalResults, ...saleResults];
+      results = [...fullQueryRental, ...fullQuerySale];
+    }
+
+    // Fallback to old split-text/number search if no results
+    if (!results || results.length === 0) {
+      const parts = query
+        .split(/[, ]+/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      const numbers = parts.filter((p) => !isNaN(p));
+      const texts = parts.filter((p) => isNaN(p));
+      const regexArray = texts.map((word) => new RegExp(word, "i"));
+
+      // Helper: search RentalProperty
+      const searchRental = async () => {
+        const rentalTextFields = [
+          "address", "propertyType", "purpose", "layoutFeatures", "appliances",
+          "conditionAge", "renovations", "parking", "outdoorSpace",
+          "neighborhoodVibe", "transportation", "localAmenities",
+          "communityFeatures", "petPolicy", "smokingPolicy", "maintenance", "insurance"
+        ];
+        const orText = regexArray.flatMap(r =>
+          rentalTextFields.map(field => ({ [field]: r }))
+        );
+        const orNumbers = numbers.flatMap(num => [
+          { bedrooms: Number(num) },
+          { bathrooms: Number(num) },
+          { totalArea: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
+          { monthlyRent: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
+        ]);
+        return await RentalProperty.find({ $or: [...orText, ...orNumbers] }).populate("owner", "name email");
+      };
+
+      // Helper: search SaleProperty
+      const searchSale = async () => {
+        const saleTextFields = ["title", "description", "location"];
+        const orText = regexArray.flatMap(r =>
+          saleTextFields.map(field => ({ [field]: r }))
+        );
+        const orNumbers = numbers.flatMap(num => [
+          { bedrooms: Number(num) },
+          { bathrooms: Number(num) },
+          { area: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
+          { price: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
+        ]);
+
+        try {
+          return await SaleProperty.find({ $or: [...orText, ...orNumbers] })
+            .populate({ path: "ownerId", select: "name email", strictPopulate: false });
+        } catch (err) {
+          console.error("SaleProperty search error:", err);
+          return [];
+        }
+      };
+
+      if (type === "rent") {
+        results = await searchRental();
+      } else if (type === "sale") {
+        results = await searchSale();
+      } else {
+        const [rentalResults, saleResults] = await Promise.all([
+          searchRental(),
+          searchSale(),
+        ]);
+        results = [...rentalResults, ...saleResults];
+      }
     }
 
     // Always return array, even if empty
@@ -119,12 +165,16 @@ exports.searchPropertiesonLocation = async (req, res) => {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // Save user search query if logged in
+    // Save user search query if logged in, but avoid duplicate consecutive entries
     if (userId) {
-      await SearchHistory.create({
-        user: userId,
-        query: queryFields.join(", "),
-      });
+      const lastEntry = await SearchHistory.findOne({ user: userId }).sort({ createdAt: -1 });
+      const currentQuery = queryFields.join(", ");
+      if (!lastEntry || lastEntry.query !== currentQuery) {
+        await SearchHistory.create({
+          user: userId,
+          query: currentQuery,
+        });
+      }
     }
 
     // Build OR conditions for address, localAmenities, and propertyType
@@ -141,6 +191,7 @@ exports.searchPropertiesonLocation = async (req, res) => {
       "owner",
       "name email"
     );
+    // console.log("Location-based search query:", queryFields);
 
     // Return results (empty array if none found)
     res.status(200).json(results || []);
@@ -165,9 +216,9 @@ exports.getUserDashboard = async (req, res) => {
       // Take latest search query
       const lastQuery = history[0].query;
 
-      // Split query into smaller searchable parts
+      // Split query into smaller searchable parts by spaces instead of commas
       const queryParts = lastQuery
-        .split(",")
+        .split(/\s+/)
         .map((part) => part.trim())
         .filter(Boolean);
 
@@ -185,6 +236,9 @@ exports.getUserDashboard = async (req, res) => {
         .limit(10)
         .populate("owner", "name email");
     }
+
+    // console.log("History:", history);
+    console.log("Recommended:", recommended);
 
     res.status(200).json({
       recentSearches: history,

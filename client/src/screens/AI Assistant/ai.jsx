@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
@@ -25,6 +24,8 @@ export default function AIAssistant() {
   const [micListening, setMicListening] = useState(false);
   // Show the new "Start Consultation" button at page load
   const [consultationStarted, setConsultationStarted] = useState(false);
+  // Send type state (email, whatsapp, call)
+  const [sendType, setSendType] = useState("");
   const [micPromptVisible, setMicPromptVisible] = useState(false);
   const micButtonRef = useRef(null);
   const [micAutoFocus, setMicAutoFocus] = useState(false);
@@ -37,19 +38,69 @@ export default function AIAssistant() {
   const recognitionRef = useRef(null);
   const questionStartTimeRef = useRef(null);
 
-  // Questions timeline as per requirements
+  // Questions timeline as per requirements, with final sendType question
   const questionsTimeline = [
-    { start: 12, end: 19, text: "First, could you please tell me your budget range? This helps me filter properties that fit your financial plan." },
-    { start: 20, end: 25, text: "Are you looking to rent a property or buy one? This will help me tailor options for you." },
-    { start: 26, end: 31, text: "Will this property be for personal use or are you planning to share it with roommates/family?" },
-    { start: 32, end: 41, text: "Which location or area are you interested in? You can specify sectors, neighborhoods, or even nearby landmarks." },
-    { start: 42, end: 51, text: "What type of property are you looking for? Options include apartment, villa, independent floor, studio, or commercial space." },
-    { start: 52, end: 57, text: "Do you have a preference for the size of the property (in sq ft or number of bedrooms)?" },
-    { start: 58, end: 66, text: "Which amenities are important to you? For example: parking, gym, swimming pool, security, pet-friendly, etc." },
-    { start: 67, end: 71, text: "Do you have any preference for the floor level or the orientation/view of the property?" },
-    { start: 72, end: 78, text: "When are you looking to move in? Do you need something immediate or flexible over the next few months?" },
-    { start: 79, end: 86, text: "Do you require home loan or financing assistance? We can guide you with verified financial partners if needed." },
-    { start: 87, end: 96, text: "Any other preferences or requirements? For example, eco-friendly properties, furnished options, gated communities, or school proximity?" }
+    {
+      start: 12,
+      end: 19,
+      text: "First, could you please tell me your budget range? This helps me filter properties that fit your financial plan.",
+    },
+    {
+      start: 20,
+      end: 25,
+      text: "Are you looking to rent a property or buy one? This will help me tailor options for you.",
+    },
+    {
+      start: 26,
+      end: 31,
+      text: "Will this property be for personal use or are you planning to share it with roommates/family?",
+    },
+    {
+      start: 32,
+      end: 41,
+      text: "Which location or area are you interested in? You can specify sectors, neighborhoods, or even nearby landmarks.",
+    },
+    {
+      start: 42,
+      end: 51,
+      text: "What type of property are you looking for? Options include apartment, villa, independent floor, studio, or commercial space.",
+    },
+    {
+      start: 52,
+      end: 57,
+      text: "Do you have a preference for the size of the property (in sq ft or number of bedrooms)?",
+    },
+    {
+      start: 58,
+      end: 66,
+      text: "Which amenities are important to you? For example: parking, gym, swimming pool, security, pet-friendly, etc.",
+    },
+    {
+      start: 67,
+      end: 71,
+      text: "Do you have any preference for the floor level or the orientation/view of the property?",
+    },
+    {
+      start: 72,
+      end: 78,
+      text: "When are you looking to move in? Do you need something immediate or flexible over the next few months?",
+    },
+    {
+      start: 79,
+      end: 86,
+      text: "Do you require home loan or financing assistance? We can guide you with verified financial partners if needed.",
+    },
+    {
+      start: 87,
+      end: 96,
+      text: "Any other preferences or requirements? For example, eco-friendly properties, furnished options, gated communities, or school proximity?",
+    },
+    // Final sendType question (no time, will be shown after last question is answered)
+    {
+      start: null,
+      end: null,
+      text: "How would you like to receive your property matches and consultation summary? Please reply with 'email', 'whatsapp', or 'call'.",
+    },
   ];
 
   // --- Microphone and Speech Recognition ---
@@ -126,45 +177,120 @@ export default function AIAssistant() {
     if (text.trim() !== "" && aiQuestion && currentQuestionIdx >= 0) {
       const capturedAnswer = text.trim();
       const questionText = aiQuestion;
-      setInputs(prev => [...prev, { question: questionText, answer: capturedAnswer }]);
-      setAiQuestion("");
-      setShow(false);
-      // Resume video
-      if (videoRef.current && videoRef.current.paused) videoRef.current.play();
-      // Clear the 20s timeout
+
+      // If final question (sendType)
+      if (currentQuestionIdx === questionsTimeline.length - 1) {
+  setSendType(capturedAnswer.toLowerCase());
+  setInputs((prev) => [
+    ...prev,
+    { question: questionText, answer: capturedAnswer },
+  ]);
+  if (questionTimeout) {
+    clearTimeout(questionTimeout);
+    setQuestionTimeout(null);
+  }
+  setAiQuestion("");
+  setShow(false);
+  setInput(""); // if text input
+  return; // Don't send yet, wait until endListener
+}
+
+      setInputs((prev) => [
+        ...prev,
+        { question: questionText, answer: capturedAnswer },
+      ]);
+      // Clear question timeout if any
       if (questionTimeout) {
         clearTimeout(questionTimeout);
         setQuestionTimeout(null);
       }
-      // Send single Q/A to backend
-      if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
-        try {
-          await fetch(process.env.REACT_APP_AI_SAVE_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userEmail: user.email,
-              sendType: "email",
-              responses: [{ question: questionText, answer: capturedAnswer }]
-            }),
-          });
-        } catch (err) {
-          // Silently handle error
-          console.error("Failed to save AI response:", err);
-        }
-      }
+      setAiQuestion("");
+      setShow(false);
+      // Resume video
+      if (videoRef.current && videoRef.current.paused) videoRef.current.play();
+      // No longer send to backend here; will send all at once at end
     }
   };
+const finalizeConsultation = async () => {
+  if (!inputsRef.current || inputsRef.current.length === 0) return;
+
+  const keyQuestions = [
+    questionsTimeline[0].text,
+    questionsTimeline[1].text,
+    questionsTimeline[3].text,
+  ];
+
+  const answersToQuestions = inputsRef.current
+    .filter((item) => keyQuestions.includes(item.question))
+    .map((item) => item.answer)
+    .filter(Boolean)
+    .join(" ");
+
+  console.log("Final search query:", answersToQuestions);
+
+  // --- Save all inputs to backend ---
+  try {
+    if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
+      await fetch(process.env.REACT_APP_AI_SAVE_API, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userEmail: user.email,
+          sendType: sendType || "email", // fallback to email
+          responses: inputsRef.current,
+        }),
+      });
+    }
+  } catch (err) {
+    console.error("Error saving AI responses:", err);
+  }
+
+  setInputs([]); // clear local state if desired
+
+  // Navigate to search
+  if (answersToQuestions.trim()) {
+    navigate(`/search/${encodeURIComponent(answersToQuestions)}`);
+  }
+};
 
   // Handle text input (manual)
   const handleInput = async () => {
     if (input.trim() !== "" && aiQuestion && currentQuestionIdx >= 0) {
       const capturedAnswer = input.trim();
       const questionText = aiQuestion;
+
+      // If final question (sendType)
+     if (currentQuestionIdx === questionsTimeline.length - 1) {
+  setSendType(capturedAnswer.toLowerCase());
+  setInputs((prev) => [
+    ...prev,
+    { question: questionText, answer: capturedAnswer },
+  ]);
+
+  if (questionTimeout) {
+    clearTimeout(questionTimeout);
+    setQuestionTimeout(null);
+  }
+
+  setAiQuestion("");
+  setShow(false);
+  setInput("");
+
+  // Immediately navigate to search
+  finalizeConsultation();
+  return;
+}
+
       setInputs((prev) => [
         ...prev,
         { question: questionText, answer: capturedAnswer },
       ]);
+      // Clear question timeout if any
+      if (questionTimeout) {
+        clearTimeout(questionTimeout);
+        setQuestionTimeout(null);
+      }
       setInput("");
       setAiQuestion("");
       setShow(false);
@@ -172,38 +298,23 @@ export default function AIAssistant() {
       if (videoRef.current && videoRef.current.paused) {
         videoRef.current.play();
       }
-      // Clear question timeout if any
-      if (questionTimeout) {
-        clearTimeout(questionTimeout);
-        setQuestionTimeout(null);
-      }
-      // Send single Q/A to backend
-      if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
-        try {
-          await fetch(process.env.REACT_APP_AI_SAVE_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userEmail: user.email,
-              sendType: "email",
-              responses: [{ question: questionText, answer: capturedAnswer }]
-            }),
-          });
-        } catch (err) {
-          // Silently handle error
-          console.error("Failed to save AI response:", err);
-        }
-      }
+      // No longer send to backend here; will send all at once at end
     }
   };
 
   // --- Video & Question Flow ---
   // Main effect: video time monitoring, triggers
+  // Ref to always get latest inputs in handlers (avoid stale closure)
+  const inputsRef = useRef(inputs);
+  useEffect(() => {
+    inputsRef.current = inputs;
+  }, [inputs]);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    // Handler for video time update
+    // Handler for video time update (fixed: uses ref for inputs, ensures only one timeout)
     function handleTimeUpdate() {
       const t = v.currentTime;
       // Find if a question is being asked (for overlay only)
@@ -218,47 +329,30 @@ export default function AIAssistant() {
           setAiQuestion(questionsTimeline[idx].text);
           setIsTyping(false);
           setShow(true);
-          setAskedQuestions(prev => ({ ...prev, [idx]: true }));
+          setAskedQuestions((prev) => ({ ...prev, [idx]: true }));
         }, 600);
       }
 
       // Detect when question ends (video crosses a question end time)
-      // and only once per question
-      for (let i = 0; i < questionsTimeline.length; i++) {
+      // Only mark as not answered if not already answered (using latest inputs)
+      for (let i = 0; i < questionsTimeline.length - 1; i++) {
         const q = questionsTimeline[i];
-        // If just crossed the end boundary (with some tolerance)
         if (
           t >= q.end &&
-          !inputs.find((item) => item.question === q.text)
+          !inputsRef.current.find((item) => item.question === q.text)
         ) {
           // Pause video
           v.pause();
-          // Set up 20s timeout for answer
+          // Only one active timeout at a time
           if (questionTimeout) clearTimeout(questionTimeout);
           const timeout = setTimeout(async () => {
             // On timeout, submit "(No answer given)" if still not answered
-            if (!inputs.find((item) => item.question === q.text)) {
+            if (!inputsRef.current.find((item) => item.question === q.text)) {
               setInputs((prev) => [
                 ...prev,
                 { question: q.text, answer: "(No answer given)" },
               ]);
-              // Immediately POST single Q/A to backend
-              if (user && user.email && process.env.REACT_APP_AI_SAVE_API) {
-                try {
-                  await fetch(process.env.REACT_APP_AI_SAVE_API, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      userEmail: user.email,
-                      sendType: "email",
-                      responses: [{ question: q.text, answer: "(No answer given)" }]
-                    }),
-                  });
-                } catch (err) {
-                  // Silently handle error
-                  console.error("Failed to save AI response:", err);
-                }
-              }
+              // No longer send to backend here; will send all at once at end
             }
             setAiQuestion("");
             setShow(false);
@@ -271,39 +365,29 @@ export default function AIAssistant() {
     }
 
     v.addEventListener("timeupdate", handleTimeUpdate);
+   
+    // If video is ended, save all responses and sendType in one POST
+const endListener = async () => {
+  try {
+    const sendTypeQuestion = questionsTimeline[questionsTimeline.length - 1];
+    const sendTypeAnswered = inputs.find(
+      (item) => item.question === sendTypeQuestion.text
+    );
 
-    // If video is ended, save preferences and redirect
-    const endListener = async () => {
-      try {
-        // Save preferences
-        const userRes = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const userData = await userRes.json();
-        const payload = {
-          username: userData.username || userData.name || "Guest",
-          email: userData.email || "",
-          preferences: inputs,
-        };
-        await fetch(`${process.env.REACT_APP_SAVE_PREFERENCES_API}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        // Build query
-        const searchQuery = inputs
-          .map((item) => (typeof item === "string" ? item : (item && item.answer) || ""))
-          .filter(Boolean)
-          .join(" ");
-        setInputs([]);
-        if (searchQuery.trim()) {
-          navigate(`/search/${encodeURIComponent(searchQuery)}`);
-        }
-      } catch (error) {
-        console.error("Error saving preferences or redirecting:", error);
-      }
-    };
+    // If final sendType question not answered yet
+    if (!sendTypeAnswered) {
+      setAiQuestion(sendTypeQuestion.text);
+      setShow(true);
+      setCurrentQuestionIdx(questionsTimeline.length - 1);
+      return; // Wait for user input before saving
+    }
+
+  
+
+  } catch (error) {
+    console.error("Error saving preferences or redirecting:", error);
+  }
+};
     v.addEventListener("ended", endListener);
 
     // Cleanup
@@ -396,7 +480,11 @@ export default function AIAssistant() {
           />
           {/* AI Status Badge */}
           <div className="status-badge">
-            <div className={`status-indicator ${show ? "active" : ""} ${micActive ? "mic-on" : ""}`} />
+            <div
+              className={`status-indicator ${show ? "active" : ""} ${
+                micActive ? "mic-on" : ""
+              }`}
+            />
             <span className="status-text">
               {show
                 ? micActive
@@ -404,7 +492,12 @@ export default function AIAssistant() {
                   : "AI Assistant Active"
                 : "Standby Mode"}
             </span>
-            {(show || micActive) && <Mic size={14} className={`mic-icon ${micActive ? "mic-on" : ""}`} />}
+            {(show || micActive) && (
+              <Mic
+                size={14}
+                className={`mic-icon ${micActive ? "mic-on" : ""}`}
+              />
+            )}
             {show && <Sparkles size={14} className="sparkle-icon" />}
           </div>
           {/* Video Overlay Info */}
@@ -495,8 +588,14 @@ export default function AIAssistant() {
                       </div>
                       <div className="message-bubble ai-bubble">
                         <div className="message-header">
-                          <span className="message-sender">ggnRentalDeals AI</span>
-                          <span className="message-time">Question {idx + 1}</span>
+                          <span className="message-sender">
+                            ggnRentalDeals AI
+                          </span>
+                          <span className="message-time">
+                            {idx < questionsTimeline.length - 1
+                              ? `Question ${idx + 1}`
+                              : "Preference"}
+                          </span>
                         </div>
                         <p className="message-text">{item.question}</p>
                       </div>
@@ -586,9 +685,15 @@ export default function AIAssistant() {
                         if (!micActive) startMic();
                         else stopMic();
                       }}
-                      className={`send-button mic-btn ${micActive ? "active" : ""}`}
+                      className={`send-button mic-btn ${
+                        micActive ? "active" : ""
+                      }`}
                       title={micActive ? "Stop mic" : "Start mic"}
-                      style={{ marginLeft: 8, background: micActive ? "#06b6d4" : "#e2e8f0", color: micActive ? "#fff" : "#64748b" }}
+                      style={{
+                        marginLeft: 8,
+                        background: micActive ? "#06b6d4" : "#e2e8f0",
+                        color: micActive ? "#fff" : "#64748b",
+                      }}
                     >
                       <Mic size={20} className={micActive ? "mic-on" : ""} />
                     </button>
@@ -1350,4 +1455,4 @@ export default function AIAssistant() {
     font-size: 13px;
     text-align: center;
   }
-`}</style>
+`}</style>;

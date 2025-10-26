@@ -2,6 +2,8 @@
 // @route GET /api/properties/my
 // @access Private (owner only)
 const SearchHistory = require("../models/SearchHistory.model.js");
+const RentalProperty = require("../models/Rentalproperty.model.js");
+
 
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
@@ -34,7 +36,7 @@ cloudinary.config({
 // @desc Create a new property
 // @route POST /api/properties
 // @access Private (owner only)
-const createProperty = async (req, res) => {
+const createRentalProperty = async (req, res) => {
   try {
     const ownerId = req.user?._id || req.user?.id;
     if (!ownerId) {
@@ -55,8 +57,8 @@ const createProperty = async (req, res) => {
     }
 
     const propertyData = { ...req.body, owner: ownerId, images };
-    const property = new Property(propertyData);
-    const savedProperty = await property.save();
+    const Rentalproperty = new RentalProperty(propertyData);
+    const savedProperty = await Rentalproperty.save();
 
     res.status(201).json({
       message: "Property created successfully",
@@ -101,7 +103,7 @@ const bulkUploadProperties = async (req, res) => {
       owner: ownerId,
     }));
 
-    const insertedProperties = await Property.insertMany(propertiesToInsert);
+    const insertedProperties = await RentalProperty.insertMany(propertiesToInsert);
 
     res.status(201).json({
       message: "Bulk properties uploaded successfully",
@@ -121,7 +123,7 @@ const bulkUploadProperties = async (req, res) => {
 // @access Public
 const getAllProperties = async (req, res) => {
   try {
-    const properties = await Property.find().populate("owner", "name email");
+    const properties = await RentalProperty.find().populate("owner", "name email");
     res.status(200).json(properties);
   } catch (error) {
     res.status(500).json({
@@ -142,7 +144,7 @@ const getAllProperties = async (req, res) => {
 
 
 module.exports = {
-  createProperty,
+  createRentalProperty,
   getAllProperties,
   bulkUploadProperties,
   getMyProperties,

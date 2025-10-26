@@ -1,5 +1,3 @@
-
-
 const AiModel = require('../models/AiAssistant.model.js');
 const User = require('../models/user.model.js');
 
@@ -12,7 +10,22 @@ const saveAiResponses = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields or invalid responses format.' });
     }
 
-    const aiEntry = await AiModel.create({ userEmail, sendType, responses });
+    // Find user by email to get ObjectId
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found for provided email.' });
+    }
+
+    // Check if an existing entry exists for this user
+    let aiEntry = await AiModel.findOne({ userEmail: user._id });
+
+    if (aiEntry) {
+      aiEntry.responses = responses;
+      aiEntry.sendType = sendType;
+      await aiEntry.save();
+    } else {
+      aiEntry = await AiModel.create({ userEmail: user._id, sendType, responses });
+    }
 
     res.status(201).json({ message: 'AI responses saved successfully.', data: aiEntry });
   } catch (error) {
