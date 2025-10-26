@@ -55,7 +55,7 @@ router.get("/api/user/dashboard", verifyToken, getUserDashboard);
 
 router.post("/api/properties/bulk-upload", verifyToken, excelUpload.single("file"), bulkUploadProperties);
 router.post("/api/properties/bulk-upload-csv", verifyToken, excelUpload.single("file"), bulkUploadProperties);
-router.get("/api/properties", verifyToken, getAllProperties);
+router.get("/api/properties",  getAllProperties);
 router.get("/api/properties/my", verifyToken, getMyProperties);
 router.get("/api/getRentalproperties/:id", getRentalPropertyById);
 

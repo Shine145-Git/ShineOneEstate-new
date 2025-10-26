@@ -157,8 +157,10 @@ useEffect(() => {
               credentials: "include",
             }
           );
+          console.log("Properties fetched for non-logged-in user:", res);
           if (res.ok) {
             const data = await res.json();
+            
             setProperties(data.slice(0, 15)); // data is array
           } else {
             setProperties([]);
