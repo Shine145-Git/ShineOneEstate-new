@@ -10,6 +10,8 @@ const images = [
   '/Ad/ad4.jpg'
 ];
 
+const backgroundImage = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80";
+
 function AdCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -26,97 +28,64 @@ function AdCarousel() {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setCurrentIndex((currentIndex - 1 + images.length) % images.length);
-    setTimeout(() => setIsTransitioning(true), 500);
+    setTimeout(() => setIsTransitioning(false), 800);
   };
 
   const handleNext = () => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setCurrentIndex((currentIndex + 1) % images.length);
-    setTimeout(() => setIsTransitioning(false), 500);
+    setTimeout(() => setIsTransitioning(false), 800);
   };
 
   const goToSlide = (index) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setCurrentIndex(index);
-    setTimeout(() => setIsTransitioning(false), 500);
+    setTimeout(() => setIsTransitioning(false), 800);
   };
 
   return (
     <div style={{
       width: '100%',
-      background: 'linear-gradient(to right, rgba(0,51,102,0.7), rgba(74,106,138,0.6))',
-      padding: '20px 20px',
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundBlendMode: 'overlay',
+      position: 'relative',
+      padding: '20px 10px',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      minHeight: '100px'
+      minHeight: '100px',
+      overflow: 'hidden',
     }}>
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(to bottom right, rgba(0,0,0,0.6), rgba(0,0,0,0.3))',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
       <div style={{ 
         position: 'relative', 
         width: '100%', 
-        maxWidth: '400px',
-        margin: '0 auto'
+        maxWidth: '600px',
+        margin: '0 auto',
+        borderRadius: '16px',
+        zIndex: 1,
+        boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
       }}>
         {/* Main Carousel Container */}
         <div style={{
           position: 'relative',
-          background: 'rgba(0, 0, 0, 0.2)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '34px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          background: 'rgba(0, 0, 0, 0.25)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
           overflow: 'hidden'
         }}>
-          {/* Image Container with aspect ratio 1080x1350 (4:5) */}
-          <div style={{ 
-            position: 'relative', 
-            width: '100%', 
-            paddingBottom: '125%' 
-          }}>
-            {images.map((img, index) => (
-              <div
-                key={index}
-                style={{
-                  position: 'absolute',
-                  inset: '0',
-                  transition: 'opacity 0.5s ease-in-out',
-                  opacity: index === currentIndex ? 1 : 0
-                }}
-              >
-                <img
-                  src={img}
-                  alt={`Advertisement ${index + 1}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-              </div>
-            ))}
-            
-            {/* Gradient Overlays for better button visibility */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: 0,
-              width: '120px',
-              background: 'linear-gradient(to right, rgba(0,0,0,0.3), transparent)',
-              pointerEvents: 'none'
-            }} />
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: '120px',
-              background: 'linear-gradient(to left, rgba(0,0,0,0.3), transparent)',
-              pointerEvents: 'none'
-            }} />
-          </div>
-
           {/* Navigation Buttons */}
           <button
             onClick={handlePrev}
@@ -125,9 +94,10 @@ function AdCarousel() {
               left: '16px',
               top: '50%',
               transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.9)',
-              color: '#1f2937',
-              border: 'none',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              backdropFilter: 'blur(8px)',
+              color: '#fff',
               borderRadius: '50%',
               width: '48px',
               height: '48px',
@@ -136,16 +106,15 @@ function AdCarousel() {
               justifyContent: 'center',
               cursor: 'pointer',
               boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-              transition: 'all 0.2s',
+              transition: 'all 0.3s ease',
               zIndex: 10,
-              backdropFilter: 'blur(4px)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
               e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
               e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
             }}
             aria-label="Previous slide"
@@ -160,9 +129,10 @@ function AdCarousel() {
               right: '16px',
               top: '50%',
               transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.9)',
-              color: '#1f2937',
-              border: 'none',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              backdropFilter: 'blur(8px)',
+              color: '#fff',
               borderRadius: '50%',
               width: '48px',
               height: '48px',
@@ -171,16 +141,15 @@ function AdCarousel() {
               justifyContent: 'center',
               cursor: 'pointer',
               boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-              transition: 'all 0.2s',
+              transition: 'all 0.3s ease',
               zIndex: 10,
-              backdropFilter: 'blur(4px)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
               e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
               e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
             }}
             aria-label="Next slide"
@@ -209,7 +178,8 @@ function AdCarousel() {
                   height: '8px',
                   background: index === currentIndex ? 'white' : 'rgba(255, 255, 255, 0.5)',
                   border: 'none',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: index === currentIndex ? '0 0 8px rgba(255,255,255,0.9)' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (index !== currentIndex) {

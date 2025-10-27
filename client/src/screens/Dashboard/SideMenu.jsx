@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { User, X, ChevronRight, Home, Key, Building, Users, TrendingUp, Lightbulb, FileText, HelpCircle, Smartphone, Search, Sparkles, Scale, Calculator, MapPin, DollarSign } from 'lucide-react';
+const ad1 = process.env.PUBLIC_URL + "/Ad/ad1.jpg";
+const ad2 = process.env.PUBLIC_URL + "/Ad/ad2.jpg";
+const ad3 = process.env.PUBLIC_URL + "/Ad/ad3.jpg";
+const ad4 = process.env.PUBLIC_URL + "/Ad/ad4.jpg";
 
 export default function SideMenuBar({ currentUser, onLoginClick }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -37,10 +41,58 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
         {/* Promotional Banner */}
         <div style={{margin: '20px', padding: '20px', background: 'linear-gradient(135deg, #E0F7F4 0%, #B8E6E0 100%)', borderRadius: '12px', position: 'relative', overflow: 'hidden'}}>
           <div style={{position: 'absolute', right: '0', top: '0', width: '120px', height: '120px', opacity: '0.3'}}>
-            // Promotional banner image URL is configurable via .env
-            <img src={`${process.env.REACT_APP_SIDEMENU_BANNER_IMAGE}`} alt="Property" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%'}} />
+           
           </div>
-          <h3 style={{fontSize: '18px', fontWeight: '700', color: '#003366', marginBottom: '8px', position: 'relative', zIndex: '1'}}>Sell or rent faster at<br/>the right price!</h3>
+          
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            paddingBottom: '125%', // 4:5 ratio
+            borderRadius: '12px',
+            overflow: 'hidden',
+            marginTop: '12px',
+          }}>
+            {[ad1, ad2, ad3, ad4].map((img, index) => (
+              <img
+                key={index}
+                src={img}
+                alt={`Ad ${index + 1}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: index === 0 ? 1 : 0,
+                  transition: 'opacity 1s ease-in-out',
+                  animation: `fade${index} 16s infinite`,
+                }}
+              />
+            ))}
+            <style>
+              {`
+                @keyframes fade0 {
+                  0%, 25% { opacity: 1; }
+                  26%, 100% { opacity: 0; }
+                }
+                @keyframes fade1 {
+                  0%, 25% { opacity: 0; }
+                  26%, 50% { opacity: 1; }
+                  51%, 100% { opacity: 0; }
+                }
+                @keyframes fade2 {
+                  0%, 50% { opacity: 0; }
+                  51%, 75% { opacity: 1; }
+                  76%, 100% { opacity: 0; }
+                }
+                @keyframes fade3 {
+                  0%, 75% { opacity: 0; }
+                  76%, 100% { opacity: 1; }
+                }
+              `}
+            </style>
+          </div>
         </div>
 
         
@@ -114,13 +166,13 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
 
         {/* Footer */}
         <div style={{position: 'absolute', bottom: '0', left: '0', right: '0', padding: '20px', backgroundColor: '#F4F7F9', borderTop: '1px solid #E5E7EB'}}>
-          <div style={{padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '10px', marginBottom: '12px'}}>
+          {/* <div style={{padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '10px', marginBottom: '12px'}}>
             <input type="text" placeholder="Search by Property Code" style={{width: '100%', padding: '12px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px', outline: 'none'}} />
-          </div>
+          </div> */}
           <div style={{fontSize: '13px', color: '#333333', textAlign: 'center', lineHeight: '1.6'}}>
-            <strong>Toll Free Number: 1800 41 99099.</strong><br/>
-            <span style={{color: '#4A6A8A'}}>For international numbers </span>
-            <a href="#" style={{color: '#0066FF', textDecoration: 'none', fontWeight: '600'}}>click here</a>
+            <strong>Toll Free Number: 9310994032.</strong><br/>
+            {/* <span style={{color: '#4A6A8A'}}>For international numbers </span> */}
+            {/* <a href="#" style={{color: '#0066FF', textDecoration: 'none', fontWeight: '600'}}>click here</a> */}
           </div>
         </div>
       </div>
