@@ -2,12 +2,41 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Home, Bed, Bath, Maximize, DollarSign, MapPin, Share2 } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
+
+const addEngagementTime = async (propertyId, seconds) => {
+  try {
+    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId, seconds }),
+      credentials: 'include',
+    });
+  } catch (err) {
+    console.error('Error adding engagement time:', err);
+  }
+};
+
+const addRating = async (propertyId, rating, comment = '') => {
+  try {
+    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId, rating, comment }),
+      credentials: 'include',
+    });
+  } catch (err) {
+    console.error('Error adding rating:', err);
+  }
+};
+
 export default function SalePropertyPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState('');
 
   useEffect(() => {
     async function fetchProperty() {
@@ -55,6 +84,15 @@ export default function SalePropertyPage() {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    if (!property) return;
+    const startTime = Date.now();
+    return () => {
+      const seconds = Math.floor((Date.now() - startTime) / 1000);
+      addEngagementTime(id, seconds);
+    };
+  }, [id, property]);
+
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   // Share button handler
@@ -66,6 +104,31 @@ export default function SalePropertyPage() {
     } catch (err) {
       alert('Failed to copy link');
     }
+  };
+  const handleSave = async () => {
+  try {
+    await fetch(`${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId: property._id }),
+    });
+    alert('Property saved!');
+  } catch (err) {
+    console.error('Error saving property:', err);
+    alert('Failed to save property');
+  }
+};
+
+  const handleSubmitRating = async () => {
+    if (userRating < 1) {
+      alert("Please select a rating before submitting!");
+      return;
+    }
+    await addRating(id, userRating, userComment);
+    alert("Thank you for your rating!");
+    setUserRating(0);
+    setUserComment('');
   };
 
   if (loading) return <div style={{padding:'20px'}}>Loading property...</div>;
@@ -90,11 +153,57 @@ export default function SalePropertyPage() {
             <h1 style={{color:'#FFFFFF',fontSize:'32px',fontWeight:'700',margin:0}}>
               {property.title || 'N.A'}
             </h1>
-            <button onClick={handleShare} style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:'6px',background:'#22D3EE',color:'#fff',border:'none',padding:'8px 16px',borderRadius:'8px',fontWeight:600,fontSize:'16px',cursor:'pointer',boxShadow:'0 2px 8px rgba(0,0,0,0.10)',transition:'background 0.2s'}} onMouseOver={e=>e.target.style.background='#00A79D'} onMouseOut={e=>e.target.style.background='#22D3EE'} title="Copy page link">
-              <Share2 size={20} style={{marginRight:'6px'}} /> Share
-            </button>
+           <div style={{ display: 'flex', marginLeft: 'auto', gap: '8px' }}>
+  <button
+    onClick={handleShare}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      background: '#22D3EE',
+      color: '#fff',
+      border: 'none',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      fontWeight: 600,
+      fontSize: '16px',
+      cursor: 'pointer',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+      transition: 'background 0.2s'
+    }}
+    onMouseOver={e => e.target.style.background = '#00A79D'}
+    onMouseOut={e => e.target.style.background = '#22D3EE'}
+    title="Copy page link"
+  >
+    <Share2 size={20} style={{ marginRight: '6px' }} /> Share
+  </button>
+
+  <button
+    onClick={handleSave}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      background: '#22D3EE',
+      color: '#fff',
+      border: 'none',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      fontWeight: 600,
+      fontSize: '16px',
+      cursor: 'pointer',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+      transition: 'background 0.2s'
+    }}
+    onMouseOver={e => e.target.style.background = '#00A79D'}
+    onMouseOut={e => e.target.style.background = '#22D3EE'}
+    title="Save property"
+  >
+    💾 Save
+  </button>
+</div>
           </div>
-          <p style={{color:'#F4F7F9',fontSize:'18px',marginBottom:'24px'}}>📍 {property.location || 'N.A'}</p>
+          <p style={{color:'#F4F7F9',fontSize:'18px',marginBottom:'24px'}}>📍 Sector: {property.Sector || 'N.A'}</p>
           <div style={{display:'flex',alignItems:'baseline',gap:'8px'}}>
             <span style={{fontSize:'48px',fontWeight:'800',color:'#22D3EE'}}>
               {property.price ? `₹${property.price.toLocaleString()}` : 'N.A'}
@@ -155,6 +264,36 @@ export default function SalePropertyPage() {
     onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
   >
     Schedule a Visit
+  </button>
+</div>
+
+{/* Rating & Comment Section */}
+<div style={{background:'#FFFFFF',padding:'24px',borderRadius:'12px',boxShadow:'0 2px 8px rgba(0,0,0,0.08)',marginTop:'32px'}}>
+  <h2 style={{fontSize:'20px',fontWeight:'600',color:'#003366',marginBottom:'16px'}}>Rate this Property</h2>
+  <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
+    {[1,2,3,4,5].map((star) => (
+      <span 
+        key={star} 
+        onClick={() => setUserRating(star)}
+        style={{
+          fontSize:'24px', 
+          cursor:'pointer', 
+          color: star <= userRating ? '#FFD700' : '#CCC'
+        }}
+      >★</span>
+    ))}
+  </div>
+  <textarea 
+    value={userComment} 
+    onChange={(e) => setUserComment(e.target.value)}
+    placeholder="Write a comment (optional)"
+    style={{width:'100%',padding:'12px',borderRadius:'8px',border:'1px solid #E5E7EB',marginBottom:'12px'}}
+  />
+  <button 
+    onClick={handleSubmitRating}
+    style={{background:'#22D3EE',color:'#fff',padding:'10px 20px',border:'none',borderRadius:'8px',fontWeight:'600',cursor:'pointer'}}
+  >
+    Submit Rating
   </button>
 </div>
       </div>

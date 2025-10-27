@@ -5,6 +5,7 @@ const RentalpropertySchema = new mongoose.Schema(
   {
     // Section 1: Property Basics & Specifications
     address: { type: String },
+    Sector: { type: String },
     propertyType: { 
       type: String, 
       enum: ["house", "apartment", "condo", "townhouse", "villa"],

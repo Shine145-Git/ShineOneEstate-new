@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, Image, MapPin, Home, Maximize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const RecommendedProperties = ({ properties = [], user, title }) => {
+const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerPage = 4;
   const navigate = useNavigate();
@@ -254,6 +254,7 @@ const RecommendedProperties = ({ properties = [], user, title }) => {
                 key={property._id || property.id || idx}
                 style={cardStyle}
                 onClick={() => {
+                  if (onPropertyClick) onPropertyClick(property._id);
                   if (user) {
                     navigate(`/Rentaldetails/${property._id}`);
                   } else {
@@ -305,7 +306,7 @@ const RecommendedProperties = ({ properties = [], user, title }) => {
                   </div>
                   <div style={locationStyle}>
                     <MapPin size={14} color="#00A79D" />
-                    {property.address}
+                    {property.Sector}
                   </div>
                   <div style={statusStyle}>
                     {property.status}

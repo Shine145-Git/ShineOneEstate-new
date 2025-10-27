@@ -5,12 +5,10 @@ const SearchHistory = require("../models/SearchHistory.model");
 // Search for properties by address or area and save search history if user is logged in
 exports.searchProperties = async (req, res) => {
   try {
-    const { query, type } = req.query; // type can be 'rent', 'sale', or undefined
+    const { query, type } = req.query;
     const userId = req.user?._id;
 
-    if (!query) {
-      return res.status(400).json({ message: "Search query is required" });
-    }
+    if (!query) return res.status(400).json({ message: "Search query is required" });
 
     if (userId) {
       const lastEntry = await SearchHistory.findOne({ user: userId }).sort({ createdAt: -1 });
@@ -18,118 +16,108 @@ exports.searchProperties = async (req, res) => {
         await SearchHistory.create({ user: userId, query });
       }
     }
-    console.log("Search query:", query, "Type:", type);
 
-    let results = [];
+    // --- ADVANCED NORMALIZATION ---
+    let normalizedQuery = query
+      .toLowerCase()
+      .replace(/\b(sec|sector|s)\b/gi, "sector")
+      .replace(/\b(blk|block)\b/gi, "block")
+      .replace(/\b(rd|road)\b/gi, "road")
+      .replace(/\b(st|street)\b/gi, "street")
+      .replace(/\b(ave|avenue)\b/gi, "avenue")
+      .replace(/\b(flat|apt|apartment)\b/gi, "apartment")
+      .replace(/\b(villa|house|bungalow)\b/gi, "villa")
+      .trim();
 
-    // First, try searching full query as regex on main text fields
-    const fullQueryRegex = new RegExp(query, "i");
+    // --- DETECT SECTOR NUMBER ---
+    const sectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
+    const bhkMatch = normalizedQuery.match(/(\d+)\s*bhk/i);
+    const priceMatch = normalizedQuery.match(/(\d+\.?\d*)\s*(k|l|cr|crore|lakh)?/i);
 
-    let fullQueryRental = [];
-    let fullQuerySale = [];
+    const fullQueryRegex = new RegExp(normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    let mainResults = [];
+    let nearbyResults = [];
 
-    try {
-      fullQueryRental = await RentalProperty.find({
-        $or: [
-          { address: fullQueryRegex },
-          { localAmenities: fullQueryRegex },
-          { propertyType: fullQueryRegex },
-        ],
-      }).populate("owner", "name email");
-    } catch (err) {
-      console.error("RentalProperty full query search error:", err);
+    // --- MAIN RENTAL SEARCH ---
+    const rentalMain = await RentalProperty.find({
+      $or: [
+        { address: fullQueryRegex },
+        { localAmenities: fullQueryRegex },
+        { propertyType: fullQueryRegex },
+        { neighborhoodVibe: fullQueryRegex },
+      ],
+    }).populate("owner", "name email");
+
+    // --- MAIN SALE SEARCH ---
+    let saleOrConditions = [
+      { title: fullQueryRegex },
+      { description: fullQueryRegex },
+      { location: fullQueryRegex },
+      { propertyType: fullQueryRegex },
+    ];
+
+    // Handle numeric query types (BHK / Price / Area)
+    if (bhkMatch) {
+      const bhkNum = parseInt(bhkMatch[1]);
+      saleOrConditions.push({ bedrooms: bhkNum });
     }
 
-    try {
-      fullQuerySale = await SaleProperty.find({
-        $or: [
-          { title: fullQueryRegex },
-          { description: fullQueryRegex },
-          { location: fullQueryRegex },
-        ],
-      }).populate({ path: "ownerId", select: "name email", strictPopulate: false });
-    } catch (err) {
-      console.error("SaleProperty full query search error:", err);
+    const numQuery = parseFloat(priceMatch?.[1]);
+    const priceUnit = priceMatch?.[2]?.toLowerCase();
+
+    if (!isNaN(numQuery)) {
+      let priceValue = numQuery;
+      if (priceUnit === "k") priceValue *= 1000;
+      else if (priceUnit === "l" || priceUnit === "lakh") priceValue *= 100000;
+      else if (priceUnit === "cr" || priceUnit === "crore") priceValue *= 10000000;
+
+      saleOrConditions.push({ price: { $gte: priceValue * 0.8, $lte: priceValue * 1.2 } });
+      saleOrConditions.push({ area: { $gte: numQuery * 0.8, $lte: numQuery * 1.2 } });
     }
 
-    results = [];
-    if (type === "rent") {
-      results = fullQueryRental;
-    } else if (type === "sale") {
-      results = fullQuerySale;
-    } else {
-      results = [...fullQueryRental, ...fullQuerySale];
-    }
+    const saleMain = await SaleProperty.find({ $or: saleOrConditions })
+      .populate({ path: "ownerId", select: "name email", strictPopulate: false });
 
-    // Fallback to old split-text/number search if no results
-    if (!results || results.length === 0) {
-      const parts = query
-        .split(/[, ]+/)
-        .map((p) => p.trim())
-        .filter(Boolean);
+    if (type === "rent") mainResults = rentalMain;
+    else if (type === "sale") mainResults = saleMain;
+    else mainResults = [...rentalMain, ...saleMain];
 
-      const numbers = parts.filter((p) => !isNaN(p));
-      const texts = parts.filter((p) => isNaN(p));
-      const regexArray = texts.map((word) => new RegExp(word, "i"));
+    // --- STRICT SECTOR/AREA MATCH LOGIC ---
+    if (sectorMatch && sectorMatch[1]) {
+      // Only return results for the matched sector/area
+      const sectorNum = parseInt(sectorMatch[1]);
+      const sectorRegex = new RegExp(`sector\\s*-?\\s*${sectorNum}\\b`, "i");
 
-      // Helper: search RentalProperty
-      const searchRental = async () => {
-        const rentalTextFields = [
-          "address", "propertyType", "purpose", "layoutFeatures", "appliances",
-          "conditionAge", "renovations", "parking", "outdoorSpace",
-          "neighborhoodVibe", "transportation", "localAmenities",
-          "communityFeatures", "petPolicy", "smokingPolicy", "maintenance", "insurance"
-        ];
-        const orText = regexArray.flatMap(r =>
-          rentalTextFields.map(field => ({ [field]: r }))
-        );
-        const orNumbers = numbers.flatMap(num => [
-          { bedrooms: Number(num) },
-          { bathrooms: Number(num) },
-          { totalArea: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
-          { monthlyRent: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
-        ]);
-        return await RentalProperty.find({ $or: [...orText, ...orNumbers] }).populate("owner", "name email");
-      };
-
-      // Helper: search SaleProperty
-      const searchSale = async () => {
-        const saleTextFields = ["title", "description", "location"];
-        const orText = regexArray.flatMap(r =>
-          saleTextFields.map(field => ({ [field]: r }))
-        );
-        const orNumbers = numbers.flatMap(num => [
-          { bedrooms: Number(num) },
-          { bathrooms: Number(num) },
-          { area: { $gte: Number(num) - 100, $lte: Number(num) + 100 } },
-          { price: { $gte: Number(num) - 2000, $lte: Number(num) + 2000 } },
-        ]);
-
-        try {
-          return await SaleProperty.find({ $or: [...orText, ...orNumbers] })
-            .populate({ path: "ownerId", select: "name email", strictPopulate: false });
-        } catch (err) {
-          console.error("SaleProperty search error:", err);
-          return [];
-        }
-      };
-
-      if (type === "rent") {
-        results = await searchRental();
-      } else if (type === "sale") {
-        results = await searchSale();
-      } else {
-        const [rentalResults, saleResults] = await Promise.all([
-          searchRental(),
-          searchSale(),
-        ]);
-        results = [...rentalResults, ...saleResults];
+      let rentalSector = [];
+      let saleSector = [];
+      if (type === "rent" || !type) {
+        rentalSector = await RentalProperty.find({
+          $or: [
+            { address: sectorRegex },
+            { localAmenities: sectorRegex },
+          ],
+        }).populate("owner", "name email");
       }
+      if (type === "sale" || !type) {
+        saleSector = await SaleProperty.find({
+          $or: [
+            { location: sectorRegex },
+          ],
+        }).populate({ path: "ownerId", select: "name email", strictPopulate: false });
+      }
+      const allResults = type === "rent"
+        ? rentalSector
+        : type === "sale"
+        ? saleSector
+        : [...rentalSector, ...saleSector];
+      return res.status(200).json(allResults);
     }
 
-    // Always return array, even if empty
-    res.status(200).json(results);
+    // If not a strict sector/area query, allow main + nearby as before
+    const allResults = [...mainResults, ...nearbyResults];
+    res.status(200).json(allResults);
   } catch (error) {
+    console.error("Enhanced search error:", error);
     res.status(500).json({ message: "Server error while searching properties", error: error.message });
   }
 };

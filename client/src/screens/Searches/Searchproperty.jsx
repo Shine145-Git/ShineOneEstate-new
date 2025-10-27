@@ -3,6 +3,19 @@ import axios from "axios";
 import { Search, MapPin, Home, Sparkles, SlidersHorizontal, Heart, MoreVertical, Phone, MessageCircle, Bed, Bath, Car, Maximize, TrendingUp, Award, Shield, ChevronDown, Filter, Grid, List, X, Check, Building2, Calendar, IndianRupee } from "lucide-react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate, useParams } from "react-router-dom";
+// Function to add a property view
+const addPropertyView = async (propertyId) => {
+  try {
+    await axios.post(
+      process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW,
+      { propertyId },
+      { withCredentials: true }
+    );
+  } catch (err) {
+    console.error("Error adding view:", err);
+  }
+};
+
 const Searchproperty = () => {
   const { query } = useParams();
   useEffect(() => {
@@ -127,12 +140,23 @@ useEffect(() => {
 
   const PropertyCard = ({ property, isGridView }) => {
     const propertyTitle = property.monthlyRent ? `${property.propertyType || 'Property'} For Rent` : `${property.title || 'Property'} For Sale`;
-    const propertyLocation = property.monthlyRent ? property.address : property.location;
+    const propertyLocation = property.Sector;
     const propertyPrice = property.monthlyRent ? property.monthlyRent : property.price;
 
     return (
-      <div style={{ backgroundColor: "#FFFFFF", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", marginBottom: "1.25rem", cursor: "pointer", transition: "all 0.3s ease", border: "1px solid #E5E7EB", position: "relative" }} onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,51,102,0.15)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08)"; }}>
-        
+      <div
+        style={{ backgroundColor: "#FFFFFF", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", marginBottom: "1.25rem", cursor: "pointer", transition: "all 0.3s ease", border: "1px solid #E5E7EB", position: "relative" }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,51,102,0.15)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08)"; }}
+        onClick={() => {
+          addPropertyView(property._id);
+          if (property.monthlyRent) {
+            navigate(`/Rentaldetails/${property._id}`);
+          } else {
+            navigate(`/Saledetails/${property._id}`);
+          }
+        }}
+      >
         <div style={{ display: "flex", flexDirection: isGridView || isMobile ? "column" : "row", position: "relative" }}>
           <div style={{ width: isGridView || isMobile ? "100%" : "320px", height: isGridView || isMobile ? "220px" : "220px", flexShrink: 0, position: "relative", overflow: "hidden" }}>
             {property.images && property.images.length > 0 ? (
@@ -172,7 +196,7 @@ useEffect(() => {
               <h3 style={{ color: "#003366", fontSize: "1.15rem", fontWeight: "700", marginBottom: "0.35rem", lineHeight: "1.3" }}>{propertyTitle}</h3>
               {property.society && <p style={{ color: "#4A6A8A", fontSize: "0.85rem", marginBottom: "0.35rem", fontWeight: "500" }}>{property.society}</p>}
               {propertyLocation && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#4A6A8A", fontSize: "0.85rem" }}><MapPin size={14} /><span>{propertyLocation}</span></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#4A6A8A", fontSize: "0.85rem" }}><MapPin size={14} /><span>Sector: {propertyLocation}</span></div>
               )}
             </div>
 

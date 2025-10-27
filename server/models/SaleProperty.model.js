@@ -24,6 +24,7 @@ const SalePropertySchema = new mongoose.Schema({
   location: {
     type: String
   },
+  Sector: { type: String },
   images: [String],
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,

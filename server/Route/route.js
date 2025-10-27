@@ -29,6 +29,7 @@ const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
 const {getRentalPropertyById , getSalePropertyById} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
+const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion } = require("../controllers/PropertyAnalysis.controller.js");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -104,5 +105,14 @@ router.post("/api/addrentproperties", verifyToken, upload.array("images", 8), cr
 // New AI response routes
 router.post("/api/ai/save", verifyToken, saveAiResponses);
 router.get("/api/ai/get", verifyToken, getAiResponses);
+
+// Property analytics routes
+router.post("/api/property-analysis/addView", verifyToken, addView);
+router.post("/api/property-analysis/addSave", verifyToken, addSave);
+// router.post("/api/property-analysis/addEnquiry", verifyToken, addEnquiry);
+router.post("/api/property-analysis/addEngagementTime", verifyToken, addEngagementTime);
+router.post("/api/property-analysis/addRating", verifyToken, addRating);
+router.get("/api/property-analysis/:id", verifyToken, getMetrics);
+router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
 
 module.exports = router;

@@ -51,11 +51,11 @@ export default function RealEstateDashboard() {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-useEffect(() => {
-  const handleResize = () => setIsMobile(window.innerWidth < 768);
-  window.addEventListener("resize", handleResize);
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   useEffect(() => {
     if (!userLocation) return;
 
@@ -160,7 +160,7 @@ useEffect(() => {
           console.log("Properties fetched for non-logged-in user:", res);
           if (res.ok) {
             const data = await res.json();
-            
+
             setProperties(data.slice(0, 15)); // data is array
           } else {
             setProperties([]);
@@ -194,23 +194,32 @@ useEffect(() => {
     };
     fetchProperties();
   }, [user]);
+
+  // Track property views
+  const handlePropertyClick = async (propertyId) => {
+    try {
+      await fetch(`${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ propertyId }),
+      });
+    } catch (err) {
+      console.error("Error adding view:", err);
+    }
+  };
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    if (user) {
-      try {
-        await fetch(
-          `${
-            process.env.REACT_APP_SEARCH_PROPERTIES_API
-          }?query=${encodeURIComponent(searchQuery.trim())}`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        // console.log('Search history sent successfully');
-      } catch (err) {
-        console.error("Error sending search history:", err);
-      }
+    if (!user) return navigate("/login"); // redirect only on search
+    try {
+      await fetch(
+        `${
+          process.env.REACT_APP_SEARCH_PROPERTIES_API
+        }?query=${encodeURIComponent(searchQuery.trim())}`,
+        { method: "GET", credentials: "include" }
+      );
+    } catch (err) {
+      console.error("Error sending search history:", err);
     }
     navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
   };
@@ -247,7 +256,7 @@ useEffect(() => {
     { name: "Buy", new: false },
     { name: "Rent", new: false },
     { name: "New Launch", new: true },
-  ]
+  ];
 
   return (
     <div
@@ -392,205 +401,344 @@ useEffect(() => {
         navItems={navItems}
       />
 
-     {/* Hero Banner with Search */}
-<div style={{ width: '100%', position: 'relative' }}>
-  {/* Hero Banner / Carousel */}
+      {/* Hero Banner with Search */}
+      <div style={{ width: "100%", position: "relative" }}>
+        {/* Hero Banner / Carousel */}
 
-  <Adcarousel />
-      
-  {/* Search Box positioned below carousel */}
-  <div
-    style={{
-      position: 'absolute',
-      bottom: window.innerWidth < 768 ? '-260px' : '-135px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '90%',
-      maxWidth: '1200px',
-      backgroundColor: '#FFFFFF',
-      borderRadius: '12px',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-      zIndex: 10,
-      overflow: 'visible',
-    }}
-  >
-    {/* Tabs */}
-   {/* Tabs Section */}
-{!isMobile ? (
-  // Desktop tabs
-  <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-    {tabs.map(tab => (
-      <button
-        key={tab.name}
-        onClick={() => setActiveTab(tab.name)}
-        style={{
-          padding: '16px 24px',
-          border: 'none',
-          backgroundColor: 'transparent',
-          color: activeTab === tab.name ? '#003366' : '#4A6A8A',
-          fontSize: '14px',
-          fontWeight: activeTab === tab.name ? '600' : '500',
-          cursor: 'pointer',
-          borderBottom: activeTab === tab.name ? '3px solid #00A79D' : '3px solid transparent',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          position: 'relative',
-        }}
-      >
-        {tab.name}
-        {tab.new && <span style={{ backgroundColor: '#FF4757', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>NEW</span>}
-        {tab.free && <span style={{ backgroundColor: '#00A79D', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>FREE</span>}
-      </button>
-    ))}
-  </div>
-) : (
-  // Mobile tabs (scrollable horizontal)
-  <div style={{ display: 'flex', overflowX: 'auto', padding: '8px 0', gap: '8px', backgroundColor: '#FFFFFF' }}>
-    {tabs.map(tab => (
-      <button
-        key={tab.name}
-        onClick={() => setActiveTab(tab.name)}
-        style={{
-          padding: '12px 16px',
-          border: 'none',
-          borderRadius: '8px',
-          backgroundColor: activeTab === tab.name ? '#00A79D' : '#F4F7F9',
-          color: activeTab === tab.name ? '#FFFFFF' : '#4A6A8A',
-          fontSize: '14px',
-          fontWeight: '500',
-          cursor: 'pointer',
-          flex: '0 0 auto',
-        }}
-      >
-        {tab.name}
-        {tab.new && <span style={{ backgroundColor: '#FF4757', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700', marginLeft: '4px' }}>NEW</span>}
-        {tab.free && <span style={{ backgroundColor: '#00A79D', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700', marginLeft: '4px' }}>FREE</span>}
-      </button>
-    ))}
-  </div>
-)}
+        <Adcarousel />
 
-    {/* Detailed Search Input */}
-    <div style={{ padding: '20px 24px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-      <div style={{ position: 'relative', minWidth: '180px' }}>
+        {/* Search Box positioned below carousel */}
         <div
           style={{
-            padding: '12px 16px',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            fontSize: '14px',
-            color: '#333333',
-            backgroundColor: '#FFFFFF',
-            cursor: 'pointer',
-            width: '100%',
-            fontWeight: '500',
+            position: "absolute",
+            bottom: window.innerWidth < 768 ? "-260px" : "-135px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "90%",
+            maxWidth: "1200px",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            zIndex: 10,
+            overflow: "visible",
           }}
         >
-          All Residential
+          {/* Tabs */}
+          {/* Tabs Section */}
+          {!isMobile ? (
+            // Desktop tabs
+            <div
+              style={{
+                display: "flex",
+                borderBottom: "1px solid #E5E7EB",
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.name}
+                  onClick={() => setActiveTab(tab.name)}
+                  style={{
+                    padding: "16px 24px",
+                    border: "none",
+                    backgroundColor: "transparent",
+                    color: activeTab === tab.name ? "#003366" : "#4A6A8A",
+                    fontSize: "14px",
+                    fontWeight: activeTab === tab.name ? "600" : "500",
+                    cursor: "pointer",
+                    borderBottom:
+                      activeTab === tab.name
+                        ? "3px solid #00A79D"
+                        : "3px solid transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    position: "relative",
+                  }}
+                >
+                  {tab.name}
+                  {tab.new && (
+                    <span
+                      style={{
+                        backgroundColor: "#FF4757",
+                        color: "#fff",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: "700",
+                      }}
+                    >
+                      NEW
+                    </span>
+                  )}
+                  {tab.free && (
+                    <span
+                      style={{
+                        backgroundColor: "#00A79D",
+                        color: "#fff",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: "700",
+                      }}
+                    >
+                      FREE
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            // Mobile tabs (scrollable horizontal)
+            <div
+              style={{
+                display: "flex",
+                overflowX: "auto",
+                padding: "8px 0",
+                gap: "8px",
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.name}
+                  onClick={() => setActiveTab(tab.name)}
+                  style={{
+                    padding: "12px 16px",
+                    border: "none",
+                    borderRadius: "8px",
+                    backgroundColor:
+                      activeTab === tab.name ? "#00A79D" : "#F4F7F9",
+                    color: activeTab === tab.name ? "#FFFFFF" : "#4A6A8A",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  {tab.name}
+                  {tab.new && (
+                    <span
+                      style={{
+                        backgroundColor: "#FF4757",
+                        color: "#fff",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        marginLeft: "4px",
+                      }}
+                    >
+                      NEW
+                    </span>
+                  )}
+                  {tab.free && (
+                    <span
+                      style={{
+                        backgroundColor: "#00A79D",
+                        color: "#fff",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        marginLeft: "4px",
+                      }}
+                    >
+                      FREE
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Detailed Search Input */}
+          <div
+            style={{
+              padding: "20px 24px",
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ position: "relative", minWidth: "180px" }}>
+              <div
+                style={{
+                  padding: "12px 16px",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  color: "#333333",
+                  backgroundColor: "#FFFFFF",
+                  cursor: "pointer",
+                  width: "100%",
+                  fontWeight: "500",
+                }}
+              >
+                All Residential
+              </div>
+            </div>
+            <div
+              style={{
+                flex: "1",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px 16px",
+                border: "1px solid #E5E7EB",
+                borderRadius: "8px",
+                backgroundColor: "#FFFFFF",
+                minWidth: "320px",
+                position: "relative",
+              }}
+            >
+              <Search
+                size={20}
+                color="#4A6A8A"
+                style={{ marginRight: "8px" }}
+              />
+              <input
+                type="text"
+                placeholder='Search "Farm house in Punjab below 1 cr"'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  if (!user) {
+                    console.log(
+                      "User not logged in, search disabled until login"
+                    );
+                    return; // do nothing on focus
+                  }
+                  setShowRecentDropdown(true);
+                }}
+                onBlur={() =>
+                  setTimeout(() => setShowRecentDropdown(false), 400)
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  flex: 1,
+                  fontSize: "14px",
+                  color: "#333333",
+                  backgroundColor: "transparent",
+                }}
+              />
+              <button
+                onClick={handleSearch}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <Search size={20} color="#4A6A8A" />
+              </button>
+
+              {showRecentDropdown && user && recentSearches.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: "0.5rem",
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    width: "100%",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                    zIndex: 10,
+                  }}
+                >
+                  {recentSearches.map((search, idx) => (
+                    <div
+                      key={search._id || idx}
+                      style={{
+                        padding: "10px 16px",
+                        cursor: "pointer",
+                        borderBottom:
+                          idx !== recentSearches.length - 1
+                            ? "1px solid #f1f1f1"
+                            : "none",
+                        color: "#333",
+                        fontSize: "14px",
+                        backgroundColor: "#fff",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSearchQuery(search.query);
+                        setShowRecentDropdown(false);
+                        handleSearch();
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.backgroundColor = "#F4F7F9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.backgroundColor = "#fff")
+                      }
+                    >
+                      {search.query}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Mic
+                size={20}
+                color="#00A79D"
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (!("webkitSpeechRecognition" in window)) {
+                    alert("Voice recognition not supported");
+                    return;
+                  }
+                  const recognition = new window.webkitSpeechRecognition();
+                  recognition.lang = "en-US";
+                  recognition.interimResults = false;
+                  recognition.maxAlternatives = 1;
+                  recognition.start();
+                  recognition.onresult = (event) => {
+                    const voiceInput = event.results[0][0].transcript;
+                    setSearchQuery(voiceInput);
+                    handleSearch();
+                  };
+                  recognition.onerror = (event) =>
+                    console.error("Voice recognition error:", event.error);
+                }}
+              />
+            </div>
+
+            <button
+              style={{
+                padding: "12px 48px",
+                backgroundColor: "#0066FF",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "15px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "#0052CC";
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 6px 20px rgba(0,102,255,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "#0066FF";
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "none";
+              }}
+              onClick={handleSearch}
+            >
+              Search
+            </button>
+          </div>
         </div>
       </div>
-      <div
-        style={{
-          flex: '1',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '12px 16px',
-          border: '1px solid #E5E7EB',
-          borderRadius: '8px',
-          backgroundColor: '#FFFFFF',
-          minWidth: '320px',
-          position: 'relative',
-        }}
-      >
-        <Search size={20} color="#4A6A8A" style={{ marginRight: '8px' }} />
-        <input
-          type="text"
-          placeholder='Search "Farm house in Punjab below 1 cr"'
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => { if (!user) navigate("/login"); else setShowRecentDropdown(true); }}
-          onBlur={() => setTimeout(() => setShowRecentDropdown(false), 400)}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          style={{
-            border: 'none',
-            outline: 'none',
-            flex: 1,
-            fontSize: '14px',
-            color: '#333333',
-            backgroundColor: 'transparent',
-          }}
-        />
-        <button onClick={handleSearch} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-          <Search size={20} color="#4A6A8A" />
-        </button>
-
-        {showRecentDropdown && user && recentSearches.length > 0 && (
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            marginTop: '0.5rem',
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            width: '100%',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            zIndex: 10
-          }}>
-            {recentSearches.map((search, idx) => (
-              <div
-                key={search._id || idx}
-                style={{ padding: '10px 16px', cursor: 'pointer', borderBottom: idx !== recentSearches.length - 1 ? '1px solid #f1f1f1' : 'none', color: '#333', fontSize: '14px', backgroundColor: '#fff', transition: 'background 0.2s' }}
-                onMouseDown={e => { e.preventDefault(); setSearchQuery(search.query); setShowRecentDropdown(false); handleSearch(); }}
-                onMouseEnter={e => e.target.style.backgroundColor = '#F4F7F9'}
-                onMouseLeave={e => e.target.style.backgroundColor = '#fff'}
-              >
-                {search.query}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <Mic
-          size={20}
-          color="#00A79D"
-          style={{ cursor: 'pointer' }}
-          onClick={() => {
-            if (!('webkitSpeechRecognition' in window)) { alert('Voice recognition not supported'); return; }
-            const recognition = new window.webkitSpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-            recognition.start();
-            recognition.onresult = event => { const voiceInput = event.results[0][0].transcript; setSearchQuery(voiceInput); handleSearch(); };
-            recognition.onerror = event => console.error("Voice recognition error:", event.error);
-          }}
-        />
-      </div>
-
-      <button
-        style={{
-          padding: '12px 48px',
-          backgroundColor: '#0066FF',
-          color: '#FFFFFF',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '15px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          transition: 'all 0.3s'
-        }}
-        onMouseEnter={e => { e.target.style.backgroundColor = '#0052CC'; e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 20px rgba(0,102,255,0.3)'; }}
-        onMouseLeave={e => { e.target.style.backgroundColor = '#0066FF'; e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = 'none'; }}
-        onClick={handleSearch}
-      >
-        Search
-      </button>
-    </div>
-  </div>
-</div>
 
       {/* Cards Section */}
       <CardSection />
@@ -599,6 +747,7 @@ useEffect(() => {
         properties={user ? recommended : properties}
         user={user}
         title={user ? "Recommended for you" : "Explore Properties"}
+        onPropertyClick={handlePropertyClick}
       />
       {/* Property Snapshot Section */}
       <PropertySnapshot />
@@ -616,6 +765,7 @@ useEffect(() => {
         properties={propertiesInArea}
         user={user}
         title="Properties in your area"
+        onPropertyClick={handlePropertyClick}
       />
       {/* Tools */}
       <ToolsShowcase />
@@ -764,53 +914,7 @@ useEffect(() => {
         </div>
       </footer>
 
-      {/* Cookie Banner */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "0",
-          left: "0",
-          right: "0",
-          backgroundColor: "#003366",
-          padding: "16px 4%",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "0 -4px 12px rgba(0,0,0,0.1)",
-          zIndex: "1000",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <p style={{ color: "#FFFFFF", fontSize: "14px", margin: "0" }}>
-          This site uses cookies to improve your experience. By browsing, you
-          agree to our{" "}
-          <a href="#" style={{ color: "#22D3EE", textDecoration: "underline" }}>
-            Privacy Policy
-          </a>{" "}
-          &{" "}
-          <a href="#" style={{ color: "#22D3EE", textDecoration: "underline" }}>
-            Cookie Policy
-          </a>
-        </p>
-        <button
-          style={{
-            padding: "10px 32px",
-            backgroundColor: "#0066FF",
-            color: "#FFFFFF",
-            border: "none",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.3s",
-          }}
-          onMouseEnter={(e) => (e.target.style.backgroundColor = "#0052CC")}
-          onMouseLeave={(e) => (e.target.style.backgroundColor = "#0066FF")}
-        >
-          Okay
-        </button>
-      </div>
+   
     </div>
   );
 }

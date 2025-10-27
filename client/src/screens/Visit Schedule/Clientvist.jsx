@@ -354,12 +354,12 @@ export default function PropertyCheckout() {
                 <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                   <img 
                     src={property.images?.[0] || 'https://via.placeholder.com/120'} 
-                    alt={property.address} 
+                    alt={property.Sector} 
                     style={{ width: '120px', height: '120px', borderRadius: '8px', objectFit: 'cover', border: '2px solid #F4F7F9' }} 
                   />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <h3 style={{ color: '#003366', fontSize: '16px', fontWeight: '600', margin: 0, lineHeight: '1.4' }}>
-                      {property.address || property.location || 'N.A'}
+                      {property.Sector || 'N.A'}
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4A6A8A', fontSize: '14px' }}>
                       <MapPin size={16} strokeWidth={2} />

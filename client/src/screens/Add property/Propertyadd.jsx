@@ -23,6 +23,7 @@ export default function PropertyListingForm() {
   const [formData, setFormData] = useState({
     purpose: "",
     address: "",
+    Sector: "",
     propertyType: "",
     bedrooms: "",
     bathrooms: "",
@@ -55,6 +56,7 @@ export default function PropertyListingForm() {
     description: "",
     price: "",
     location: "",
+    Sector: "",
     area: "",
   });
   const [images, setImages] = useState([]);
@@ -196,6 +198,7 @@ export default function PropertyListingForm() {
       });
       if (res.ok) {
         alert("✅ Property successfully submitted!");
+        navigate("/");
       } else {
         const err = await res.json();
         alert("❌ Submission failed: " + (err.message || res.statusText));
@@ -549,6 +552,19 @@ export default function PropertyListingForm() {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              </div>
+              <div style={fieldStyle}>
+                <label style={inputLabelStyle}>Sector *</label>
+                <input
+                  type="text"
+                  name="Sector"
+                  value={formData.Sector}
+                  onChange={handleChange}
+                  placeholder="e.g., Sector 46"
                   style={inputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
@@ -1052,6 +1068,19 @@ export default function PropertyListingForm() {
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
+              <div style={fieldStyle}>
+                <label style={inputLabelStyle}>Sector *</label>
+                <input
+                  type="text"
+                  name="Sector"
+                  value={formData.Sector}
+                  onChange={handleChange}
+                  placeholder="e.g., Sector 46"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              </div>
               <div style={gridStyle}>
                 <div>
                   <label style={inputLabelStyle}>Property Type</label>
@@ -1261,7 +1290,7 @@ export default function PropertyListingForm() {
                 ← Previous
               </button>
               {currentStep === steps.length - 1 ? (
-                <button onClick={handleSubmit} style={buttonStyle("primary")}>
+                <button onClick={handleSubmit} style={buttonStyle("primary")} >
                   Submit Property
                 </button>
               ) : (

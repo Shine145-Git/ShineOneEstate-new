@@ -205,6 +205,27 @@ export default function PropertyCards() {
                   {property.status}
                 </span>
               </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // prevent triggering the card click
+                  navigate(`/property-analytics/${property._id}`, { state: { propertyId: property._id } });
+                }}
+                style={{
+                  marginTop: '16px',
+                  backgroundColor: '#003366',
+                  color: '#FFFFFF',
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={e => e.currentTarget.style.backgroundColor = '#22D3EE'}
+                onMouseOut={e => e.currentTarget.style.backgroundColor = '#003366'}
+              >
+                View Analytics
+              </button>
             </div>
           ))}
         </div>
