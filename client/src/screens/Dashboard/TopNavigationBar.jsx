@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import SideMenuBar from "./SideMenu";
 import Location from "./Location";
+import SavedProperties from "./savedproperties";
 
 const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -38,6 +40,22 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch saved properties from API
+  React.useEffect(() => {
+    console.log("Fetching saved properties from API...");
+    axios
+      .get(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_SAVED_PROPERTIES_API, {
+        withCredentials: true,
+      })
+      .then((response) => {
+        console.log("Fetched saved properties successfully:", response.data);
+        setProperties(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching saved properties:", error);
+      });
   }, []);
 
 return (
@@ -217,6 +235,8 @@ return (
         </button>
       )}
 
+
+
       <Location 
         size={20} 
         color="#FFFFFF" 
@@ -320,6 +340,40 @@ return (
                   <Square size={20} color="#4A6A8A" />
                   <span>Properties</span>
                 </button>
+                      {/* Saved Properties Button
+      <button
+        style={{
+          padding: "8px 20px",
+          backgroundColor: "#00A79D",
+          color: "#FFFFFF",
+          border: "none",
+          borderRadius: "6px",
+          fontSize: "13px",
+          fontWeight: "600",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          transition: "all 0.3s ease",
+          whiteSpace: "nowrap",
+          outline: "none",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#22D3EE";
+          e.currentTarget.style.transform = "translateY(-1px)";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#00A79D";
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+        onClick={() => {
+          navigate("/savedproperties", { state: { savedProperties: properties } });
+        }}
+      >
+        <span>Saved Properties</span>
+      </button> */}
                 <button
                   style={{
                     display: "flex",

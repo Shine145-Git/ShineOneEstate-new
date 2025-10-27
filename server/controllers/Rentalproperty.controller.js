@@ -3,6 +3,7 @@
 // @access Private (owner only)
 const SearchHistory = require("../models/SearchHistory.model.js");
 const RentalProperty = require("../models/Rentalproperty.model.js");
+const Sector = require("../models/Sector.model.js");
 
 
 const cloudinary = require("cloudinary").v2;
@@ -57,6 +58,24 @@ const createRentalProperty = async (req, res) => {
     }
 
     const propertyData = { ...req.body, owner: ownerId, images };
+
+    // 🧩 Extract sector name (e.g., "Sector-9" or "Sector 9") from full string
+    if (propertyData.Sector) {
+      const sectorRegex = /(sector[-\s]*\d+)/i;
+      const match = propertyData.Sector.match(sectorRegex);
+      const cleanSector =
+        match && match[1]
+          ? match[1].replace(/\s+/g, "").replace(/-?(\d+)/, "-$1").toUpperCase()
+          : propertyData.Sector.trim();
+
+      // Save or update in Sector collection
+      await Sector.findOneAndUpdate(
+        { name: cleanSector.toLowerCase() },
+        { name: cleanSector },
+        { upsert: true, new: true }
+      );
+    }
+
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
 

@@ -47,6 +47,33 @@ export default function RealEstateDashboard() {
   const [recentSearches, setRecentSearches] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
+  const [areaSuggestions, setAreaSuggestions] = useState([]);
+  // Area suggestions effect
+  useEffect(() => {
+    // If searchQuery is empty, clear suggestions and show history
+    if (!searchQuery.trim()) {
+      setAreaSuggestions([]);
+      return;
+    }
+    // Fetch area suggestions from API
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(searchQuery.trim())}`,
+          { method: "GET", credentials: "include" }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setAreaSuggestions(data.sectors || []);
+        } else {
+          setAreaSuggestions([]);
+        }
+      } catch (err) {
+        setAreaSuggestions([]);
+      }
+    };
+    fetchSuggestions();
+  }, [searchQuery]);
   const [propertiesInArea, setPropertiesInArea] = useState([]);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -636,7 +663,7 @@ export default function RealEstateDashboard() {
                 <Search size={20} color="#4A6A8A" />
               </button>
 
-              {showRecentDropdown && user && recentSearches.length > 0 && (
+              {showRecentDropdown && user && (
                 <div
                   style={{
                     position: "absolute",
@@ -651,37 +678,73 @@ export default function RealEstateDashboard() {
                     zIndex: 10,
                   }}
                 >
-                  {recentSearches.map((search, idx) => (
-                    <div
-                      key={search._id || idx}
-                      style={{
-                        padding: "10px 16px",
-                        cursor: "pointer",
-                        borderBottom:
-                          idx !== recentSearches.length - 1
-                            ? "1px solid #f1f1f1"
-                            : "none",
-                        color: "#333",
-                        fontSize: "14px",
-                        backgroundColor: "#fff",
-                        transition: "background 0.2s",
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setSearchQuery(search.query);
-                        setShowRecentDropdown(false);
-                        handleSearch();
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.target.style.backgroundColor = "#F4F7F9")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.target.style.backgroundColor = "#fff")
-                      }
-                    >
-                      {search.query}
-                    </div>
-                  ))}
+                  {/* If searchQuery is empty, show recentSearches */}
+                  {!searchQuery.trim() && recentSearches.length > 0 &&
+                    recentSearches.map((search, idx) => (
+                      <div
+                        key={search._id || idx}
+                        style={{
+                          padding: "10px 16px",
+                          cursor: "pointer",
+                          borderBottom:
+                            idx !== recentSearches.length - 1
+                              ? "1px solid #f1f1f1"
+                              : "none",
+                          color: "#333",
+                          fontSize: "14px",
+                          backgroundColor: "#fff",
+                          transition: "background 0.2s",
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSearchQuery(search.query);
+                          setShowRecentDropdown(false);
+                          handleSearch();
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.target.style.backgroundColor = "#F4F7F9")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.target.style.backgroundColor = "#fff")
+                        }
+                      >
+                        {search.query}
+                      </div>
+                    ))
+                  }
+                  {/* If searchQuery is not empty and areaSuggestions exist, show suggestions */}
+                  {searchQuery.trim() && areaSuggestions.length > 0 &&
+                    areaSuggestions.map((sector, idx) => (
+                      <div
+                        key={sector.id || sector.name || idx}
+                        style={{
+                          padding: "10px 16px",
+                          cursor: "pointer",
+                          borderBottom:
+                            idx !== areaSuggestions.length - 1
+                              ? "1px solid #f1f1f1"
+                              : "none",
+                          color: "#333",
+                          fontSize: "14px",
+                          backgroundColor: "#fff",
+                          transition: "background 0.2s",
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSearchQuery(sector.name);
+                          setShowRecentDropdown(false);
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.target.style.backgroundColor = "#F4F7F9")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.target.style.backgroundColor = "#fff")
+                        }
+                      >
+                        {sector.name}
+                      </div>
+                    ))
+                  }
                 </div>
               )}
 

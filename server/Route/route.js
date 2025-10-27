@@ -19,7 +19,7 @@ const {
   bulkUploadProperties,
   getMyProperties,
 } = require("../controllers/Rentalproperty.controller.js");
-const { getUserDashboard, searchProperties, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
+const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
 const { getPendingPayments, updatePaymentStatus, getApprovedPayments } = require("../controllers/admin.controller");
 const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
@@ -29,7 +29,7 @@ const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
 const {getRentalPropertyById , getSalePropertyById} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
-const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion } = require("../controllers/PropertyAnalysis.controller.js");
+const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties } = require("../controllers/PropertyAnalysis.controller.js");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -65,6 +65,7 @@ router.get("/api/getRentalproperties/:id", getRentalPropertyById);
 router.get("/api/search-properties",verifyToken, searchProperties);
 router.get("/api/search-history", verifyToken, getSearchHistory);
 router.post("/api/search-properties-on-location", verifyToken, searchPropertiesonLocation);
+router.get("/api/get-sector-suggestions", verifyToken, getSectorSuggestions);
 
 // Payment routes
 router.post("/api/payment", verifyToken, createPayment);
@@ -114,5 +115,6 @@ router.post("/api/property-analysis/addEngagementTime", verifyToken, addEngageme
 router.post("/api/property-analysis/addRating", verifyToken, addRating);
 router.get("/api/property-analysis/:id", verifyToken, getMetrics);
 router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
+router.get("/api/property-analysis/saved-properties", verifyToken, getSavedProperties);
 
 module.exports = router;

@@ -1,3 +1,4 @@
+const Sector = require("../models/Sector.model");
 const RentalProperty = require("../models/Rentalproperty.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const SearchHistory = require("../models/SearchHistory.model");
@@ -122,6 +123,53 @@ exports.searchProperties = async (req, res) => {
   }
 };
 
+// ===============================
+// 🔹 SEARCH AREA SUGGESTIONS
+// ===============================
+exports.getSectorSuggestions = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) return res.status(400).json({ message: "Query is required" });
+
+    // Match sector names containing user query (case-insensitive)
+    const regex = new RegExp(query.trim(), "i");
+    const sectors = await Sector.find({ name: regex }).limit(10);
+
+    if (sectors.length === 0) {
+      return res.status(200).json({ sectors: [] });
+    }
+
+    res.status(200).json({ sectors });
+  } catch (error) {
+    console.error("Error fetching sector suggestions:", error);
+    res.status(500).json({ message: "Server error fetching sector suggestions" });
+  }
+};
+
+// // ===============================
+// // 🔹 SEARCH PROPERTIES BY SECTOR
+// // ===============================
+// exports.getPropertiesBySector = async (req, res) => {
+//   try {
+//     const { sector } = req.params;
+//     if (!sector) return res.status(400).json({ message: "Sector name is required" });
+
+//     const regex = new RegExp(sector.trim(), "i");
+
+//     const rentalProperties = await RentalProperty.find({ Sector: regex })
+//       .populate("owner", "name email");
+
+//     const saleProperties = await SaleProperty.find({ Sector: regex })
+//       .populate({ path: "ownerId", select: "name email", strictPopulate: false });
+
+//     const combined = [...rentalProperties, ...saleProperties];
+//     res.status(200).json({ properties: combined });
+//   } catch (error) {
+//     console.error("Error fetching properties by sector:", error);
+//     res.status(500).json({ message: "Server error fetching properties by sector" });
+//   }
+// };
+
 // Get search history for the logged-in user
 exports.getSearchHistory = async (req, res) => {
   try {
@@ -226,7 +274,7 @@ exports.getUserDashboard = async (req, res) => {
     }
 
     // console.log("History:", history);
-    console.log("Recommended:", recommended);
+    // console.log("Recommended:", recommended);
 
     res.status(200).json({
       recentSearches: history,

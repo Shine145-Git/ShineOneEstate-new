@@ -22,6 +22,7 @@ import Chatbot from "./screens/Dashboard/ChatBot";
 import AdminEnquiryProperties from "./screens/Admin Page/admin.enquiryproperties";
 import SeeAllProperties from "./screens/Dashboard/SeeAllProperties";
 import PropertyAnalytics from "./screens/User-Properties/PropertyAnalysis";
+import Savedproperties from "./screens/Dashboard/savedproperties";
 
 function App() {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ function App() {
       <Route path="/admin/callback" element={<CallbackDetailsUI />} />
       <Route path="/chatbot" element={<Chatbot />} />
       <Route path="/seeAllproperties" element={<SeeAllProperties />} />
-
+      <Route path="/savedproperties" element={<Savedproperties />} />
       <Route path="/property-analytics/:id" element={<PropertyAnalytics />} />
     </Routes>
   );

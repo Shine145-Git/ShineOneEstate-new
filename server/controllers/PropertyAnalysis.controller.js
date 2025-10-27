@@ -15,7 +15,6 @@ const addView = async (req, res) => {
     );
     res.status(200).json(metrics);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Error adding view' });
   }
 };
@@ -32,7 +31,6 @@ const addSave = async (req, res) => {
     );
     res.status(200).json(metrics);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Error adding save' });
   }
 };
@@ -53,7 +51,6 @@ const getLeadConversion = async (req, res) => {
       conversionRate: Number(conversionRate.toFixed(1))
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Error calculating lead conversion' });
   }
 };
@@ -70,7 +67,6 @@ const addEngagementTime = async (req, res) => {
     );
     res.status(200).json(metrics);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Error adding engagement time' });
   }
 };
@@ -87,7 +83,6 @@ const addRating = async (req, res) => {
     );
     res.status(200).json(metrics);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Error adding rating' });
   }
 };
@@ -105,22 +100,44 @@ const getMetrics = async (req, res) => {
       // Removed populate for payments.user because it does not exist in schema
       .populate('engagementTime.user', 'name email')
       .populate('ratings.user', 'name email');
-    console.log('Fetched metrics:', metrics);
 
     if (!metrics) return res.status(404).json({ error: "Metrics not found" });
 
     res.status(200).json(metrics);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Error fetching metrics' });
   }
 };
 
+// In PropertyAnalysis.controller.js
+const getSavedProperties = async (req, res) => {
+  try {
+    // Fallback: extract userId from cookie if middleware didn't attach it
+    const userId = req.user?._id || req.cookies?.userId;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User not authenticated" });
+    }
+
+    const saved = await PropertyAnalysis.find({ 'saves.user': userId })
+      .populate('property')
+      .populate('saves.user', 'name email');
+
+    if (!saved || saved.length === 0) {
+      return res.status(404).json({ message: "No saved properties found" });
+    }
+
+    res.status(200).json(saved);
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching saved properties' });
+  }
+};
 module.exports = {
   addView,
   addSave,
   getLeadConversion,
   addEngagementTime,
   addRating,
-  getMetrics
+  getMetrics,
+  getSavedProperties
 };
