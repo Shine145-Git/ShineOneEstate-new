@@ -1,23 +1,36 @@
 import os
 import subprocess
+import time
+import socket
 
-# Read the Render-assigned port (fallback to 10000 locally)
+# Delay start a bit so Render doesn't timeout
+print("⏳ Waiting for environment to stabilize...")
+time.sleep(10)
+
 port = os.environ.get("PORT", "10000")
-
-# Your frontend URL for CORS
 cors_origin = "https://shineoneestate-new-1.onrender.com"
-
-# The trained model path
 model_path = "models/RENTALPROPERTYMODEL.tar.gz"
 
-# Build the command
 cmd = [
     "rasa", "run",
     "--enable-api",
     "--cors", cors_origin,
     "--port", str(port),
-    "--model", model_path
+    "--model", model_path,
+    "--host", "0.0.0.0"
 ]
 
 print(f"🚀 Starting Rasa server on port {port} with CORS {cors_origin}")
-subprocess.run(cmd)
+subprocess.Popen(cmd)
+
+# Wait until the port is open to satisfy Render’s port scan
+print("🔍 Waiting for Rasa to open the port...")
+for _ in range(60):  # up to ~60 seconds
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("0.0.0.0", int(port))) == 0:
+            print(f"✅ Port {port} is open. Rasa is live!")
+            while True:
+                time.sleep(60)
+        time.sleep(1)
+
+print("❌ Timeout: Rasa did not open the port in time.")
