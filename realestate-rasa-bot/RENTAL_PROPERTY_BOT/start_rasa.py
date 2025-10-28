@@ -16,7 +16,7 @@ cmd = [
     "--enable-api",
     "--cors", cors_origin,
     "--model", model_path,
-    "--host", "0.0.0.0",   # 👈 add this here
+    "--interface", "0.0.0.0",   # ✅ corrected flag
     "--port", str(port)
 ]
 
