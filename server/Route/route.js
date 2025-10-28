@@ -11,7 +11,7 @@ const { verifyToken } = require("../middleware/auth");
 const { requestOtp, verifyOtp } = require("../controllers/login.controller");
 const { userDetails, saveUserDetails, getUserDetails } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
-const { saveUserPreferencesRENTALARIA , saveUserPreferencesSALEARIA } = require("../controllers/UserPreferencesARIA.controller.js");
+const { saveUserPreferencesRENTALARIA , saveUserPreferencesSALEARIA } = require("../controllers/userPreferencesARIA.controller.js");
 
 const {
   createRentalProperty,
