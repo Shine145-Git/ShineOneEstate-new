@@ -15,9 +15,9 @@ cmd = [
     "rasa", "run",
     "--enable-api",
     "--cors", cors_origin,
-    "--port", str(port),
     "--model", model_path,
-    "--host", "0.0.0.0"
+    "--host", "0.0.0.0",   # 👈 add this here
+    "--port", str(port)
 ]
 
 print(f"🚀 Starting Rasa server on port {port} with CORS {cors_origin}")
