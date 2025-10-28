@@ -1,0 +1,45 @@
+version: "3.1"
+
+stories:
+- story: user provides budget then size then amenities
+  steps:
+  - intent: start_conversation
+  - action: utter_intro
+  - action: utter_ask_location
+  - intent: provide_location
+  - action: utter_ask_budget
+  - intent: provide_budget
+  - action: utter_ask_size
+  - intent: provide_size
+  - action: utter_ask_amenities
+  - intent: provide_amenities
+  - action: utter_thank_you
+
+# ✅ Reinforcement stories
+- story: budget to size path
+  steps:
+  - intent: provide_budget
+  - action: utter_ask_size
+  - intent: provide_size
+  - action: utter_ask_amenities
+
+- story: size to amenities path
+  steps:
+  - intent: provide_size
+  - action: utter_ask_amenities
+  - intent: provide_amenities
+  - action: utter_thank_you
+
+- story: complete rental flow
+  steps:
+  - intent: start_conversation
+  - action: utter_intro
+  - action: utter_ask_location
+  - intent: provide_location
+  - action: utter_ask_budget
+  - intent: provide_budget
+  - action: utter_ask_size
+  - intent: provide_size
+  - action: utter_ask_amenities
+  - intent: provide_amenities
+  - action: utter_thank_you

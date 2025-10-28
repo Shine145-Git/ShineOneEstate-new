@@ -41,8 +41,8 @@ const Searchproperty = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleLogout = async () => {
-    await fetch("http://localhost:2000/auth/logout", {
+const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
       method: "POST",
       credentials: "include",
     });
@@ -53,7 +53,7 @@ const Searchproperty = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:2000/auth/me", {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
           method: "GET",
           credentials: "include",
         });

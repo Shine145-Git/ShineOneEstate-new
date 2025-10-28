@@ -1,0 +1,29 @@
+version: "3.1"
+
+rules:
+- rule: fallback message
+  steps:
+  - intent: nlu_fallback
+  - action: utter_thank_you
+
+- rule: Ask for size after budget
+  steps:
+  - intent: provide_budget
+  - action: utter_ask_size
+
+- rule: Ask for size after budget (reinforce)
+  condition:
+  - active_loop: null
+  steps:
+  - intent: provide_budget
+  - action: utter_ask_size
+
+- rule: Ask for amenities after size
+  steps:
+  - intent: provide_size
+  - action: utter_ask_amenities
+
+- rule: Thank user after amenities
+  steps:
+  - intent: provide_amenities
+  - action: utter_thank_you

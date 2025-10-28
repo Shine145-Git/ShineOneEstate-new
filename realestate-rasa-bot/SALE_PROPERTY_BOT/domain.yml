@@ -1,0 +1,50 @@
+version: "3.1"
+
+intents:
+  - start_sale_conversation
+  - start_conversation
+  - provide_location
+  - provide_budget
+  - provide_property_type
+  - provide_size
+  - provide_purpose
+  - provide_amenities
+  - provide_timeline
+
+responses:
+  utter_intro:
+  - text: "Welcome to ggnRentalDeals Sale Property Assistant! I’m here to help you find your dream property. Let’s get started!"
+
+  utter_ask_location:
+  - text: "Which location or city are you looking to buy a property in?"
+
+  utter_ask_budget:
+  - text: "What is your budget range for the property purchase?"
+
+  utter_ask_property_type:
+  - text: "What type of property are you interested in? (e.g., apartment, villa, plot, commercial space)"
+
+  utter_ask_size:
+  - text: "What size or configuration are you looking for? (e.g., 2BHK, 3BHK, 2000 sq ft, etc.)"
+
+  utter_ask_purpose:
+  - text: "Are you buying for personal use or as an investment?"
+
+  utter_ask_amenities:
+  - text: "Do you have any special preferences or amenities in mind? (e.g., parking, garden, gated community, swimming pool)"
+
+  utter_thank_you:
+  - text: "Thank you for sharing your preferences! I’ll use this information to find the best properties for you."
+
+  utter_goodbye:
+  - text: "Goodbye! Have a great day ahead."
+
+  utter_iamabot:
+  - text: "I am your virtual assistant from ggnRentalDeals, here to help you with sale property queries."
+
+  utter_ask_timeline:
+  - text: "When are you planning to make the property purchase? (e.g., immediately, within 3 months, later this year)"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

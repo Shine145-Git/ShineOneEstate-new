@@ -109,13 +109,15 @@ const getMetrics = async (req, res) => {
   }
 };
 
-// In PropertyAnalysis.controller.js
 const getSavedProperties = async (req, res) => {
   try {
-    // Fallback: extract userId from cookie if middleware didn't attach it
-    const userId = req.user?._id || req.cookies?.userId;
+    console.log("📩 getSavedProperties triggered");
+    console.log("👤 req.user:", req.user);
+    console.log("🍪 req.cookies:", req.cookies);
 
+    const userId = req.user?._id || req.cookies?.userId;
     if (!userId) {
+      console.warn("⚠️ Missing user ID → returning 400");
       return res.status(400).json({ error: "User not authenticated" });
     }
 
@@ -123,13 +125,16 @@ const getSavedProperties = async (req, res) => {
       .populate('property')
       .populate('saves.user', 'name email');
 
+    console.log(`🔍 Found ${saved.length} saved properties for user ${userId}`);
+
     if (!saved || saved.length === 0) {
       return res.status(404).json({ message: "No saved properties found" });
     }
 
     res.status(200).json(saved);
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching saved properties' });
+    console.error("❌ Error fetching saved properties:", err);
+    res.status(500).json({ error: "Server error while fetching saved properties" });
   }
 };
 module.exports = {

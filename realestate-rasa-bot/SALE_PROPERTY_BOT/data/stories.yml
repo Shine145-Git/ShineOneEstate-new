@@ -1,0 +1,21 @@
+version: "3.1"
+
+stories:
+
+- story: sale property conversation
+  steps:
+  - intent: start_sale_conversation
+  - action: utter_intro
+  - action: utter_ask_location
+  - intent: provide_location
+  - action: utter_ask_budget
+  - intent: provide_budget
+  - action: utter_ask_size
+  - intent: provide_size
+  - action: utter_ask_property_type
+  - intent: provide_property_type
+  - action: utter_ask_amenities
+  - intent: provide_amenities
+  - action: utter_ask_timeline
+  - intent: provide_timeline
+  - action: utter_thank_you

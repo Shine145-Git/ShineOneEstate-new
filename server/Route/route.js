@@ -11,7 +11,7 @@ const { verifyToken } = require("../middleware/auth");
 const { requestOtp, verifyOtp } = require("../controllers/login.controller");
 const { userDetails, saveUserDetails, getUserDetails } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
-
+const { saveUserPreferencesRENTALARIA , saveUserPreferencesSALEARIA } = require("../controllers/UserPreferencesARIA.controller.js");
 
 const {
   createRentalProperty,
@@ -116,5 +116,10 @@ router.post("/api/property-analysis/addRating", verifyToken, addRating);
 router.get("/api/property-analysis/:id", verifyToken, getMetrics);
 router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
 router.get("/api/property-analysis/saved-properties", verifyToken, getSavedProperties);
+
+// User Preferences (ARIA Assistant)
+
+router.post("/api/user/preferences-RENT-aria", verifyToken, saveUserPreferencesRENTALARIA);
+router.post("/api/user/preferences-SALE-aria", verifyToken, saveUserPreferencesRENTALARIA);
 
 module.exports = router;

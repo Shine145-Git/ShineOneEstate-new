@@ -6,9 +6,8 @@
 #FFFFFF (White)
 #333333 (Dark Charcoal)
 
-
-  const handleLogout = async () => {
-    await fetch("http://localhost:2000/auth/logout", {
+const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
       method: "POST",
       credentials: "include",
     });
@@ -19,7 +18,7 @@
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:2000/auth/me", {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
           method: "GET",
           credentials: "include",
         });
@@ -33,3 +32,10 @@
   }, []);
 
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
+
+
+   <TopNavigationBar
+        user={user}
+        handleLogout={handleLogout}
+        navItems={navItems}
+      />

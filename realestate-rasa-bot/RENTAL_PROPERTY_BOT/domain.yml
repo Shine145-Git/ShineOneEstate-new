@@ -1,0 +1,31 @@
+version: "3.1"
+
+intents:
+  - provide_location
+  - provide_budget
+  - provide_size
+  - provide_amenities
+  - start_conversation
+
+responses:
+  utter_intro:
+  - text: " Welcome to ggnRentalDeals Assistant! I’m here to help you find your perfect rental property. Let’s get started!"
+
+  utter_ask_location:
+  - text: "Which location are you interested in for renting a property?"
+
+  utter_ask_budget:
+  - text: "What is your budget range for renting?"
+
+  utter_ask_size:
+  - text: "What size of property are you looking for? (Like, number of BHK or area)"
+
+  utter_ask_amenities:
+  - text: "What amenities would you like? (For example, parking, gym, lift, security, etc.)"
+
+  utter_thank_you:
+  - text: "Thank you for sharing all the details! Our rental team will get in touch with you soon."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

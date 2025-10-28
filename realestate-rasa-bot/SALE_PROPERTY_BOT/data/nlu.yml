@@ -1,0 +1,128 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - good morning
+    - good evening
+    - hey there
+    - hello ggnRentalDeals assistant
+    - hi, I want to buy a property
+
+- intent: start_sale_conversation
+  examples: |
+    - Let's start
+    - I am ready to answer
+    - Start the process
+    - Begin the property questions
+    - Let's go ahead
+    - Start asking the questions
+
+- intent: start_conversation
+  examples: |
+    - I want to buy a property
+    - I am looking to purchase a flat
+    - I am searching for a house for sale
+    - show me some properties for sale
+    - looking for a home to buy
+    - want to explore sale properties
+    - I am interested in purchasing a property
+
+- intent: provide_location
+  examples: |
+    - Gurgaon
+    - Delhi
+    - Noida
+    - Sector 56
+    - Golf Course Road
+    - I want in Dwarka
+    - somewhere in Delhi NCR
+    - near MG Road
+
+- intent: provide_budget
+  examples: |
+    - 60 lacs
+    - under 1 crore
+    - between 80 lakh to 1 crore
+    - my budget is 50 lakh
+    - around 70 lakh
+    - less than 90 lakh
+    - maximum 1.2 crore
+    - I can spend up to 1.5 crore
+
+- intent: provide_property_type
+  examples: |
+    - apartment
+    - villa
+    - plot
+    - independent house
+    - 3 BHK flat
+    - 2 BHK apartment
+    - penthouse
+
+- intent: provide_size
+  examples: |
+    - 2 BHK
+    - 3 BHK
+    - 4 BHK
+    - 1500 sq ft
+    - 2000 square feet
+    - 1200 sqft
+    - 5 BHK villa
+
+- intent: provide_amenities
+  examples: |
+    - parking
+    - swimming pool
+    - gym
+    - lift
+    - garden
+    - security
+    - clubhouse
+    - power backup
+    - kids play area
+
+- intent: goodbye
+  examples: |
+    - bye
+    - goodbye
+    - see you later
+    - thanks, that’s all
+    - thank you
+    - bye assistant
+
+- intent: affirm
+  examples: |
+    - yes
+    - of course
+    - sure
+    - definitely
+    - that’s correct
+
+- intent: deny
+  examples: |
+    - no
+    - not really
+    - I don’t think so
+    - no thanks
+
+- intent: provide_purpose
+  examples: |
+    - personal use
+    - for investment
+    - it’s for my family
+    - I’m buying as an investment
+    - for my own living
+    - for rental income
+
+- intent: provide_timeline
+  examples: |
+    - immediately
+    - within 3 months
+    - later this year
+    - after 6 months
+    - by next year
+    - not decided yet

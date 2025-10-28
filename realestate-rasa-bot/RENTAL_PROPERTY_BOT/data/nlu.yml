@@ -1,0 +1,87 @@
+version: "3.1"
+
+nlu:
+- intent: provide_location
+  examples: |
+    - Gurgaon
+    - I want a flat in Delhi
+    - Looking for a house in Mumbai
+    - I prefer Noida
+    - Bangalore
+    - Can you find something in Pune?
+    - My preferred location is Hyderabad
+    - I want to rent in Chennai
+    - Any available places in Kolkata?
+    - Searching for apartments near Bangalore
+
+- intent: provide_budget
+  examples: |
+    - My budget is 25k
+    - around 50 thousand per month
+    - I can pay up to 30,000
+    - maximum 40k
+    - I am looking for something under 60,000
+    - about 20k per month
+    - I want to spend 35,000 monthly
+    - My budget is between 20k and 30k
+    - I’m willing to pay 45k max
+    - Rent should not exceed 55,000
+    - 5000
+    - 7000
+    - around 8000
+    - my budget is 10k
+    - between 6000 and 8000
+    - up to 12000
+    - under 15000
+    - ₹8000
+    - 10000 rupees
+
+- intent: provide_size
+  examples: |
+    - 2 BHK
+    - a 3 bedroom flat
+    - around 1500 sq ft
+    - I want a 1BHK
+    - Looking for a 4 BHK apartment
+    - 1200 square feet
+    - a studio apartment
+    - 3 rooms
+    - Need a two bedroom place
+    - I’m looking for a 3BHK house
+
+
+- intent: provide_amenities
+  examples: |
+    - parking
+    - gym
+    - lift
+    - security
+    - swimming pool
+    - power backup
+    - garden
+    - clubhouse
+    - play area
+    - 24x7 water supply
+    - I want a flat with parking and lift
+    - need gym and security
+    - looking for a property with power backup and water supply
+    - amenities like garden and clubhouse
+    - furnished with gym access
+    - I prefer a place with security and lift
+
+- intent: start_conversation
+  examples: |
+    - start_conversation
+    - begin
+    - let's start
+    - start
+    - I want to start
+    - initiate
+    - can we begin
+    - let's go
+    - begin the process
+    - start the chat
+
+- regex: budget_amount
+  examples: |
+    - [0-9]{3,6}

@@ -150,7 +150,7 @@ export default function AdminDashboard() {
 
 
   const handleLogout = async () => {
-    await fetch("http://localhost:2000/auth/logout", {
+    await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
       method: "POST",
       credentials: "include",
     });

@@ -7,7 +7,9 @@ import RentalPropertydetails from "./screens/Property View/RentalPropertyPageVie
 import SalePropertyPage from "./screens/Property View/SalePropertyPageView";
 import PropertyCheckout from "./screens/Visit Schedule/Clientvist";
 import TestUser from "./screens/Testing/test";
-import AIAssistant from "./screens/AI Assistant/ai";
+import PropertySearchInterface from "./screens/AI Assistant/ai";
+import VoiceAssistantRent from "./screens/AI Assistant/RENTAL_CLIENT_RASA_MODEL";
+import VoiceAssistantSale from "./screens/AI Assistant/SALE_CLIENT_RASA_MODEL";
 import PropertyListingForm from "./screens/Add property/Propertyadd";
 import MyProperties from "./screens/Property View/RentalPropertyPageView";
 import PropertyCards from "./screens/User-Properties/propertiesuser";
@@ -40,7 +42,9 @@ function App() {
       <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
 
       <Route path="/test" element={<TestUser />} />
-      <Route path="/AIassistant" element={<AIAssistant />} />
+      <Route path="/AIassistant" element={<PropertySearchInterface />} />
+      <Route path="/AIassistant-Rent" element={<VoiceAssistantRent />} />
+      <Route path="/AIassistant-Sale" element={<VoiceAssistantSale />} />
       <Route path="/add-property" element={<PropertyListingForm />} />
       <Route path="/my-properties/:id" element={<MyProperties />} />
       {/* This property visit page show the client visit page i.e the enquiry and payment page */}

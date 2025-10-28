@@ -1,0 +1,14 @@
+{
+  "0": "affirm",
+  "1": "bot_challenge",
+  "2": "deny",
+  "3": "goodbye",
+  "4": "greet",
+  "5": "mood_great",
+  "6": "mood_unhappy",
+  "7": "provide_budget",
+  "8": "provide_furnishing",
+  "9": "provide_location",
+  "10": "provide_size",
+  "11": "start_conversation"
+}
