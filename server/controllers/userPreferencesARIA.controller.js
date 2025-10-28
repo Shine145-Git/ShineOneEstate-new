@@ -1,4 +1,4 @@
-const UserPreferencesARIA = require("../models/userPreferencesARIA.model");
+const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
 
 exports.saveUserPreferencesRENTALARIA = async (req, res) => {
   try {
