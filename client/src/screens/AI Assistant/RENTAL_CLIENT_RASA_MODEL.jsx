@@ -121,18 +121,26 @@ const VoiceAssistantRent = () => {
           const userSpeech = event.results[0][0].transcript.trim();
           // LOG: Recognized speech
           console.log("🎤 Recognized speech:", userSpeech);
-          // --- Similarity check: Prevent user from repeating the bot's question
+          // --- Improved Similarity Check ---
           const botQuestion = questions[currentQuestionIdx];
-          // 🔹 Check if user repeated the bot question
           const normalizedUser = userSpeech.toLowerCase().replace(/[^a-z0-9 ]/g, "");
           const normalizedQuestion = botQuestion.toLowerCase().replace(/[^a-z0-9 ]/g, "");
-          let similarity = 0;
-          const words1 = new Set(normalizedUser.split(" "));
-          const words2 = new Set(normalizedQuestion.split(" "));
-          for (const w of words1) if (words2.has(w)) similarity++;
-          const ratio = similarity / Math.max(words2.size, 1);
-          // If > 0.6 words overlap → probably repeated the bot question
-          if (ratio > 0.3) {
+          // Token-based similarity calculation
+          let overlap = 0;
+          const wordsUser = new Set(normalizedUser.split(" "));
+          const wordsBot = new Set(normalizedQuestion.split(" "));
+          for (const word of wordsUser) if (wordsBot.has(word)) overlap++;
+          const ratio = overlap / Math.max(wordsBot.size, 1);
+          // Skip if user repeats or paraphrases the bot’s question
+          if (
+            ratio > 0.6 ||
+            normalizedUser.includes("how many") ||
+            normalizedUser.includes("what is your budget") ||
+            normalizedUser.includes("which location") ||
+            normalizedUser.includes("amenities") ||
+            normalizedUser.includes("are you looking")
+          ) {
+            console.log("⚠️ Ignoring repeated or similar input:", userSpeech, "| similarity:", ratio.toFixed(2));
             setMessages(prev => [...prev, { type: "bot", text: "Please answer the question so I can continue." }]);
             speak("Please answer the question so I can continue.");
             return;
