@@ -477,18 +477,8 @@ export default function AdminProperties() {
             {tab.label}
           </button>
         ))}
-        <button
-          onClick={() => navigate("/admin/enquiries")}
-          style={styles.tab(false)}
-        >
-          Enquiries
-        </button>
-        <button
-          onClick={() => navigate("/admin/callback")}
-          style={styles.tab(false)}
-        >
-          Callback
-        </button>
+       
+        
       </div>
 
       {/* Main Content */}

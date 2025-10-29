@@ -61,7 +61,7 @@ const AdminLandingPage = () => {
       title: 'Properties',
       description: 'Manage all property listings',
       icon: Home,
-      route: '/admin/properties',
+      route: '/admin/rewardsproperties',
       color: '#ef4444',
       gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
     },
