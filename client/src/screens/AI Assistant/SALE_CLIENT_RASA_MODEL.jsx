@@ -2,10 +2,21 @@ import React, { useEffect, useRef, useState } from "react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
 
+function stringSimilarity(str1, str2) {
+  if (!str1 || !str2) return 0;
+  str1 = str1.toLowerCase();
+  str2 = str2.toLowerCase();
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  const longerLength = longer.length;
+  if (longerLength === 0) return 1.0;
+  const matches = [...shorter].filter(ch => longer.includes(ch)).length;
+  return matches / longerLength;
+}
+
 const VoiceAssistantSale = () => {
   const [sessionId, setSessionId] = useState(null);
   const [listening, setListening] = useState(false);
-  const [botResponse, setBotResponse] = useState("");
   const [messages, setMessages] = useState([]);
   const [waveform, setWaveform] = useState(Array(40).fill(0));
   const [isMobile, setIsMobile] = useState(false);
@@ -16,6 +27,22 @@ const VoiceAssistantSale = () => {
   const isBotSpeakingRef = useRef(false);
   const messagesEndRef = useRef(null);
   const waveIntervalRef = useRef(null);
+  // Sale property assistant flow questions and intro
+  const saleQuestions = [
+    "Which location or city are you looking to buy a property in?",
+    "What is your budget range for the property purchase?",
+    "What type of property are you interested in? (e.g., apartment, villa, plot, commercial space)",
+    "What size or configuration are you looking for? (e.g., 2BHK, 3BHK, 2000 sq ft, etc.)",
+    "Are you buying for personal use or as an investment?",
+    "Do you have any special preferences or amenities in mind? (e.g., parking, garden, gated community, swimming pool)",
+    "When are you planning to make the property purchase? (e.g., immediately, within 3 months, later this year)"
+  ];
+  const saleIntro =
+    "Welcome to ggnRentalDeals Sale Property Assistant! I’m here to help you find your dream property. Let’s get started!";
+  const saleThankYou =
+    "Thank you for sharing your preferences! I’ll use this information to find the best properties for you.";
+  // Track which question we're on (0 = intro, 1 = q1, etc)
+  const [questionIndex, setQuestionIndex] = useState(0);
 
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -165,40 +192,47 @@ const VoiceAssistantSale = () => {
           return;
         }
         const userSpeech = event.results[0][0].transcript;
-        collectedPrefsRef.current.push(userSpeech.trim());
-console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
-        const filteredText = userSpeech.toLowerCase();
-        if (
-          filteredText.includes("which location") ||
-          filteredText.includes("budget range") ||
-          filteredText.includes("property are you looking") ||
-          filteredText.includes("furnishing preferences")
-        ) {
-          console.log("Ignored echo from bot:", filteredText);
+        // Similarity check with last bot message
+        const similarity = stringSimilarity(userSpeech, lastBotMessageRef.current);
+        if (similarity > 0.3) {
+          console.log(`🛑 Ignored — ${Math.round(similarity * 100)}% similar to bot message`);
           return;
+        }
+        // Only collect user responses to actual questions (not intro/thank you)
+        if (
+          questionIndex > 0 &&
+          questionIndex <= saleQuestions.length
+        ) {
+          collectedPrefsRef.current.push(userSpeech.trim());
         }
         console.log("🎙️ User said:", userSpeech);
         setMessages((prev) => [...prev, { type: "user", text: userSpeech }]);
-        try {
-          const res = await fetch(
-            process.env.REACT_APP_SALE_PROPERTY_MODEL_ARIA,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ sender: sessionId, message: userSpeech }),
-            }
-          );
-          const data = await res.json();
-          const botText =
-            data
-              .map((msg) => msg.text)
-              .filter(Boolean)
-              .join(" ") || "Sorry, I didn't understand.";
-          setBotResponse(botText);
-          setMessages((prev) => [...prev, { type: "bot", text: botText }]);
-          speak(botText);
-        } catch (error) {
-          console.error("Error sending message:", error);
+        // Advance to next question or thank you
+        if (questionIndex < saleQuestions.length) {
+          // Next question
+          const nextIdx = questionIndex + 1;
+          setQuestionIndex(nextIdx);
+          const nextText =
+            nextIdx <= saleQuestions.length
+              ? saleQuestions[nextIdx - 1]
+              : saleThankYou;
+          setTimeout(() => {
+            setMessages((prev) => [
+              ...prev,
+              { type: "bot", text: nextText },
+            ]);
+            speak(nextText);
+          }, 400);
+        } else {
+          // Thank you message, finish
+          setQuestionIndex(saleQuestions.length + 1);
+          setTimeout(() => {
+            setMessages((prev) => [
+              ...prev,
+              { type: "bot", text: saleThankYou },
+            ]);
+            speak(saleThankYou);
+          }, 400);
         }
       } catch {}
     };
@@ -211,10 +245,14 @@ console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
         recognition.stop();
       } catch {}
     };
-  }, [sessionId]);
+  // eslint-disable-next-line
+  }, [sessionId, questionIndex]);
 
   // Track collected sale preferences in order for payload
   const collectedPrefsRef = useRef([]);
+
+  // Track the last bot message for similarity check
+  const lastBotMessageRef = useRef("");
 
   const speak = async (text) => {
     try {
@@ -236,10 +274,13 @@ console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
         utterance.voice = preferredVoice;
         console.log("🗣️ Using voice:", preferredVoice.name);
       }
+      // Store last bot message for similarity check
+      lastBotMessageRef.current = text;
       utterance.onend = async () => {
         console.log("🗣️ Bot finished speaking...");
         isBotSpeakingRef.current = false;
         speakingRef.current = false;
+        // If just finished the thank you message, save preferences and stop recognition
         if (
           text
             .toLowerCase()
@@ -252,29 +293,24 @@ console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
           // Map collected responses in the exact order of sale questions
           console.log("🧠 Raw collected responses before mapping:", collectedPrefsRef.current);
           const orderedPrefs = {
-            location: collectedPrefsRef.current[0] || "", // From "Which location or city..."
-            budget: collectedPrefsRef.current[1] || "", // From "What is your budget range..."
-            size: collectedPrefsRef.current[2] || "", // From "What size or configuration..."
-            propertyType: collectedPrefsRef.current[3] || "", // From "What type of property..."
-            amenities: collectedPrefsRef.current[4],
-            Time: collectedPrefsRef.current[5] || "" // From "Are you buying for personal use..."
-              ? [collectedPrefsRef.current[5]]
-              : [], // From "Do you have any special preferences..."
+            location: collectedPrefsRef.current[0] || "",
+            budget: collectedPrefsRef.current[1] || "",
+            propertyType: collectedPrefsRef.current[2] || "",
+            size: collectedPrefsRef.current[3] || "",
+            use: collectedPrefsRef.current[4] || "",
+            amenities: collectedPrefsRef.current[5] || "",
+            time: collectedPrefsRef.current[6] || ""
           };
-
           console.log(
             "🧾 Final orderedPrefs before sending (from ref):",
             orderedPrefs
           );
-
           const payload = {
             email: user?.email || null,
             assistantType: "sale",
             preferences: orderedPrefs,
           };
-
           console.log("📬 Payload to backend:", payload);
-
           try {
             const resp = await fetch(
               process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA,
@@ -285,7 +321,6 @@ console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
                 credentials: "include",
               }
             );
-
             if (resp.ok) {
               console.log("✅ User preferences saved successfully.");
               console.log("✅ Backend acknowledged preference save.");
@@ -296,7 +331,6 @@ console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
           } catch (err) {
             console.error("❌ Error saving user preferences:", err);
           }
-
           console.log("✅ Conversation ended. Stopping recognition.");
           if (recognitionRef.current) recognitionRef.current.stop();
           return;
@@ -329,34 +363,29 @@ console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
 
   useEffect(() => {
     if (sessionId) {
+      // Start the conversation with the intro and first question
+      setMessages([
+        { type: "bot", text: saleIntro },
+        { type: "bot", text: saleQuestions[0] }
+      ]);
+      setQuestionIndex(1);
+      // Speak intro, then first question, but wait for intro to finish
       (async () => {
-        try {
-          const res = await fetch(
-            process.env.REACT_APP_SALE_PROPERTY_MODEL_ARIA,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                sender: sessionId,
-                message: "start_conversation",
-              }),
+        await new Promise((resolve) => {
+          speak(saleIntro);
+          const introCheck = setInterval(() => {
+            if (!window.speechSynthesis.speaking) {
+              clearInterval(introCheck);
+              resolve();
             }
-          );
-          const data = await res.json();
-          const botText = data
-            .map((msg) => msg.text)
-            .filter(Boolean)
-            .join(" ");
-          if (botText) {
-            setBotResponse(botText);
-            setMessages([{ type: "bot", text: botText }]);
-            speak(botText);
-          }
-        } catch (err) {
-          console.error("Error sending initial message:", err);
-        }
+          }, 300);
+        });
+        setTimeout(() => {
+          speak(saleQuestions[0]);
+        }, 800);
       })();
     }
+    // eslint-disable-next-line
   }, [sessionId]);
 
   useEffect(() => {

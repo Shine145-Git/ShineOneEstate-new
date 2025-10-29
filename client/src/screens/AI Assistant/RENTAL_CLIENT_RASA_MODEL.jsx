@@ -18,7 +18,15 @@ const VoiceAssistantRent = () => {
     const waveIntervalRef = useRef(null);
 
   const [user, setUser] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
+  // Conversation questions for rental preferences
+  const questions = [
+    "Hello! I'm Aria, your AI rental assistant. Let's find your ideal rental property. First, which location are you interested in?",
+    "What is your budget range for the rent?",
+    "How many bedrooms or what property size do you prefer?",
+    "Are there any specific amenities or features you want?",
+    "Thank you for sharing all the details. I'll save your preferences now."
+  ];
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   // Deprecated: collectedPrefs, now using collectedPrefsArr for ordered responses
   // const [collectedPrefs, setCollectedPrefs] = useState({});
   const collectedPrefsRef = useRef([]);
@@ -113,64 +121,80 @@ const VoiceAssistantRent = () => {
           const userSpeech = event.results[0][0].transcript.trim();
           // LOG: Recognized speech
           console.log("🎤 Recognized speech:", userSpeech);
-          collectedPrefsRef.current.push(userSpeech);
-          console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
-          const filteredText = userSpeech.toLowerCase();
-          if (
-            filteredText.includes("which location") ||
-            filteredText.includes("budget range") ||
-            filteredText.includes("property are you looking") ||
-            filteredText.includes("furnishing preferences")
-          ) {
-            console.log("Ignored echo from bot:", filteredText);
+          // --- Similarity check: Prevent user from repeating the bot's question
+          const botQuestion = questions[currentQuestionIdx];
+          // 🔹 Check if user repeated the bot question
+          const normalizedUser = userSpeech.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+          const normalizedQuestion = botQuestion.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+          let similarity = 0;
+          const words1 = new Set(normalizedUser.split(" "));
+          const words2 = new Set(normalizedQuestion.split(" "));
+          for (const w of words1) if (words2.has(w)) similarity++;
+          const ratio = similarity / Math.max(words2.size, 1);
+          // If > 0.6 words overlap → probably repeated the bot question
+          if (ratio > 0.3) {
+            setMessages(prev => [...prev, { type: "bot", text: "Please answer the question so I can continue." }]);
+            speak("Please answer the question so I can continue.");
             return;
           }
-          console.log("🎙️ User said:", userSpeech);
+          // -----
+          collectedPrefsRef.current.push(userSpeech);
+          console.log("🧩 Collected responses so far:", collectedPrefsRef.current);
           setMessages(prev => [...prev, { type: "user", text: userSpeech }]);
-          try {
-            const res = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_MODEL_ARIA , {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ sender: sessionId, message: userSpeech }),
-            });
-            const data = await res.json();
-            const botText =
-              data.map((msg) => msg.text).filter(Boolean).join(" ") ||
-              "Sorry, I didn't understand.";
-            setBotResponse(botText);
-
-            // --- Set currentQuestion BEFORE speak(botText) ---
-            let detectedQuestion = null;
-            const lowerBotText = botText.toLowerCase();
-            if (lowerBotText.includes("which location") || lowerBotText.includes("location")) {
-              detectedQuestion = "location";
-            } else if (lowerBotText.includes("budget")) {
-              detectedQuestion = "budget";
-            } else if (lowerBotText.includes("size") || lowerBotText.includes("bhk") || lowerBotText.includes("bedroom")) {
-              detectedQuestion = "size";
-            } else if (lowerBotText.includes("amenit")) {
-              detectedQuestion = "amenities";
-            } else if (lowerBotText.includes("furnish")) {
-              detectedQuestion = "furnishing";
-            } else if (lowerBotText.includes("property type")) {
-              detectedQuestion = "propertyType";
+          // Move to next question
+          const nextIdx = currentQuestionIdx + 1;
+          setCurrentQuestionIdx(nextIdx);
+          if (nextIdx < questions.length) {
+            setMessages(prev => [...prev, { type: "bot", text: questions[nextIdx] }]);
+            speak(questions[nextIdx]);
+          } else {
+            // All questions done, preferences to backend
+            const orderedPrefs = {
+              location: collectedPrefsRef.current[0] || "",
+              budget: collectedPrefsRef.current[1] || "",
+              size: collectedPrefsRef.current[2] || "",
+              amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
+              furnishing: "",
+              propertyType: ""
+            };
+            console.log("🧾 Final orderedPrefs before sending (from ref):", orderedPrefs);
+            const payload = {
+              email: user?.email || null,
+              assistantType: "rental",
+              preferences: orderedPrefs,
+            };
+            setMessages(prev => [...prev, { type: "bot", text: questions[questions.length - 1] }]);
+            speak(questions[questions.length - 1]);
+            // Save to backend
+            try {
+              const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+                credentials: "include",
+              });
+              if (resp.ok) {
+                console.log("✅ User preferences saved successfully.");
+                console.log("✅ Backend acknowledged preference save.");
+                navigate("/");
+              } else {
+                const errText = await resp.text();
+                console.error("❌ Failed to save preferences:", errText);
+              }
+            } catch (err) {
+              console.error("❌ Error saving user preferences:", err);
             }
-            setCurrentQuestion(detectedQuestion);
-            console.log("🎯 Updated current question:", detectedQuestion);
-
-            setMessages(prev => [...prev, { type: "bot", text: botText }]);
-            speak(botText);
-          } catch (error) {
-            console.error("Error sending message:", error);
+            if (recognitionRef.current) recognitionRef.current.stop();
           }
-        } catch {}
+        } catch (err) { console.error("Speech result error:", err); }
       };
       safeStartRecognition();
       return () => {
         if (restartTimeoutRef.current) { clearTimeout(restartTimeoutRef.current); }
         try { recognition.stop(); } catch {}
       };
-    }, [sessionId]);
+    // eslint-disable-next-line
+    }, [sessionId, currentQuestionIdx]);
 
   const speak = (text) => {
     try {
@@ -196,52 +220,17 @@ const VoiceAssistantRent = () => {
         console.log("🗣️ Bot finished speaking...");
         isBotSpeakingRef.current = false;
         speakingRef.current = false;
-        if (text.includes("Thank you for sharing all the details")) {
-          // Map collectedPrefsRef.current to correct keys in order
-          const orderedPrefs = {
-            location: collectedPrefsRef.current[0] || "",
-            budget: collectedPrefsRef.current[1] || "",
-            size: collectedPrefsRef.current[2] || "",
-            amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
-            furnishing: "",
-            propertyType: ""
-          };
-          console.log("🧾 Final orderedPrefs before sending (from ref):", orderedPrefs);
-          const payload = {
-            email: user?.email || null,
-            assistantType: "rental",
-            preferences: orderedPrefs,
-          };
-          console.log("📬 Payload to backend:", payload);
-          try {
-            const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-              credentials: "include",
-            });
-            if (resp.ok) {
-              console.log("✅ User preferences saved successfully.");
-              console.log("✅ Backend acknowledged preference save.");
-            } else {
-              const errText = await resp.text();
-              console.error("❌ Failed to save preferences:", errText);
+        // Only auto-restart recognition if not at end
+        if (currentQuestionIdx < questions.length) {
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+              setTimeout(() => {
+                safeStartRecognition();
+              }, 1200);
+            } catch (err) {
+              console.warn("Restart error:", err);
             }
-          } catch (err) {
-            console.error("❌ Error saving user preferences:", err);
-          }
-          console.log("✅ Conversation ended. Stopping recognition.");
-          if (recognitionRef.current) recognitionRef.current.stop();
-          return;
-        }
-        if (recognitionRef.current) {
-          try {
-            recognitionRef.current.stop();
-            setTimeout(() => {
-              safeStartRecognition();
-            }, 1200);
-          } catch (err) {
-            console.warn("Restart error:", err);
           }
         }
       };
@@ -260,7 +249,15 @@ const VoiceAssistantRent = () => {
     }
   };
 
-  useEffect(() => { if (sessionId) { (async () => { try { const res = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_MODEL_ARIA, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sender: sessionId, message: "start_conversation" }), }); const data = await res.json(); const botText = data.map((msg) => msg.text).filter(Boolean).join(" "); if (botText) { setBotResponse(botText); setMessages([{ type: "bot", text: botText }]); speak(botText); } } catch (err) { console.error("Error sending initial message:", err); } })(); } }, [sessionId]);
+  // On session start, immediately trigger the first question
+  useEffect(() => {
+    if (sessionId) {
+      setCurrentQuestionIdx(0);
+      setMessages([{ type: "bot", text: questions[0] }]);
+      speak(questions[0]);
+    }
+    // eslint-disable-next-line
+  }, [sessionId]);
 
   useEffect(() => { window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); }; }, []);
 
