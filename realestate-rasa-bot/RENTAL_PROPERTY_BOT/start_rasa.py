@@ -7,7 +7,10 @@ import socket
 print("⏳ Waiting for environment to stabilize...")
 time.sleep(10)
 
-port = os.environ.get("PORT", "10000")
+port = os.getenv("PORT")
+if not port:
+    print("⚙️  No PORT found in environment, using default 10000 for local run.")
+    port = "10000"
 cors_origin = "https://shineoneestate-new-1.onrender.com"
 model_path = "models/RENTALPROPERTYMODEL.tar.gz"
 
@@ -20,6 +23,8 @@ cmd = [
     "--port", str(port)
 ]
 
+print(f"Binding explicitly to 0.0.0.0:{port}")
+os.environ["PORT"] = str(port)
 print(f"🚀 Starting Rasa server on port {port} with CORS {cors_origin}")
 subprocess.Popen(cmd)
 
