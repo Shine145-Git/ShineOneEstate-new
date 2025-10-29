@@ -66,7 +66,7 @@ function App() {
       <Route path="/admin/UserManagement" element={<UserManagementSystem />} />
       <Route path="/admin/enquiries" element={<PaymentsRewardsDashboard />} />
       <Route path="/admin/callback" element={<CallbackRequestsDashboard />} />
-      <Route path="/admin/properties" element={<AdminProperties />} />
+      <Route path="/admin/rewardsproperties" element={<AdminProperties />} />
 
       <Route path="/support" element={<CustomerSupportPage />} />
       <Route path="/chatbot" element={<Chatbot />} />
