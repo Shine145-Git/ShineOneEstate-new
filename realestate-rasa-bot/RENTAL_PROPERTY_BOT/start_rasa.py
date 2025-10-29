@@ -26,7 +26,7 @@ cmd = [
 print(f"Binding explicitly to 0.0.0.0:{port}")
 os.environ["PORT"] = str(port)
 print(f"🚀 Starting Rasa server on port {port} with CORS {cors_origin}")
-subprocess.Popen(cmd)
+subprocess.run(cmd, check=True)
 
 # Wait until the port is open to satisfy Render’s port scan
 print("🔍 Waiting for Rasa to open the port...")
