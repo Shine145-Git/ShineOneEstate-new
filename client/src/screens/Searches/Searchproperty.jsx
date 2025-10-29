@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Search, MapPin, Home, Sparkles, SlidersHorizontal, Heart, MoreVertical, Phone, MessageCircle, Bed, Bath, Car, Maximize, TrendingUp, Award, Shield, ChevronDown, Filter, Grid, List, X, Check, Building2, Calendar, IndianRupee } from "lucide-react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
@@ -24,6 +24,52 @@ const Searchproperty = () => {
     }
   }, [query]);
   const [searchQuery, setSearchQuery] = useState(query || "");
+  const [areaSuggestions, setAreaSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsTimeout = useRef(null);
+  // Debounced fetch for sector/area suggestions
+  useEffect(() => {
+    // Don't fetch if empty
+    if (!searchQuery.trim()) {
+      setAreaSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    // Debounce logic
+    if (suggestionsTimeout.current) clearTimeout(suggestionsTimeout.current);
+    suggestionsTimeout.current = setTimeout(() => {
+      fetchSuggestions(searchQuery.trim());
+    }, 300);
+    return () => {
+      if (suggestionsTimeout.current) clearTimeout(suggestionsTimeout.current);
+    };
+    // eslint-disable-next-line
+  }, [searchQuery]);
+
+  // Fetch suggestions function (sector/area autocomplete)
+  const fetchSuggestions = async (input) => {
+    try {
+      const res = await axios.get(
+        `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(input)}`,
+        { withCredentials: true }
+      );
+
+      // ✅ Handle API returning { sectors: [...] }
+      const data = res.data?.sectors || [];
+
+      if (data.length > 0) {
+        setAreaSuggestions(data.map(s => s.name || s)); // extract sector names if objects
+        setShowSuggestions(true);
+      } else {
+        setAreaSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (err) {
+      console.error("Error fetching suggestions:", err);
+      setAreaSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
@@ -95,6 +141,7 @@ const handleLogout = async () => {
       filteredData = res.data.filter(p => p.price !== undefined);
     }
 
+    // console.log("Property match percentages received:", filteredData.map(p => ({ id: p._id, matchPercentage: p.matchPercentage })));
     setFilteredPayments(filteredData);
   } catch (error) {
     console.error("Search API error:", error);
@@ -185,6 +232,30 @@ useEffect(() => {
               <div style={{ backgroundColor: property.monthlyRent ? "#00A79D" : "#22D3EE", color: "#FFFFFF", padding: "4px 10px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", backdropFilter: "blur(8px)" }}>{property.monthlyRent ? "RENT" : "SALE"}</div>
               {Math.random() > 0.5 && <div style={{ backgroundColor: "rgba(0, 51, 102, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: "700", backdropFilter: "blur(8px)" }}>FEATURED</div>}
             </div>
+           {typeof property.matchPercentage === "number" && (
+  <div
+    style={{
+      position: "absolute",
+      bottom: "10px",
+      left: "10px",
+      backgroundColor:
+        property.matchPercentage >= 70
+          ? "rgba(34,197,94,0.9)" // Green for good match
+          : property.matchPercentage >= 40
+          ? "rgba(234,179,8,0.9)" // Yellow for average
+          : "rgba(239,68,68,0.9)", // Red for poor match
+      color: "#fff",
+      padding: "6px 12px",
+      borderRadius: "8px",
+      fontSize: "0.8rem",
+      fontWeight: "700",
+      backdropFilter: "blur(8px)",
+      transition: "all 0.3s ease",
+    }}
+  >
+    💯 {property.matchPercentage}% Match
+  </div>
+)}
             <button onClick={(e) => toggleSaveProperty(property._id, e)} style={{ position: "absolute", top: "10px", right: "10px", backgroundColor: "rgba(255,255,255,0.95)", border: "none", borderRadius: "50%", width: "34px", height: "34px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.1)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}><Heart size={16} color={savedProperties.has(property._id) ? "#00A79D" : "#4A6A8A"} fill={savedProperties.has(property._id) ? "#00A79D" : "none"} /></button>
             {property.images && property.images.length > 1 && (
               <div style={{ position: "absolute", bottom: "10px", right: "10px", backgroundColor: "rgba(0,0,0,0.75)", color: "#FFFFFF", padding: "4px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: "600", backdropFilter: "blur(8px)" }}>{property.images.length} Photos</div>
@@ -233,8 +304,108 @@ useEffect(() => {
           <h1 style={{ color: "#FFFFFF", fontSize: isMobile ? "1.5rem" : "2rem", fontWeight: "800", marginBottom: "1.25rem", textAlign: "center", textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>Find Your Perfect Property</h1>
           <div style={{ backgroundColor: "#FFFFFF", borderRadius: "14px", padding: "0.4rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
             <Search size={20} color="#4A6A8A" style={{ marginLeft: "0.75rem" }} />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && searchQuery.trim() !== "") { fetchSearchResults(searchQuery.trim()); } }} placeholder="Search by location, builder, society or landmark" style={{ flex: 1, padding: "0.75rem 0", border: "none", fontSize: "0.95rem", outline: "none", color: "#333333", minWidth: "200px" }} />
-            <button onClick={() => { if (searchQuery.trim() !== "") { fetchSearchResults(searchQuery.trim()); } }} style={{ backgroundColor: "#00A79D", color: "#FFFFFF", border: "none", padding: "0.75rem 1.75rem", borderRadius: "10px", fontSize: "0.95rem", fontWeight: "700", cursor: "pointer", transition: "background-color 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#008A82"} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#00A79D"}><Search size={16} />Search</button>
+            <div style={{ position: "relative", flex: 1 }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => {
+                  if (areaSuggestions.length > 0) setShowSuggestions(true);
+                }}
+                onBlur={() => {
+                  // Delay hiding to allow click
+                  setTimeout(() => setShowSuggestions(false), 140);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchQuery.trim() !== "") {
+                    fetchSearchResults(searchQuery.trim());
+                    setShowSuggestions(false);
+                  }
+                }}
+                placeholder="Search by location, builder, society or landmark"
+                style={{
+                  flex: 1,
+                  padding: "0.75rem 0",
+                  border: "none",
+                  fontSize: "0.95rem",
+                  outline: "none",
+                  color: "#333333",
+                  minWidth: "200px",
+                  width: "100%",
+                  background: "transparent"
+                }}
+              />
+              {showSuggestions && areaSuggestions.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "110%",
+                    left: 0,
+                    right: 0,
+                    background: "#fff",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "0 0 10px 10px",
+                    zIndex: 100,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                    maxHeight: "230px",
+                    overflowY: "auto"
+                  }}
+                >
+                  {areaSuggestions.map((suggestion, idx) => (
+                    <div
+                      key={idx}
+                      onMouseDown={() => {
+                        setSearchQuery(suggestion);
+                        setShowSuggestions(false);
+                        fetchSearchResults(suggestion);
+                      }}
+                      style={{
+                        padding: "0.7rem 1rem",
+                        cursor: "pointer",
+                        color: "#003366",
+                        fontWeight: 500,
+                        borderBottom: idx !== areaSuggestions.length - 1 ? "1px solid #F3F4F6" : "none",
+                        background: "#fff"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F1F5F9"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                if (searchQuery.trim() !== "") {
+                  fetchSearchResults(searchQuery.trim());
+                  setShowSuggestions(false);
+                }
+              }}
+              style={{
+                backgroundColor: "#00A79D",
+                color: "#FFFFFF",
+                border: "none",
+                padding: "0.75rem 1.75rem",
+                borderRadius: "10px",
+                fontSize: "0.95rem",
+                fontWeight: "700",
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.4rem"
+              }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = "#008A82"}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = "#00A79D"}
+            >
+              <Search size={16} />Search
+            </button>
           </div>
         </div>
       </div>

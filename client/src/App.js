@@ -14,17 +14,20 @@ import PropertyListingForm from "./screens/Add property/Propertyadd";
 import MyProperties from "./screens/Property View/RentalPropertyPageView";
 import PropertyCards from "./screens/User-Properties/propertiesuser";
 import Searchproperty from "./screens/Searches/Searchproperty";
-import AdminDashboard from "./screens/Admin Page/admin.properties";
+import AdminProperties from "./screens/Admin Page/admin.properties";
 import RewardsPage from "./screens/Rewards/reward";
 // import UserDetailsForm from "./screens/User Details/user";
 import PricePredictor from "./screens/Price Predictor Model/pricepredict";
 import CustomerSupportPage from "./screens/Customer Support/Customersupport";
-import CallbackDetailsUI from "./screens/Admin Page/admin.customersupport";
+import  CallbackRequestsDashboard from "./screens/Admin Page/admin.customersupport";
 import Chatbot from "./screens/Dashboard/ChatBot";
-import AdminEnquiryProperties from "./screens/Admin Page/admin.enquiryproperties";
+import PaymentsRewardsDashboard from "./screens/Admin Page/admin.enquiryproperties";
 import SeeAllProperties from "./screens/Dashboard/SeeAllProperties";
 import PropertyAnalytics from "./screens/User-Properties/PropertyAnalysis";
 import Savedproperties from "./screens/Dashboard/savedproperties";
+import AdminDashboard from "./screens/Admin Page/admin.dashboardoverview";
+import UserManagementSystem from "./screens/Admin Page/admin.usermanagement";
+import AdminLandingPage from "./screens/Admin Page/LandingAdminPage";
 
 function App() {
   const navigate = useNavigate();
@@ -56,10 +59,16 @@ function App() {
       <Route path="/rewards" element={<RewardsPage />} />
       {/* <Route path="/user-details" element={<UserDetailsForm />} /> */}
       <Route path="/price-predictor" element={<PricePredictor />} />
-      <Route path="/admin/properties" element={<AdminDashboard />} />
+
+      
+      <Route path="/admin/Landingpage" element={<AdminLandingPage />} />
+      <Route path="/admin/Dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/UserManagement" element={<UserManagementSystem />} />
+      <Route path="/admin/enquiries" element={<PaymentsRewardsDashboard />} />
+      <Route path="/admin/callback" element={<CallbackRequestsDashboard />} />
+      <Route path="/admin/properties" element={<AdminProperties />} />
+
       <Route path="/support" element={<CustomerSupportPage />} />
-      <Route path="/admin/enquiries" element={<AdminEnquiryProperties />} />
-      <Route path="/admin/callback" element={<CallbackDetailsUI />} />
       <Route path="/chatbot" element={<Chatbot />} />
       <Route path="/seeAllproperties" element={<SeeAllProperties />} />
       <Route path="/savedproperties" element={<Savedproperties />} />

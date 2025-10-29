@@ -24,11 +24,3 @@ exports.requestCallback = async (req, res) => {
 };
 
 
-exports.getCallbackRequests = async (req, res) => {
-  try {
-    const requests = await CustomerSupport.find().sort({ createdAt: -1 });
-    res.status(200).json({ data: requests });
-  } catch (error) {
-    res.status(500).json({ message: "Server error while fetching callback requests" });
-  }
-};

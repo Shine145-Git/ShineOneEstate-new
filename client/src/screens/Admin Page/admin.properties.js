@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Check, X, Home, Gift, Bell } from "lucide-react";
+import { Check, X, Home, Gift, Bell, CheckCircle, XCircle, Clock, User, DollarSign, Calendar, AlertCircle } from "lucide-react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
 
-export default function AdminDashboard() {
+export default function AdminProperties() {
   const [activeTab, setActiveTab] = useState("approvals");
   const [approvals, setApprovals] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   const [bulkFile, setBulkFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   // Fetch all properties when Properties tab is active
@@ -28,6 +29,7 @@ export default function AdminDashboard() {
       fetchApprovedPayments();
     }
   }, [activeTab]);
+
   useEffect(() => {
     if (activeTab === "approvals") {
       fetchPendingPayments();
@@ -45,6 +47,7 @@ export default function AdminDashboard() {
       setProperties(response.data);
     } catch (error) {
       console.error("Error fetching properties:", error);
+      setError("Error fetching properties");
     }
   };
 
@@ -56,7 +59,13 @@ export default function AdminDashboard() {
       );
       const rewardsData = response.data.map((p, index) => ({
         id: index + 1,
+        paymentId: p._id,
         email: p.resident?.email || "N/A",
+        residentName: p.resident?.name || "N/A",
+        residentId: p.resident?._id,
+        propertyName: p.property?.title || "N/A",
+        amount: p.amount,
+        createdAt: p.createdAt,
         points: 0,
         tier: "New",
         eligible: true,
@@ -65,6 +74,7 @@ export default function AdminDashboard() {
       console.log("Approved payments fetched for rewards:", rewardsData);
     } catch (error) {
       console.error("Error fetching approved payments:", error);
+      setError("Error fetching approved payments");
     }
   };
 
@@ -77,6 +87,7 @@ export default function AdminDashboard() {
       setApprovals(response.data);
     } catch (error) {
       console.error("Error fetching pending payments:", error);
+      setError("Error fetching pending payments");
     }
   };
 
@@ -91,6 +102,7 @@ export default function AdminDashboard() {
       // No rewards update here; rewards are fetched dynamically when rewards tab is opened
     } catch (error) {
       console.error("Error updating payment status:", error);
+      setError("Error updating payment status");
     }
   };
 
@@ -117,6 +129,7 @@ export default function AdminDashboard() {
       alert("Failed to distribute reward.");
     }
   };
+
   const handleBulkUpload = async () => {
     if (!bulkFile) {
       alert("Please select a file first");
@@ -147,7 +160,6 @@ export default function AdminDashboard() {
       setBulkFile(null);
     }
   };
-
 
   const handleLogout = async () => {
     await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
@@ -183,30 +195,274 @@ export default function AdminDashboard() {
       }
     };
     fetchUser();
-  }, []);
+  }, [navigate]);
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
+
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      backgroundColor: "#F4F7F9",
+    },
+    header: {
+      backgroundColor: "#003366",
+      color: "#FFFFFF",
+      padding: "30px 40px",
+      boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+    },
+    headerTitle: {
+      fontSize: "32px",
+      fontWeight: "bold",
+      marginBottom: "8px",
+      margin: 0
+    },
+    headerSubtitle: {
+      fontSize: "16px",
+      opacity: 0.9,
+      margin: 0
+    },
+    navTabs: {
+      background: "#FFFFFF",
+      padding: "0 40px",
+      display: "flex",
+      gap: "10px",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+      borderBottom: "2px solid #E5E7EB"
+    },
+    tab: (active) => ({
+      background: "transparent",
+      color: active ? "#003366" : "#4A6A8A",
+      border: "none",
+      padding: "15px 25px",
+      cursor: "pointer",
+      fontSize: "16px",
+      fontWeight: "600",
+      borderBottom: active ? "3px solid #00A79D" : "3px solid transparent",
+      transition: "all 0.3s ease",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginBottom: "-2px"
+    }),
+    content: {
+      padding: "40px"
+    },
+    statsContainer: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+      gap: "20px",
+      marginBottom: "30px"
+    },
+    statCard: {
+      backgroundColor: "#FFFFFF",
+      padding: "24px",
+      borderRadius: "12px",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+      display: "flex",
+      alignItems: "center",
+      gap: "16px"
+    },
+    statIcon: (bgColor) => ({
+      width: "56px",
+      height: "56px",
+      borderRadius: "12px",
+      backgroundColor: bgColor,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#FFFFFF"
+    }),
+    statContent: {
+      flex: 1
+    },
+    statLabel: {
+      fontSize: "14px",
+      color: "#4A6A8A",
+      marginBottom: "4px"
+    },
+    statValue: {
+      fontSize: "28px",
+      fontWeight: "bold",
+      color: "#003366"
+    },
+    grid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+      gap: "20px"
+    },
+    card: {
+      backgroundColor: "#FFFFFF",
+      borderRadius: "12px",
+      padding: "24px",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+      transition: "transform 0.2s, box-shadow 0.2s"
+    },
+    cardHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "16px",
+      paddingBottom: "16px",
+      borderBottom: "2px solid #F4F7F9"
+    },
+    cardHeaderLeft: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px"
+    },
+    cardTitle: {
+      fontSize: "18px",
+      fontWeight: "600",
+      color: "#003366"
+    },
+    statusBadge: (status) => ({
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      padding: "6px 12px",
+      borderRadius: "6px",
+      fontSize: "12px",
+      fontWeight: "600",
+      backgroundColor: status === 'pending' ? '#FEF3C7' : '#D1FAE5',
+      color: status === 'pending' ? '#92400E' : '#065F46'
+    }),
+    cardBody: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px"
+    },
+    infoRow: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      fontSize: "14px"
+    },
+    infoLabel: {
+      color: "#4A6A8A",
+      fontWeight: "500"
+    },
+    infoValue: {
+      color: "#333333",
+      fontWeight: "600",
+      marginLeft: "auto"
+    },
+    cardActions: {
+      display: "flex",
+      gap: "12px",
+      marginTop: "20px",
+      paddingTop: "16px",
+      borderTop: "2px solid #F4F7F9"
+    },
+    approveButton: {
+      flex: 1,
+      backgroundColor: "#00A79D",
+      color: "#FFFFFF",
+      border: "none",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      fontSize: "14px",
+      fontWeight: "600",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "6px",
+      transition: "background-color 0.3s"
+    },
+    rejectButton: {
+      flex: 1,
+      backgroundColor: "#EF4444",
+      color: "#FFFFFF",
+      border: "none",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      fontSize: "14px",
+      fontWeight: "600",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "6px",
+      transition: "background-color 0.3s"
+    },
+    distributeButton: (eligible) => ({
+      width: "100%",
+      backgroundColor: eligible ? "#00A79D" : "#E5E7EB",
+      color: eligible ? "#FFFFFF" : "#9CA3AF",
+      border: "none",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      fontSize: "14px",
+      fontWeight: "600",
+      cursor: eligible ? "pointer" : "not-allowed",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "6px",
+      transition: "background-color 0.3s"
+    }),
+    error: {
+      backgroundColor: "#FEE2E2",
+      color: "#991B1B",
+      padding: "16px",
+      borderRadius: "8px",
+      marginBottom: "20px",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px"
+    },
+    emptyState: {
+      textAlign: "center",
+      padding: "60px 20px",
+      color: "#4A6A8A",
+      gridColumn: "1 / -1"
+    },
+    emptyIcon: {
+      marginBottom: "16px",
+      color: "#00A79D"
+    },
+    propertiesGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+      gap: "20px"
+    },
+    propertyCard: {
+      background: "#FFFFFF",
+      padding: "20px",
+      borderRadius: "12px",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+      transition: "all 0.3s ease"
+    },
+    propertyImage: {
+      width: "100%",
+      height: "180px",
+      objectFit: "cover",
+      borderRadius: "8px",
+      marginBottom: "12px"
+    },
+    uploadSection: {
+      backgroundColor: "#FFFFFF",
+      borderRadius: "12px",
+      padding: "24px",
+      marginBottom: "24px",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.08)"
+    }
+  };
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #003366 0%, #4A6A8A 100%)",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}
-    >
-      
+    <div style={styles.container}>
       <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
+
       {/* Navigation Tabs */}
-      <div
-        style={{
-          background: "#F4F7F9",
-          padding: "0 40px",
-          display: "flex",
-          gap: "10px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-        }}
-      >
+      <div style={styles.navTabs}>
         {[
           { id: "approvals", label: "Approvals", icon: Bell },
           { id: "properties", label: "Properties", icon: Home },
@@ -215,481 +471,303 @@ export default function AdminDashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              background: activeTab === tab.id ? "#003366" : "transparent",
-              color: activeTab === tab.id ? "#FFFFFF" : "#333333",
-              border: "none",
-              padding: "15px 25px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "600",
-              borderBottom:
-                activeTab === tab.id
-                  ? "3px solid #22D3EE"
-                  : "3px solid transparent",
-              transition: "all 0.3s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
+            style={styles.tab(activeTab === tab.id)}
           >
             <tab.icon size={18} />
             {tab.label}
           </button>
         ))}
-      
         <button
           onClick={() => navigate("/admin/enquiries")}
-          style={{
-            background: "transparent",
-            color: "#333333",
-            border: "none",
-            padding: "15px 25px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "600",
-            borderBottom: "3px solid transparent",
-            transition: "all 0.3s ease",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
+          style={styles.tab(false)}
         >
           Enquiries
         </button>
         <button
           onClick={() => navigate("/admin/callback")}
-          style={{
-            background: "transparent",
-            color: "#333333",
-            border: "none",
-            padding: "15px 25px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "600",
-            borderBottom: "3px solid transparent",
-            transition: "all 0.3s ease",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
+          style={styles.tab(false)}
         >
           Callback
         </button>
       </div>
 
       {/* Main Content */}
-      <div style={{ padding: "40px" }}>
+      <div style={styles.content}>
+        {error && (
+          <div style={styles.error}>
+            <AlertCircle size={20} />
+            {error}
+          </div>
+        )}
+
         {/* Approvals Tab */}
         {activeTab === "approvals" && (
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "30px",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h2
-              style={{
-                color: "#003366",
-                fontSize: "24px",
-                marginBottom: "25px",
-                fontWeight: "700",
-              }}
-            >
-              Pending Approvals
-            </h2>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "15px" }}
-            >
-              {approvals.map((approval) => (
-                <div
-                  key={approval._id}
-                  style={{
-                    background: "#F4F7F9",
-                    padding: "20px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    border: "2px solid #E5E7EB",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <div>
-                    <h3
-                      style={{
-                        color: "#333333",
-                        fontSize: "18px",
-                        margin: "5px 0",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {approval.propertyName}
-                    </h3>
-                    <p
-                      style={{
-                        color: "#4A6A8A",
-                        fontSize: "14px",
-                        margin: "5px 0",
-                      }}
-                    >
-                      Resident: {approval.residentName}
-                    </p>
-                    <p
-                      style={{
-                        color: "#4A6A8A",
-                        fontSize: "14px",
-                        margin: "5px 0",
-                      }}
-                    >
-                      Amount: {approval.amount}
-                    </p>
-                    <p
-                      style={{
-                        color: "#4A6A8A",
-                        fontSize: "14px",
-                        margin: "5px 0",
-                      }}
-                    >
-                      Payment Method: {approval.paymentMethod}
-                    </p>
-                    {approval.status !== "pending" && (
-                      <span
-                        style={{
-                          color:
-                            approval.status === "approved"
-                              ? "#00A79D"
-                              : "#DC2626",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {approval.status === "approved"
-                          ? "✓ Approved"
-                          : "✗ Rejected"}
-                      </span>
+          <>
+            <div style={styles.statsContainer}>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon('#FCD34D')}>
+                  <Clock size={28} />
+                </div>
+                <div style={styles.statContent}>
+                  <div style={styles.statLabel}>Pending Payments</div>
+                  <div style={styles.statValue}>{approvals.length}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.grid}>
+              {approvals.length > 0 ? (
+                approvals.map((approval) => (
+                  <div key={approval._id} style={styles.card}>
+                    <div style={styles.cardHeader}>
+                      <div style={styles.cardHeaderLeft}>
+                        <User size={20} style={{ color: '#00A79D' }} />
+                        <span style={styles.cardTitle}>{approval.resident?.name || approval.residentName || 'N/A'}</span>
+                      </div>
+                      <div style={styles.statusBadge('pending')}>
+                        <Clock size={14} />
+                        <span>PENDING</span>
+                      </div>
+                    </div>
+
+                    <div style={styles.cardBody}>
+                      <div style={styles.infoRow}>
+                        <Home size={16} style={{ color: '#4A6A8A' }} />
+                        <span style={styles.infoLabel}>Property:</span>
+                        <span style={styles.infoValue}>{approval.property?.title || approval.propertyName || 'N/A'}</span>
+                      </div>
+
+                      <div style={styles.infoRow}>
+                        <DollarSign size={16} style={{ color: '#00A79D' }} />
+                        <span style={styles.infoLabel}>Amount:</span>
+                        <span style={styles.infoValue}>₹{approval.amount?.toLocaleString() || 'N/A'}</span>
+                      </div>
+
+                      <div style={styles.infoRow}>
+                        <Calendar size={16} style={{ color: '#4A6A8A' }} />
+                        <span style={styles.infoLabel}>Method:</span>
+                        <span style={styles.infoValue}>{approval.paymentMethod || 'N/A'}</span>
+                      </div>
+
+                      {approval.resident?.email && (
+                        <div style={styles.infoRow}>
+                          <User size={16} style={{ color: '#4A6A8A' }} />
+                          <span style={styles.infoLabel}>Email:</span>
+                          <span style={styles.infoValue}>{approval.resident.email}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {approval.status === "pending" && (
+                      <div style={styles.cardActions}>
+                        <button
+                          style={styles.approveButton}
+                          onClick={() => handleApproval(approval._id, "approved")}
+                        >
+                          <CheckCircle size={16} />
+                          Approve
+                        </button>
+                        <button
+                          style={styles.rejectButton}
+                          onClick={() => handleApproval(approval._id, "rejected")}
+                        >
+                          <XCircle size={16} />
+                          Reject
+                        </button>
+                      </div>
                     )}
                   </div>
-                  {approval.status === "pending" && (
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button
-                        onClick={() => handleApproval(approval._id, "approved")}
-                        style={{
-                          background: "#00A79D",
-                          color: "#FFFFFF",
-                          border: "none",
-                          padding: "10px 20px",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          transition: "all 0.3s ease",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.background = "#008C84")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.background = "#00A79D")
-                        }
-                      >
-                        <Check size={16} /> Approve
-                      </button>
-                      <button
-                        onClick={() => handleApproval(approval._id, "rejected")}
-                        style={{
-                          background: "#DC2626",
-                          color: "#FFFFFF",
-                          border: "none",
-                          padding: "10px 20px",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          transition: "all 0.3s ease",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.target.style.background = "#B91C1C")
-                        }
-                        onMouseOut={(e) =>
-                          (e.target.style.background = "#DC2626")
-                        }
-                      >
-                        <X size={16} /> Reject
-                      </button>
-                    </div>
-                  )}
+                ))
+              ) : (
+                <div style={styles.emptyState}>
+                  <Clock size={48} style={styles.emptyIcon} />
+                  <p>No pending payments</p>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
+          </>
         )}
 
         {/* Properties Tab */}
         {activeTab === "properties" && (
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "30px",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-            }}
-          >
-            {activeTab === "properties" && (
-              <div style={{ marginBottom: "20px" }}>
-                <h3 style={{ color: "#003366", fontWeight: 600 }}>
-                  Bulk Upload Properties
-                </h3>
+          <>
+            <div style={styles.uploadSection}>
+              <h3 style={{ color: "#003366", fontWeight: 600, marginBottom: "16px" }}>
+                Bulk Upload Properties
+              </h3>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                 <input
                   type="file"
                   accept=".xlsx,.xls,.csv"
                   onChange={(e) => setBulkFile(e.target.files[0])}
-                  style={{ marginRight: "10px" }}
+                  style={{ flex: 1 }}
                 />
                 <button
                   onClick={handleBulkUpload}
                   disabled={uploading}
                   style={{
-                    background: "#00A79D",
-                    color: "#fff",
+                    background: uploading ? "#E5E7EB" : "#00A79D",
+                    color: "#FFFFFF",
                     border: "none",
                     padding: "10px 20px",
-                    borderRadius: "6px",
+                    borderRadius: "8px",
                     cursor: uploading ? "not-allowed" : "pointer",
                     fontWeight: 600,
+                    fontSize: "14px"
                   }}
                 >
                   {uploading ? "Uploading..." : "Upload Excel"}
                 </button>
               </div>
-            )}
-            <h2
-              style={{
-                color: "#003366",
-                fontSize: "24px",
-                marginBottom: "25px",
-                fontWeight: "700",
-              }}
-            >
-              All Properties
-            </h2>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "20px",
-              }}
-            >
+            </div>
+
+            <div style={styles.statsContainer}>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon('#00A79D')}>
+                  <Home size={28} />
+                </div>
+                <div style={styles.statContent}>
+                  <div style={styles.statLabel}>Total Properties</div>
+                  <div style={styles.statValue}>{properties.length}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.propertiesGrid}>
               {properties.map((property) => (
-                <div
-                  key={property._id || property.id}
-                  style={{
-                    background: "#F4F7F9",
-                    padding: "20px",
-                    borderRadius: "8px",
-                    border: "2px solid #E5E7EB",
-                    transition: "all 0.3s ease",
-                  }}
-                >
+                <div key={property._id || property.id} style={styles.propertyCard}>
                   {property.images?.[0] && (
                     <img
                       src={property.images[0]}
                       alt={property.name}
-                      style={{
-                        width: "100%",
-                        height: "180px",
-                        objectFit: "cover",
-                        borderRadius: "6px",
-                        marginBottom: "12px",
-                      }}
+                      style={styles.propertyImage}
                     />
                   )}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      marginBottom: "12px",
-                    }}
-                  >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
                     <Home size={24} color="#00A79D" />
-                    <span
-                      style={{
-                        background:
-                          property.status === "Active" ? "#00A79D" : "#4A6A8A",
-                        color: "#FFFFFF",
-                        padding: "4px 12px",
-                        borderRadius: "20px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
+                    <span style={{
+                      background: property.status === "Active" ? "#00A79D" : "#4A6A8A",
+                      color: "#FFFFFF",
+                      padding: "4px 12px",
+                      borderRadius: "20px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                    }}>
                       {property.status}
                     </span>
                   </div>
-                  <h3
-                    style={{
-                      color: "#333333",
-                      fontSize: "18px",
-                      margin: "10px 0",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <h3 style={{ color: "#333333", fontSize: "18px", margin: "10px 0", fontWeight: "600" }}>
                     {property.name}
                   </h3>
-                  <p
-                    style={{
-                      color: "#4A6A8A",
-                      fontSize: "14px",
-                      margin: "8px 0",
-                    }}
-                  >
+                  <p style={{ color: "#4A6A8A", fontSize: "14px", margin: "8px 0" }}>
                     Owner: {property.owner?.name || "N/A"} <br />
                     Email: {property.owner?.email || "N/A"}
                   </p>
-                  <p
-                    style={{
-                      color: "#4A6A8A",
-                      fontSize: "14px",
-                      margin: "8px 0",
-                    }}
-                  >
+                  <p style={{ color: "#4A6A8A", fontSize: "14px", margin: "8px 0" }}>
                     Location: {property.location}
                   </p>
-                  <p
-                    style={{
-                      color: "#003366",
-                      fontSize: "20px",
-                      fontWeight: "700",
-                      margin: "12px 0 0 0",
-                    }}
-                  >
+                  <p style={{ color: "#003366", fontSize: "20px", fontWeight: "700", margin: "12px 0 0 0" }}>
                     {typeof property.monthlyRent === "number"
-                      ? `$${property.monthlyRent.toLocaleString()}`
-                      : `$${property.monthlyRent || "N/A"}`}
+                      ? `₹${property.monthlyRent.toLocaleString()}`
+                      : `₹${property.monthlyRent || "N/A"}`}
                   </p>
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
 
         {/* Rewards Tab */}
         {activeTab === "rewards" && (
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "30px",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h2
-              style={{
-                color: "#003366",
-                fontSize: "24px",
-                marginBottom: "25px",
-                fontWeight: "700",
-              }}
-            >
-              Rewards Distribution
-            </h2>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "15px" }}
-            >
-              {rewards.map((reward) => (
-                <div
-                  key={reward.id}
-                  style={{
-                    background: "#F4F7F9",
-                    padding: "20px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    border: "2px solid #E5E7EB",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "15px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "50%",
-                        background: "#22D3EE",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#003366",
-                        fontWeight: "700",
-                        fontSize: "18px",
-                      }}
-                    >
-                      {reward.email
-                        ? reward.email.split("@")[0].slice(0, 2).toUpperCase()
-                        : "NA"}
+          <>
+            <div style={styles.statsContainer}>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon('#22D3EE')}>
+                  <Gift size={28} />
+                </div>
+                <div style={styles.statContent}>
+                  <div style={styles.statLabel}>Approved Payments</div>
+                  <div style={styles.statValue}>{rewards.length}</div>
+                </div>
+              </div>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon('#00A79D')}>
+                  <CheckCircle size={28} />
+                </div>
+                <div style={styles.statContent}>
+                  <div style={styles.statLabel}>Eligible for Rewards</div>
+                  <div style={styles.statValue}>{rewards.filter(r => r.eligible).length}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.grid}>
+              {rewards.length > 0 ? (
+                rewards.map((reward) => (
+                  <div key={reward.id} style={styles.card}>
+                    <div style={styles.cardHeader}>
+                      <div style={styles.cardHeaderLeft}>
+                        <User size={20} style={{ color: '#00A79D' }} />
+                        <span style={styles.cardTitle}>{reward.residentName}</span>
+                      </div>
+                      <div style={styles.statusBadge('approved')}>
+                        <CheckCircle size={14} />
+                        <span>APPROVED</span>
+                      </div>
                     </div>
-                    <div>
-                      <h3
-                        style={{
-                          color: "#333333",
-                          fontSize: "18px",
-                          margin: "0 0 5px 0",
-                          fontWeight: "600",
-                        }}
+
+                    <div style={styles.cardBody}>
+                      <div style={styles.infoRow}>
+                        <Home size={16} style={{ color: '#4A6A8A' }} />
+                        <span style={styles.infoLabel}>Property:</span>
+                        <span style={styles.infoValue}>{reward.propertyName}</span>
+                      </div>
+
+                      <div style={styles.infoRow}>
+                        <DollarSign size={16} style={{ color: '#00A79D' }} />
+                        <span style={styles.infoLabel}>Amount:</span>
+                        <span style={styles.infoValue}>₹{reward.amount?.toLocaleString() || 'N/A'}</span>
+                      </div>
+
+                      <div style={styles.infoRow}>
+                        <Calendar size={16} style={{ color: '#4A6A8A' }} />
+                        <span style={styles.infoLabel}>Date:</span>
+                        <span style={styles.infoValue}>{formatDate(reward.createdAt)}</span>
+                      </div>
+
+                      <div style={styles.infoRow}>
+                        <User size={16} style={{ color: '#4A6A8A' }} />
+                        <span style={styles.infoLabel}>Email:</span>
+                        <span style={styles.infoValue}>{reward.email}</span>
+                      </div>
+
+                      <div style={styles.infoRow}>
+                        <Gift size={16} style={{ color: '#4A6A8A' }} />
+                        <span style={styles.infoLabel}>Tier:</span>
+                        <span style={styles.infoValue}>{reward.tier}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "2px solid #F4F7F9" }}>
+                      <button
+                        onClick={() => distributeReward(reward.id)}
+                        disabled={!reward.eligible}
+                        style={styles.distributeButton(reward.eligible)}
                       >
-                        {reward.email}
-                      </h3>
-                      <p
-                        style={{
-                          color: "#4A6A8A",
-                          fontSize: "14px",
-                          margin: 0,
-                        }}
-                      >
-                        Points: {reward.points} | Tier:{" "}
-                        <span style={{ fontWeight: "600" }}>{reward.tier}</span>
-                      </p>
+                        <Gift size={16} />
+                        {reward.eligible ? "Distribute Reward" : "Reward Distributed"}
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={() => distributeReward(reward.id)}
-                    disabled={!reward.eligible}
-                    style={{
-                      background: reward.eligible ? "#00A79D" : "#E5E7EB",
-                      color: reward.eligible ? "#FFFFFF" : "#9CA3AF",
-                      border: "none",
-                      padding: "10px 20px",
-                      borderRadius: "6px",
-                      cursor: reward.eligible ? "pointer" : "not-allowed",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    <Gift size={16} />{" "}
-                    {reward.eligible ? "Distribute" : "Distributed"}
-                  </button>
+                ))
+              ) : (
+                <div style={styles.emptyState}>
+                  <Gift size={48} style={styles.emptyIcon} />
+                  <p>No approved payments</p>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

@@ -20,11 +20,11 @@ const {
   getMyProperties,
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
-const { getPendingPayments, updatePaymentStatus, getApprovedPayments } = require("../controllers/admin.controller");
+const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests } = require("../controllers/admin.controller");
 const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
 const { createPayment, getPaymentsForUser } = require("../controllers/payment.controller");
-const { requestCallback, getCallbackRequests } = require("../controllers/Customersupport.js");
+const { requestCallback } = require("../controllers/Customersupport.js");
 const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot.controller.js");
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
 const {getRentalPropertyById , getSalePropertyById} = require("../controllers/Viewproperties.controller");
@@ -75,7 +75,10 @@ router.get("/api/payment", verifyToken, getPaymentsForUser);
 router.get("/api/admin/pending-payments", verifyToken, checkAdminEmail, getPendingPayments);
 router.post("/api/admin/update-payment-status", verifyToken, checkAdminEmail, updatePaymentStatus);
 router.get("/api/admin/approved-payments", verifyToken, checkAdminEmail, getApprovedPayments);
+router.get('/api/admin/overview', verifyToken, checkAdminEmail, getAdminOverview);
+router.get('/admin/usermanagement', verifyToken, checkAdminEmail, getAllUsersDetailed);
 router.get("/api/get-callback-requests", verifyToken, checkAdminEmail, getCallbackRequests);
+
 
 
 // AI routes
@@ -87,6 +90,7 @@ router.get("/api/check-eligibility", verifyToken, checkEligibility);
 
 // Customer support routes
 router.post("/api/request-callback", verifyToken, requestCallback);
+
 
 // Property enquiry routes
 const { createEnquiry, getEnquiries } = require("../controllers/Enquiry.controller.js");
@@ -120,6 +124,6 @@ router.get("/api/property-analysis/saved-properties", verifyToken, getSavedPrope
 // User Preferences (ARIA Assistant)
 
 router.post("/api/user/preferences-RENT-aria", verifyToken, saveUserPreferencesRENTALARIA);
-router.post("/api/user/preferences-SALE-aria", verifyToken, saveUserPreferencesRENTALARIA);
+router.post("/api/user/preferences-SALE-aria", verifyToken, saveUserPreferencesSALEARIA);
 
 module.exports = router;

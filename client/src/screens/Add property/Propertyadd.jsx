@@ -27,7 +27,10 @@ export default function PropertyListingForm() {
     propertyType: "",
     bedrooms: "",
     bathrooms: "",
-    totalArea: "",
+    totalArea: {
+  sqft: "",
+  configuration: "",
+},
     images: [],
     // Rental-specific fields
     layoutFeatures: "",
@@ -109,57 +112,73 @@ export default function PropertyListingForm() {
 
   // --- Handlers ---
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    // Reset form on purpose change
-    if (name === "purpose" && value !== formData.purpose) {
-      setFormData({
-        purpose: value,
-        address: "",
-        propertyType: "",
-        bedrooms: "",
-        bathrooms: "",
-        totalArea: "",
-        layoutFeatures: "",
-        appliances: [],
-        conditionAge: "",
-        renovations: "",
-        parking: "",
-        outdoorSpace: "",
-        monthlyRent: "",
-        leaseTerm: "",
-        securityDeposit: "",
-        otherFees: "",
-        utilities: [],
-        tenantRequirements: "",
-        moveInDate: "",
-        neighborhoodVibe: "",
-        transportation: "",
-        localAmenities: "",
-        communityFeatures: [],
-        petPolicy: "",
-        smokingPolicy: "",
-        maintenance: "",
-        insurance: "",
-        title: "",
-        description: "",
-        price: "",
-        location: "",
-        area: "",
-      });
-      setImages([]);
-      setCurrentStep(0);
-      return;
-    }
-    if (type === "checkbox") {
-      const array = formData[name] || [];
-      setFormData({
-        ...formData,
-        [name]: checked ? [...array, value] : array.filter((v) => v !== value),
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
+  const { name, value, type, checked } = e.target;
+
+  // ✅ Handle nested totalArea fields
+  if (name.startsWith("totalArea.")) {
+    const key = name.split(".")[1];
+    setFormData((prev) => ({
+      ...prev,
+      totalArea: {
+        ...prev.totalArea,
+        [key]: value,
+      },
+    }));
+    return;
+  }
+
+  // Reset form when purpose changes
+  if (name === "purpose" && value !== formData.purpose) {
+    setFormData({
+      purpose: value,
+      address: "",
+      propertyType: "",
+      bedrooms: "",
+      bathrooms: "",
+      totalArea: { sqft: "", configuration: "" },
+      layoutFeatures: "",
+      appliances: [],
+      conditionAge: "",
+      renovations: "",
+      parking: "",
+      outdoorSpace: "",
+      monthlyRent: "",
+      leaseTerm: "",
+      securityDeposit: "",
+      otherFees: "",
+      utilities: [],
+      tenantRequirements: "",
+      moveInDate: "",
+      neighborhoodVibe: "",
+      transportation: "",
+      localAmenities: "",
+      communityFeatures: [],
+      petPolicy: "",
+      smokingPolicy: "",
+      maintenance: "",
+      insurance: "",
+      title: "",
+      description: "",
+      price: "",
+      location: "",
+      area: "",
+    });
+    setImages([]);
+    setCurrentStep(0);
+    return;
+  }
+
+  // Handle checkboxes
+  if (type === "checkbox") {
+    const array = formData[name] || [];
+    setFormData({
+      ...formData,
+      [name]: checked ? [...array, value] : array.filter((v) => v !== value),
+    });
+  } else {
+    setFormData({ ...formData, [name]: value });
+  }
+};
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const newImages = files.map((f) => ({
@@ -176,14 +195,40 @@ export default function PropertyListingForm() {
   };
   const handleSubmit = async () => {
     try {
-      const form = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach((v) => form.append(`${key}[]`, v));
-        } else if (value !== undefined && value !== null && value !== "") {
-          form.append(key, value);
+      // Normalize Sector input
+      if (formData.Sector) {
+        const formattedSector = formData.Sector
+          .trim()
+          .replace(/[^a-zA-Z0-9]/g, " ")
+          .replace(/\s+/g, " ")
+          .toLowerCase();
+
+        const match = formattedSector.match(/sector\s*(\d+)/);
+        if (match) {
+          formData.Sector = `Sector-${match[1]}`;
+        } else if (/^\d+$/.test(formattedSector)) {
+          formData.Sector = `Sector-${formattedSector}`;
+        } else if (formattedSector.startsWith("sec")) {
+          const num = formattedSector.replace("sec", "").trim();
+          formData.Sector = `Sector-${num}`;
+        } else {
+          formData.Sector =
+            formattedSector.charAt(0).toUpperCase() + formattedSector.slice(1);
         }
-      });
+      }
+      const form = new FormData();
+    // Build FormData object
+Object.entries(formData).forEach(([key, value]) => {
+  if (key === "totalArea" && value && typeof value === "object") {
+    // Append both sqft and configuration separately
+    if (value.sqft) form.append("totalArea.sqft", value.sqft);
+    if (value.configuration) form.append("totalArea.configuration", value.configuration);
+  } else if (Array.isArray(value)) {
+    value.forEach((v) => form.append(`${key}[]`, v));
+  } else if (value !== undefined && value !== null && value !== "") {
+    form.append(key, value);
+  }
+});
       images.forEach((imgObj) => {
         if (imgObj.file) form.append("images", imgObj.file);
       });
@@ -590,17 +635,25 @@ export default function PropertyListingForm() {
                   </select>
                 </div>
                 <div>
-                  <label style={inputLabelStyle}>Total Area (sqft) *</label>
-                  <input
-                    type="number"
-                    name="totalArea"
-                    value={formData.totalArea}
-                    onChange={handleChange}
-                    placeholder="e.g., 1200"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
+                 <label style={inputLabelStyle}>Total Area *</label>
+<div style={{ display: "flex", gap: "10px" }}>
+  <input
+    type="number"
+    name="totalArea.sqft"
+    value={formData.totalArea.sqft}
+    onChange={handleChange}
+    placeholder="Area in sqft (e.g., 1200)"
+    style={{ ...inputStyle, flex: 1 }}
+  />
+  <input
+    type="text"
+    name="totalArea.configuration"
+    value={formData.totalArea.configuration}
+    onChange={handleChange}
+    placeholder="Configuration (e.g., 3 BHK)"
+    style={{ ...inputStyle, flex: 1 }}
+  />
+</div>
                 </div>
               </div>
               <div style={gridStyle}>

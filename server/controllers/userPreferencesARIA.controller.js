@@ -48,15 +48,25 @@ exports.saveUserPreferencesRENTALARIA = async (req, res) => {
      amenities: amenities == null ? "" : amenities,
    };
 
-    const newPreference = new UserPreferencesARIA({
-      email,
-      assistantType,
-      preferences: safePreferences
-    });
+   const existingPreference = await UserPreferencesARIA.findOne({ email, assistantType });
 
-    console.log("🧱 Constructed preference document to save:", newPreference);
-
-    await newPreference.save();
+   if (existingPreference) {
+     await UserPreferencesARIA.findOneAndUpdate(
+       { email, assistantType },
+       { preferences: safePreferences },
+       { new: true }
+     );
+     console.log("♻️ Updated existing preference for:", email);
+   } else {
+     const newPreference = new UserPreferencesARIA({
+       email,
+       assistantType,
+       preferences: safePreferences
+     });
+     console.log("🧱 Constructed preference document to save:", newPreference);
+     await newPreference.save();
+     console.log("🆕 Created new preference for:", email);
+   }
 
     console.log("✅ User preferences saved successfully to DB for:", email);
 
@@ -115,15 +125,25 @@ exports.saveUserPreferencesSALEARIA = async (req, res) => {
      amenities: amenities == null ? "" : amenities,
    };
 
-    const newPreference = new UserPreferencesARIA({
-      email,
-      assistantType,
-      preferences: safePreferences
-    });
+   const existingPreference = await UserPreferencesARIA.findOne({ email, assistantType });
 
-    console.log("🧱 Constructed SALE preference document to save:", newPreference);
-
-    await newPreference.save();
+   if (existingPreference) {
+     await UserPreferencesARIA.findOneAndUpdate(
+       { email, assistantType },
+       { preferences: safePreferences },
+       { new: true }
+     );
+     console.log("♻️ Updated existing SALE preference for:", email);
+   } else {
+     const newPreference = new UserPreferencesARIA({
+       email,
+       assistantType,
+       preferences: safePreferences
+     });
+     console.log("🧱 Constructed SALE preference document to save:", newPreference);
+     await newPreference.save();
+     console.log("🆕 Created new SALE preference for:", email);
+   }
 
     console.log("✅ SALE user preferences saved successfully to DB for:", email);
 

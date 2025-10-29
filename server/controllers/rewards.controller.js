@@ -30,6 +30,7 @@ exports.distributeReward = async (req, res) => {
 };
 
 // Function to check if user is eligible for a reward
+// Function to check if user is eligible for a reward
 exports.checkEligibility = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -38,14 +39,15 @@ exports.checkEligibility = async (req, res) => {
 
     const targetUserId = req.user._id;
 
-    const existingReward = await Reward.findOne({ userId: targetUserId });
+    // ✅ Fetch the latest reward (most recent)
+    const latestReward = await Reward.findOne({ userId: targetUserId }).sort({ distributedAt: -1 });
 
-    if (existingReward) {
+    if (latestReward) {
       return res.status(200).json({
         success: true,
         eligible: false,
         message: "User already received a reward",
-        reward: existingReward,
+        reward: latestReward, // 🧩 send only the most recent reward
       });
     }
 

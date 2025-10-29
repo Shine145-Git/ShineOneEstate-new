@@ -282,16 +282,11 @@ const VoiceAssistantSale = () => {
         speakingRef.current = false;
         // If just finished the thank you message, save preferences and stop recognition
         if (
-          text
-            .toLowerCase()
-            .includes("thank you for sharing your preferences") ||
-          text
-            .toLowerCase()
-            .includes("thank you for sharing all the details") ||
+          text.toLowerCase().includes("thank you for sharing your preferences") ||
+          text.toLowerCase().includes("thank you for sharing all the details") ||
           text.toLowerCase().includes("i’ll use this information")
         ) {
-          // Map collected responses in the exact order of sale questions
-          console.log("🧠 Raw collected responses before mapping:", collectedPrefsRef.current);
+          console.log("🧠 Collecting final preferences before sending...");
           const orderedPrefs = {
             location: collectedPrefsRef.current[0] || "",
             budget: collectedPrefsRef.current[1] || "",
@@ -301,38 +296,34 @@ const VoiceAssistantSale = () => {
             amenities: collectedPrefsRef.current[5] || "",
             time: collectedPrefsRef.current[6] || ""
           };
-          console.log(
-            "🧾 Final orderedPrefs before sending (from ref):",
-            orderedPrefs
-          );
+          console.log("📦 Ordered Prefs:", orderedPrefs);
           const payload = {
-            email: user?.email || null,
+            email: user?.email || "anonymous",
             assistantType: "sale",
             preferences: orderedPrefs,
           };
-          console.log("📬 Payload to backend:", payload);
+          console.log("📬 Sending payload to backend:", payload);
+
           try {
-            const resp = await fetch(
-              process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                credentials: "include",
-              }
-            );
-            if (resp.ok) {
-              console.log("✅ User preferences saved successfully.");
-              console.log("✅ Backend acknowledged preference save.");
+            const response = await fetch(process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              credentials: "include",
+            });
+            if (response.ok) {
+              console.log("✅ Preferences saved successfully!");
             } else {
-              const errText = await resp.text();
-              console.error("❌ Failed to save preferences:", errText);
+              const errorMsg = await response.text();
+              console.error("❌ Failed to save preferences:", errorMsg);
             }
           } catch (err) {
-            console.error("❌ Error saving user preferences:", err);
+            console.error("🚨 Error sending preferences:", err);
           }
-          console.log("✅ Conversation ended. Stopping recognition.");
+
+          console.log("🏁 Conversation complete — navigating to homepage.");
           if (recognitionRef.current) recognitionRef.current.stop();
+          navigate("/");
           return;
         }
         if (recognitionRef.current) {

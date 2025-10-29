@@ -6,14 +6,17 @@ const RentalpropertySchema = new mongoose.Schema(
     // Section 1: Property Basics & Specifications
     address: { type: String },
     Sector: { type: String },
-    propertyType: { 
-      type: String, 
+    propertyType: {
+      type: String,
       enum: ["house", "apartment", "condo", "townhouse", "villa"],
     },
-    purpose: {type: String},
+    purpose: { type: String },
     bedrooms: { type: Number },
     bathrooms: { type: Number },
-    totalArea: { type: Number },
+    totalArea: {
+      sqft: { type: Number }, // Numeric area, e.g., 1200
+      configuration: { type: String }, // e.g., "3 BHK"
+    },
     layoutFeatures: { type: String },
     appliances: [{ type: String }],
     conditionAge: { type: String },

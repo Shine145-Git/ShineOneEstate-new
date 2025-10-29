@@ -265,7 +265,13 @@ export default function RentalPropertyPage() {
                   </div>
                 <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
                   <Maximize size={18} style={{color:'#00A79D'}} />
-                  <span style={{color:'#333333',fontWeight:'600'}}>{property.totalArea != null ? `${property.totalArea} sqft` : 'N.A'}</span>
+                  <span style={{ color: '#333333', fontWeight: '600' }}>
+  {property.totalArea
+    ? `${property.totalArea.sqft ? `${property.totalArea.sqft} sqft` : ''}${
+        property.totalArea.sqft && property.totalArea.configuration ? ' • ' : ''
+      }${property.totalArea.configuration ? property.totalArea.configuration : ''}`
+    : 'N.A'}
+</span>
                 </div>
                 </div>
                 <div style={{paddingTop:'8px',borderTop:'1px solid #F4F7F9'}}>

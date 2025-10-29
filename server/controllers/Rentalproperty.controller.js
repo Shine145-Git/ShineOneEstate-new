@@ -59,6 +59,14 @@ const createRentalProperty = async (req, res) => {
 
     const propertyData = { ...req.body, owner: ownerId, images };
 
+// 🏠 Handle totalArea as an object with sqft and configuration
+if (req.body.totalAreaSqft || req.body.totalAreaConfiguration) {
+  propertyData.totalArea = {
+    sqft: Number(req.body.totalAreaSqft) || 0,
+    configuration: req.body.totalAreaConfiguration?.trim() || "",
+  };
+}
+
     // 🧩 Extract sector name (e.g., "Sector-9" or "Sector 9") from full string
     if (propertyData.Sector) {
       const sectorRegex = /(sector[-\s]*\d+)/i;

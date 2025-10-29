@@ -46,7 +46,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   React.useEffect(() => {
     console.log("Fetching saved properties from API...");
     axios
-      .get("http://localhost:2000/api/property-analysis/saved-properties", {
+      .get(process.env.REACT_APP_FETCHING_SAVED_PROPERTIES, {
         withCredentials: true,
       })
       .then((response) => {
