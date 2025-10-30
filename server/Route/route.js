@@ -39,7 +39,10 @@ const checkAdminEmail = (req, res, next) => {
   next();
 };
 
+
+
 // Auth routes
+
 router.post("/login/request-otp", requestOtp);
 router.post("/login/verify-otp", verifyOtp);
 router.get("/auth/me", verifyToken, userDetails);
@@ -75,6 +78,9 @@ router.post("/api/payment", verifyToken, createPayment);
 router.get("/api/payment", verifyToken, getPaymentsForUser);
 
 // Admin routes
+router.post("/admin/ping", (req, res) => {
+  res.status(200).json({ message: "Admin route is working!" });
+});
 router.get("/api/admin/pending-payments", verifyToken, checkAdminEmail, getPendingPayments);
 router.post("/api/admin/update-payment-status", verifyToken, checkAdminEmail, updatePaymentStatus);
 router.get("/api/admin/approved-payments", verifyToken, checkAdminEmail, getApprovedPayments);
