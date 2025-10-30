@@ -78,7 +78,7 @@ router.post("/api/payment", verifyToken, createPayment);
 router.get("/api/payment", verifyToken, getPaymentsForUser);
 
 // Admin routes
-router.post("/admin/ping", (req, res) => {
+router.get("/admin/ping", (req, res) => {
   res.status(200).json({ message: "Admin route is working!" });
 });
 router.get("/api/admin/pending-payments", verifyToken, checkAdminEmail, getPendingPayments);
