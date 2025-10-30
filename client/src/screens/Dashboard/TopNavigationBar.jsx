@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
   ChevronDown,
@@ -18,6 +18,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("Buy");
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -31,8 +32,11 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
   const [isMediumScreen, setIsMediumScreen] = useState(window.innerWidth < 1024);
 
+  // --- Preference Popup State ---
+  const [showPreferencePopup, setShowPreferencePopup] = useState(false);
+
   // Handle window resize
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth < 768);
       setIsMediumScreen(window.innerWidth < 1024);
@@ -43,7 +47,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   }, []);
 
   // Fetch saved properties from API
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("Fetching saved properties from API...");
     axios
       .get(process.env.REACT_APP_FETCHING_SAVED_PROPERTIES, {
@@ -58,7 +62,15 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
       });
   }, []);
 
-return (
+  // Show preference popup on login/component load, but only on dashboard route
+  useEffect(() => {
+    if (user && location.pathname === "/") {
+      setShowPreferencePopup(true);
+    }
+  }, [user, location]);
+
+  return (
+  <>
   <nav
     style={{
       backgroundColor: "#003366",
@@ -169,7 +181,7 @@ return (
           else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
         }}
       >
-        <span>{isSmallScreen ? "AI" : "AI Search"}</span>
+        <span>{isSmallScreen ? "ARIA" : "ARIA"}</span>
         <span
           style={{
             backgroundColor: "#FFFFFF",
@@ -463,6 +475,142 @@ return (
       </div>
     </div>
   </nav>
+
+  {/* --- Preference Popup Modal --- */}
+  {showPreferencePopup && (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "rgba(0,0,0,0.55)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "background 0.3s",
+        animation: "fadeInBackdrop 0.36s cubic-bezier(.4,0,.2,1)",
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "20px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+          width: isSmallScreen ? "90%" : "40%",
+          maxWidth: "480px",
+          minWidth: isSmallScreen ? "unset" : "340px",
+          padding: isSmallScreen ? "1.3rem 1rem" : "2.3rem 2.5rem",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          animation: "scaleFadeInPopup 0.36s cubic-bezier(.4,0,.2,1)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: isSmallScreen ? "1.15rem" : "1.5rem",
+            fontWeight: 700,
+            marginBottom: isSmallScreen ? "0.5rem" : "0.7rem",
+            color: "#003366",
+            letterSpacing: "0.01em",
+          }}
+        >
+          ✨ Personalize Your Experience
+        </div>
+        <div
+          style={{
+            fontSize: isSmallScreen ? "0.97rem" : "1.07rem",
+            fontWeight: 400,
+            color: "#3c4f68",
+            marginBottom: isSmallScreen ? "1.2rem" : "1.7rem",
+            lineHeight: 1.5,
+          }}
+        >
+          Tell us your preferences to get smarter property matches.
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isSmallScreen ? "column" : "row",
+            gap: isSmallScreen ? "0.75rem" : "1.2rem",
+            width: "100%",
+            justifyContent: "center",
+            marginTop: isSmallScreen ? "0.1rem" : "0.2rem",
+          }}
+        >
+          <button
+            onClick={() => {
+              setShowPreferencePopup(false);
+              navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
+            }}
+            style={{
+              flex: 1,
+              padding: isSmallScreen ? "0.65rem 0.5rem" : "0.75rem 1.2rem",
+              background: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: 600,
+              fontSize: isSmallScreen ? "1rem" : "1.08rem",
+              cursor: "pointer",
+              marginBottom: isSmallScreen ? "0.15rem" : 0,
+              boxShadow: "0 2px 8px rgba(34,211,238,0.13)",
+              transition: "background 0.2s, transform 0.18s",
+              outline: "none",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "linear-gradient(90deg, #22D3EE 0%, #00A79D 100%)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)")}
+          >
+            Set Preferences
+          </button>
+          <button
+            onClick={() => setShowPreferencePopup(false)}
+            style={{
+              flex: 1,
+              padding: isSmallScreen ? "0.65rem 0.5rem" : "0.75rem 1.2rem",
+              background: "#f5f7fa",
+              color: "#003366",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: 600,
+              fontSize: isSmallScreen ? "1rem" : "1.08rem",
+              cursor: "pointer",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              transition: "background 0.2s, color 0.2s",
+              outline: "none",
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "#e2e8f0";
+              e.currentTarget.style.color = "#00A79D";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "#f5f7fa";
+              e.currentTarget.style.color = "#003366";
+            }}
+          >
+            Maybe Later
+          </button>
+        </div>
+      </div>
+      {/* Animations */}
+      <style>{`
+        @keyframes fadeInBackdrop {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleFadeInPopup {
+          from { opacity: 0; transform: scale(0.93);}
+          to { opacity: 1; transform: scale(1);}
+        }
+      `}</style>
+    </div>
+  )
+  }
+  </>
 );
 };
 

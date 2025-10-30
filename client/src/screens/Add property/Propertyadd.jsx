@@ -253,48 +253,47 @@ Object.entries(formData).forEach(([key, value]) => {
     }
   };
 
-  // --- Styles ---
+  // --- Responsive Styles ---
+  // Get window width for responsive breakpoints
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Breakpoints
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  const isDesktop = windowWidth >= 1024;
+
   const containerStyle = {
     minHeight: "100vh",
     backgroundColor: "#F4F7F9",
     padding: "0",
   };
-  const headerStyle = {
-    backgroundColor: "#003366",
-    padding: "20px 40px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-  };
-  const logoStyle = {
-    color: "#FFFFFF",
-    fontSize: "28px",
-    fontWeight: "800",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  };
   const mainContentStyle = {
     display: "flex",
-    maxWidth: "1400px",
+    flexDirection: isMobile ? "column" : "row",
+    maxWidth: isMobile ? "100%" : isTablet ? "96%" : "1400px",
     margin: "0 auto",
-    padding: "40px 20px",
-    gap: "30px",
+    padding: isMobile ? "16px 4vw" : isTablet ? "30px 4vw" : "40px 20px",
+    gap: isMobile ? "20px" : "30px",
   };
   const sidebarStyle = {
-    width: "280px",
+    width: isMobile ? "100%" : isTablet ? "220px" : "280px",
     flexShrink: 0,
+    marginBottom: isMobile ? "20px" : 0,
   };
   const sidebarCardStyle = {
     backgroundColor: "#FFFFFF",
     borderRadius: "12px",
-    padding: "25px",
+    padding: isMobile ? "18px" : isTablet ? "20px" : "25px",
     boxShadow: "0 2px 12px rgba(0,51,102,0.08)",
     marginBottom: "20px",
   };
   const sidebarTitleStyle = {
-    fontSize: "16px",
+    fontSize: isMobile ? "14px" : "16px",
     fontWeight: "700",
     color: "#003366",
     marginBottom: "20px",
@@ -302,8 +301,8 @@ Object.entries(formData).forEach(([key, value]) => {
   const stepItemStyle = (index) => ({
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    padding: "12px",
+    gap: isMobile ? "8px" : "12px",
+    padding: isMobile ? "8px" : "12px",
     borderRadius: "8px",
     marginBottom: "8px",
     cursor: "pointer",
@@ -313,8 +312,8 @@ Object.entries(formData).forEach(([key, value]) => {
       currentStep === index ? "2px solid #00A79D" : "2px solid transparent",
   });
   const stepIconStyle = (index) => ({
-    width: "36px",
-    height: "36px",
+    width: isMobile ? "28px" : "36px",
+    height: isMobile ? "28px" : "36px",
     borderRadius: "50%",
     backgroundColor:
       currentStep === index
@@ -328,7 +327,7 @@ Object.entries(formData).forEach(([key, value]) => {
     flexShrink: 0,
   });
   const stepTextStyle = (index) => ({
-    fontSize: "14px",
+    fontSize: isMobile ? "12px" : "14px",
     fontWeight: currentStep === index ? "700" : "500",
     color: currentStep === index ? "#003366" : "#4A6A8A",
   });
@@ -336,33 +335,35 @@ Object.entries(formData).forEach(([key, value]) => {
     flex: 1,
     backgroundColor: "#FFFFFF",
     borderRadius: "12px",
-    padding: "40px",
+    padding: isMobile ? "18px 10px" : isTablet ? "28px" : "40px",
     boxShadow: "0 2px 12px rgba(0,51,102,0.08)",
+    width: isMobile ? "100%" : undefined,
+    maxWidth: "100%",
   };
   const formTitleStyle = {
-    fontSize: "32px",
+    fontSize: isMobile ? "22px" : isTablet ? "26px" : "32px",
     fontWeight: "800",
     color: "#003366",
     marginBottom: "10px",
   };
   const formSubtitleStyle = {
-    fontSize: "16px",
+    fontSize: isMobile ? "13px" : "16px",
     color: "#4A6A8A",
-    marginBottom: "40px",
+    marginBottom: isMobile ? "24px" : "40px",
   };
   const inputLabelStyle = {
     display: "block",
-    fontSize: "14px",
+    fontSize: isMobile ? "12px" : "14px",
     fontWeight: "600",
     color: "#333333",
     marginBottom: "8px",
   };
   const inputStyle = {
     width: "100%",
-    padding: "12px 16px",
+    padding: isMobile ? "10px 12px" : "12px 16px",
     border: "2px solid #E5E7EB",
     borderRadius: "8px",
-    fontSize: "15px",
+    fontSize: isMobile ? "14px" : "15px",
     outline: "none",
     transition: "all 0.3s",
     boxSizing: "border-box",
@@ -371,43 +372,46 @@ Object.entries(formData).forEach(([key, value]) => {
   const textareaStyle = {
     ...inputStyle,
     resize: "vertical",
-    minHeight: "100px",
+    minHeight: isMobile ? "60px" : "100px",
   };
   const gridStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
-    gap: "20px",
-    marginBottom: "25px",
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
+    gap: isMobile ? "12px" : "20px",
+    marginBottom: isMobile ? "16px" : "25px",
   };
   const fieldStyle = {
-    marginBottom: "25px",
+    marginBottom: isMobile ? "16px" : "25px",
   };
   const checkboxGroupStyle = {
     display: "flex",
     flexWrap: "wrap",
-    gap: "15px",
+    gap: isMobile ? "8px" : "15px",
   };
   const checkboxLabelStyle = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
     cursor: "pointer",
-    padding: "8px 12px",
+    padding: isMobile ? "6px 8px" : "8px 12px",
     borderRadius: "6px",
     border: "2px solid #E5E7EB",
     transition: "all 0.3s",
+    fontSize: isMobile ? "12px" : "inherit",
   };
   const buttonContainerStyle = {
-    display: "flex",
+    display: isMobile ? "block" : "flex",
     justifyContent: "space-between",
-    marginTop: "40px",
-    paddingTop: "30px",
+    marginTop: isMobile ? "24px" : "40px",
+    paddingTop: isMobile ? "18px" : "30px",
     borderTop: "2px solid #F4F7F9",
+    gap: isMobile ? "10px" : 0,
   };
   const buttonStyle = (variant) => ({
-    padding: "14px 32px",
+    width: isMobile ? "100%" : undefined,
+    padding: isMobile ? "12px" : "14px 32px",
     borderRadius: "8px",
-    fontSize: "16px",
+    fontSize: isMobile ? "14px" : "16px",
     fontWeight: "700",
     border: "none",
     cursor: "pointer",
@@ -418,25 +422,27 @@ Object.entries(formData).forEach(([key, value]) => {
     backgroundColor: variant === "primary" ? "#00A79D" : "#FFFFFF",
     color: variant === "primary" ? "#FFFFFF" : "#4A6A8A",
     border: variant === "secondary" ? "2px solid #E5E7EB" : "none",
+    marginBottom: isMobile ? "10px" : 0,
   });
   const uploadAreaStyle = {
     border: "3px dashed #00A79D",
     borderRadius: "12px",
-    padding: "40px",
+    padding: isMobile ? "18px" : "40px",
     textAlign: "center",
     backgroundColor: "#F4F7F9",
     transition: "all 0.3s",
     cursor: "pointer",
+    fontSize: isMobile ? "13px" : undefined,
   };
   const uploadedImagesStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "15px",
-    marginTop: "25px",
+    gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(4, 1fr)",
+    gap: isMobile ? "8px" : "15px",
+    marginTop: isMobile ? "16px" : "25px",
   };
   const uploadedImageStyle = {
     width: "100%",
-    height: "150px",
+    height: isMobile ? "85px" : "150px",
     objectFit: "cover",
     borderRadius: "8px",
     border: "2px solid #E5E7EB",
@@ -1297,10 +1303,10 @@ Object.entries(formData).forEach(([key, value]) => {
   return (
     <div style={containerStyle}>
       <TopNavigationBar
-          user={user}
-          handleLogout={handleLogout}
-          navItems={navItems}
-        />
+        user={user}
+        handleLogout={handleLogout}
+        navItems={navItems}
+      />
       <div style={mainContentStyle}>
         {/* Sidebar with steps */}
         {formData.purpose && (
@@ -1317,9 +1323,9 @@ Object.entries(formData).forEach(([key, value]) => {
                   >
                     <div style={stepIconStyle(idx)}>
                       {currentStep > idx ? (
-                        <Check size={20} color="#FFFFFF" />
+                        <Check size={isMobile ? 16 : 20} color="#FFFFFF" />
                       ) : (
-                        <StepIcon size={20} color="#FFFFFF" />
+                        <StepIcon size={isMobile ? 16 : 20} color="#FFFFFF" />
                       )}
                     </div>
                     <span style={stepTextStyle(idx)}>{step.title}</span>
@@ -1348,7 +1354,7 @@ Object.entries(formData).forEach(([key, value]) => {
                 </button>
               ) : (
                 <button onClick={handleNext} style={buttonStyle("primary")}>
-                  Next <ChevronRight size={18} />
+                  Next <ChevronRight size={isMobile ? 15 : 18} />
                 </button>
               )}
             </div>

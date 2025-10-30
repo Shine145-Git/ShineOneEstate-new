@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Phone, Clock, CheckCircle, MessageSquare, Headphones, Mail } from 'lucide-react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
 
 export default function CustomerSupportPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +14,37 @@ export default function CustomerSupportPage() {
     issue: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,7 +72,9 @@ export default function CustomerSupportPage() {
   };
 
   return (
+    <> <TopNavigationBar user={user} handleLogout={handleLogout} navItems={navItems} />
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)' }}>
+
       {/* Header */}
       <div style={{ 
         background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
@@ -524,6 +560,7 @@ export default function CustomerSupportPage() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+      </>
   );
 }

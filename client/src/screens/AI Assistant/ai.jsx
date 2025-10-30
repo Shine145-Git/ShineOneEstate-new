@@ -48,6 +48,17 @@ const handleLogout = async () => {
     }, 500);
   };
 
+  // Responsive styles for buttons
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth <= 768;
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
@@ -73,14 +84,14 @@ const handleLogout = async () => {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: '3rem', marginBottom: '4rem', animation: 'fadeIn 0.5s ease-in' }}>
-            <button onClick={() => handleOptionSelect('Rental')} style={{ width: '280px', padding: '2.5rem', borderRadius: '16px', background: selectedOption === 'Rental' ? '#00A79D' : 'rgba(255,255,255,0.1)', border: '2px solid #22D3EE', cursor: 'pointer', transition: 'all 0.3s', backdropFilter: 'blur(10px)' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(34,211,238,0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+          <div style={{ display: 'flex', gap: '3rem', marginBottom: '4rem', animation: 'fadeIn 0.5s ease-in', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button onClick={() => handleOptionSelect('Rental')} style={{ width: isMobile ? '200px' : '280px', padding: isMobile ? '1.5rem' : '2.5rem', borderRadius: '16px', background: selectedOption === 'Rental' ? '#00A79D' : 'rgba(255,255,255,0.1)', border: '2px solid #22D3EE', cursor: 'pointer', transition: 'all 0.3s', backdropFilter: 'blur(10px)' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(34,211,238,0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
               <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#22D3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}><Home size={36} color="#003366" /></div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#FFFFFF', marginBottom: '0.75rem' }}>Rental Property</h3>
               <p style={{ fontSize: '0.95rem', color: '#F4F7F9', lineHeight: '1.6', opacity: 0.9 }}>Search for properties available for rent with flexible terms and conditions</p>
             </button>
 
-            <button onClick={() => handleOptionSelect('Sale')} style={{ width: '280px', padding: '2.5rem', borderRadius: '16px', background: selectedOption === 'Sale' ? '#00A79D' : 'rgba(255,255,255,0.1)', border: '2px solid #22D3EE', cursor: 'pointer', transition: 'all 0.3s', backdropFilter: 'blur(10px)' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(34,211,238,0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+            <button onClick={() => handleOptionSelect('Sale')} style={{ width: isMobile ? '200px' : '280px', padding: isMobile ? '1.5rem' : '2.5rem', borderRadius: '16px', background: selectedOption === 'Sale' ? '#00A79D' : 'rgba(255,255,255,0.1)', border: '2px solid #22D3EE', cursor: 'pointer', transition: 'all 0.3s', backdropFilter: 'blur(10px)' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(34,211,238,0.3)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
               <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#22D3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}><Building2 size={36} color="#003366" /></div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#FFFFFF', marginBottom: '0.75rem' }}>Sale Property</h3>
               <p style={{ fontSize: '0.95rem', color: '#F4F7F9', lineHeight: '1.6', opacity: 0.9 }}>Browse properties available for purchase and find your dream home</p>
@@ -88,23 +99,138 @@ const handleLogout = async () => {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '4rem', maxWidth: '1200px', marginTop: '2rem' }}>
-          <div style={{ flex: 1, textAlign: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(34,211,238,0.2)' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#22D3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 15px rgba(34,211,238,0.3)' }}><div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#003366' }}>01</div></div>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#22D3EE', marginBottom: '0.5rem', letterSpacing: '1px' }}>EXPERT GUIDANCE</h4>
-            <p style={{ fontSize: '0.875rem', color: '#F4F7F9', lineHeight: '1.6', opacity: 0.8 }}>Our team of property experts will guide you through the entire search process</p>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '2rem',
+          maxWidth: '1200px',
+          marginTop: '2rem',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            flex: isMobile ? '0 1 calc(50% - 1rem)' : '1',
+            textAlign: 'center',
+            padding: isMobile ? '1rem' : '1.5rem',
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(34,211,238,0.2)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              width: isMobile ? '50px' : '60px',
+              height: isMobile ? '50px' : '60px',
+              borderRadius: '12px',
+              background: '#22D3EE',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              boxShadow: '0 4px 15px rgba(34,211,238,0.3)'
+            }}>
+              <div style={{
+                fontSize: isMobile ? '1.25rem' : '1.75rem',
+                fontWeight: '700',
+                color: '#003366'
+              }}>01</div>
+            </div>
+            <h4 style={{
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              fontWeight: '600',
+              color: '#22D3EE',
+              marginBottom: '0.5rem',
+              letterSpacing: '1px'
+            }}>EXPERT GUIDANCE</h4>
+            <p style={{
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              color: '#F4F7F9',
+              lineHeight: '1.6',
+              opacity: 0.8
+            }}>Our team of property experts will guide you through the entire search process</p>
           </div>
 
-          <div style={{ flex: 1, textAlign: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(34,211,238,0.2)' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#22D3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 15px rgba(34,211,238,0.3)' }}><div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#003366' }}>02</div></div>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#22D3EE', marginBottom: '0.5rem', letterSpacing: '1px' }}>VERIFIED LISTINGS</h4>
-            <p style={{ fontSize: '0.875rem', color: '#F4F7F9', lineHeight: '1.6', opacity: 0.8 }}>Browse through verified property listings with accurate details and pricing</p>
+          <div style={{
+            flex: isMobile ? '0 1 calc(50% - 1rem)' : '1',
+            textAlign: 'center',
+            padding: isMobile ? '1rem' : '1.5rem',
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(34,211,238,0.2)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              width: isMobile ? '50px' : '60px',
+              height: isMobile ? '50px' : '60px',
+              borderRadius: '12px',
+              background: '#22D3EE',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              boxShadow: '0 4px 15px rgba(34,211,238,0.3)'
+            }}>
+              <div style={{
+                fontSize: isMobile ? '1.25rem' : '1.75rem',
+                fontWeight: '700',
+                color: '#003366'
+              }}>02</div>
+            </div>
+            <h4 style={{
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              fontWeight: '600',
+              color: '#22D3EE',
+              marginBottom: '0.5rem',
+              letterSpacing: '1px'
+            }}>VERIFIED LISTINGS</h4>
+            <p style={{
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              color: '#F4F7F9',
+              lineHeight: '1.6',
+              opacity: 0.8
+            }}>Browse through verified property listings with accurate details and pricing</p>
           </div>
 
-          <div style={{ flex: 1, textAlign: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(34,211,238,0.2)' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#22D3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 15px rgba(34,211,238,0.3)' }}><div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#003366' }}>03</div></div>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#22D3EE', marginBottom: '0.5rem', letterSpacing: '1px' }}>94% SUCCESS RATE</h4>
-            <p style={{ fontSize: '0.875rem', color: '#F4F7F9', lineHeight: '1.6', opacity: 0.8 }}>Property seekers using our platform have a higher chance of finding their ideal property</p>
+          <div style={{
+            flex: isMobile ? '0 1 calc(50% - 1rem)' : '1',
+            textAlign: 'center',
+            padding: isMobile ? '1rem' : '1.5rem',
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(34,211,238,0.2)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              width: isMobile ? '50px' : '60px',
+              height: isMobile ? '50px' : '60px',
+              borderRadius: '12px',
+              background: '#22D3EE',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              boxShadow: '0 4px 15px rgba(34,211,238,0.3)'
+            }}>
+              <div style={{
+                fontSize: isMobile ? '1.25rem' : '1.75rem',
+                fontWeight: '700',
+                color: '#003366'
+              }}>03</div>
+            </div>
+            <h4 style={{
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              fontWeight: '600',
+              color: '#22D3EE',
+              marginBottom: '0.5rem',
+              letterSpacing: '1px'
+            }}>94% SUCCESS RATE</h4>
+            <p style={{
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              color: '#F4F7F9',
+              lineHeight: '1.6',
+              opacity: 0.8
+            }}>Property seekers using our platform have a higher chance of finding their ideal property</p>
           </div>
         </div>
 

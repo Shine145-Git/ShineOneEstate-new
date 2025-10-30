@@ -339,33 +339,34 @@ return {
     <div style={{ backgroundColor: '#F1F5F9', minHeight: '100vh' }}>
       <TopNavigationBar user={user} navItems={navItems} onLogout={handleLogout} />
 
-      <div style={{ backgroundColor: '#FFF', borderBottom: '1px solid #E2E8F0', padding: '20px 0' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* Responsive Header and Filters */}
+      <div className="properties-header-bar" style={{ backgroundColor: '#FFF', borderBottom: '1px solid #E2E8F0', padding: '20px 0' }}>
+        <div className="properties-header-container" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px' }}>
+          <div className="properties-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
             <div>
               <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>My Properties</h1>
               <p style={{ color: '#64748B', fontSize: '14px' }}>Last visited: {new Date().toLocaleString()}</p>
             </div>
-            <button onClick={() => navigate('/add-property')} style={{ backgroundColor: '#3B82F6', color: '#FFF', border: 'none', borderRadius: '8px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}>
+            <button onClick={() => navigate('/add-property')} className="properties-header-post-btn" style={{ backgroundColor: '#3B82F6', color: '#FFF', border: 'none', borderRadius: '8px', padding: '12px 24px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563EB'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3B82F6'}>
               <Plus size={18} />POST A PROPERTY
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="properties-header-filters" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="properties-header-status" style={{ display: 'flex', gap: '8px' }}>
               {['all', 'active', 'deleted'].map(status => (
-                <button key={status} onClick={() => setFilterStatus(status)} style={{ padding: '8px 16px', backgroundColor: filterStatus === status ? '#DBEAFE' : '#FFF', color: filterStatus === status ? '#1E40AF' : '#64748B', border: `1px solid ${filterStatus === status ? '#3B82F6' : '#E2E8F0'}`, borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', textTransform: 'uppercase', transition: 'all 0.2s' }}>
+                <button key={status} onClick={() => setFilterStatus(status)} className="properties-header-status-btn" style={{ padding: '8px 16px', backgroundColor: filterStatus === status ? '#DBEAFE' : '#FFF', color: filterStatus === status ? '#1E40AF' : '#64748B', border: `1px solid ${filterStatus === status ? '#3B82F6' : '#E2E8F0'}`, borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', textTransform: 'uppercase', transition: 'all 0.2s' }}>
                   {status}
                 </button>
               ))}
             </div>
 
-            <div style={{ flex: 1, maxWidth: '400px', position: 'relative' }}>
+            <div className="properties-header-search" style={{ flex: 1, maxWidth: '400px', position: 'relative' }}>
               <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input type="text" placeholder="Search by locality, project, or landmark..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '10px 12px 10px 40px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '14px', outline: 'none' }} />
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+            <div className="properties-header-viewmode" style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
               <button onClick={() => setViewMode('grid')} style={{ padding: '8px', backgroundColor: viewMode === 'grid' ? '#DBEAFE' : '#FFF', border: `1px solid ${viewMode === 'grid' ? '#3B82F6' : '#E2E8F0'}`, borderRadius: '6px', cursor: 'pointer' }}>
                 <Grid size={18} color={viewMode === 'grid' ? '#1E40AF' : '#64748B'} />
               </button>
@@ -377,8 +378,8 @@ return {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', padding: '16px 20px', backgroundColor: '#FFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+      <div className="properties-main-container" style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
+        <div className="properties-main-filters-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', padding: '16px 20px', backgroundColor: '#FFF', borderRadius: '10px', border: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>Showing:</span>
             <span style={{ fontSize: '14px', color: '#64748B' }}>ALL</span>
@@ -408,10 +409,10 @@ return {
           <button style={{ backgroundColor: '#3B82F6', color: '#FFF', border: 'none', borderRadius: '6px', padding: '6px 16px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>Learn more</button>
         </div>
 
-        <div style={{ backgroundColor: '#FFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '20px', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div className="properties-main-card-list-container" style={{ backgroundColor: '#FFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '20px', marginBottom: '24px' }}>
+          <div className="properties-main-card-list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>{sortedProperties.length} ALL Products</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="properties-main-card-list-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748B', cursor: 'pointer' }}>
                 <input type="checkbox" />Select All
               </label>
@@ -434,10 +435,10 @@ return {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="properties-main-card-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {sortedProperties.map((p, idx) => (
-                <div key={p._id} style={{ border: '1px solid #E2E8F0', borderRadius: '10px', padding: '20px', transition: 'all 0.2s', cursor: 'pointer', backgroundColor: '#FFF' }} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = '#CBD5E1'; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#E2E8F0'; }}>
-                  <div style={{ display: 'flex', gap: '20px' }}>
+                <div key={p._id} className="property-card" style={{ border: '1px solid #E2E8F0', borderRadius: '10px', padding: '20px', transition: 'all 0.2s', cursor: 'pointer', backgroundColor: '#FFF' }} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = '#CBD5E1'; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#E2E8F0'; }}>
+                  <div className="property-card-content" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'flex-start' }}>
                       <input type="checkbox" style={{ marginTop: '4px', cursor: 'pointer' }} />
                     </label>
@@ -548,7 +549,7 @@ return {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '24px' }}>
+        <div className="properties-bottom-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '24px' }}>
           <div style={{ background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)', borderRadius: '12px', padding: '24px', color: '#FFF' }}>
             <Home size={32} style={{ marginBottom: '12px' }} />
             <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>List More Properties</h3>
@@ -653,6 +654,103 @@ return {
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design for Properties User Page */
+        @media (max-width: 768px) {
+          .properties-header-container {
+            padding: 0 8px !important;
+          }
+          .properties-header-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+          }
+          .properties-header-post-btn {
+            width: 100%;
+            justify-content: center;
+            margin-top: 8px;
+            padding: 12px 0 !important;
+            font-size: 15px !important;
+          }
+          .properties-header-filters {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+          }
+          .properties-header-status {
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+          }
+          .properties-header-status-btn {
+            width: 100%;
+            min-width: 110px;
+            font-size: 12px !important;
+          }
+          .properties-header-search {
+            max-width: 100% !important;
+            width: 100%;
+            margin-top: 6px;
+          }
+          .properties-header-viewmode {
+            margin-left: 0 !important;
+            margin-top: 8px;
+            gap: 4px !important;
+          }
+
+          .properties-main-container {
+            padding: 12px !important;
+          }
+          .properties-main-filters-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            padding: 12px 8px !important;
+          }
+          .properties-main-card-list-container {
+            padding: 12px 8px !important;
+          }
+          .properties-main-card-list-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+          }
+          .properties-main-card-list-header-actions {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+          .properties-main-card-list {
+            gap: 12px !important;
+          }
+          .property-card {
+            padding: 12px 6px !important;
+          }
+          .property-card-content {
+            flex-direction: column !important;
+            gap: 10px !important;
+          }
+          .property-card-content img {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 180px !important;
+            object-fit: cover;
+          }
+          .property-card-content > div {
+            width: 100% !important;
+          }
+          /* Make property card buttons full width and stack */
+          .property-card button {
+            width: 100%;
+            min-width: 0 !important;
+            margin-bottom: 6px;
+            justify-content: center;
+          }
+          /* Bottom grid: stack boxes vertically */
+          .properties-bottom-grid {
+            grid-template-columns: 1fr !important;
+            gap: 14px !important;
+            margin-top: 18px !important;
+          }
         }
       `}</style>
     </div>
