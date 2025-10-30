@@ -1,3 +1,4 @@
+
 // @desc Get all properties owned by the logged-in user
 // @route GET /api/properties/my
 // @access Private (owner only)
@@ -11,20 +12,9 @@ const multer = require("multer");
 const excelStorage = multer.memoryStorage();
 const excelUpload = multer({ storage: excelStorage });
 const xlsx = require("xlsx");
-const getMyProperties = async (req, res) => {
-  try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Unauthorized: User not logged in" });
-    }
-    const myProperties = await RentalProperty.find({ owner: req.user._id });
-    res.status(200).json(myProperties);
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error while fetching user's properties",
-      error: error.message,
-    });
-  }
-};
+
+
+
 
 
 // Configure Cloudinary (ensure your credentials are set in environment variables)
@@ -174,5 +164,5 @@ module.exports = {
   createRentalProperty,
   getAllProperties,
   bulkUploadProperties,
-  getMyProperties,
+
 };

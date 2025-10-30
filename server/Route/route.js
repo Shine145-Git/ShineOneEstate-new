@@ -9,7 +9,7 @@ const { verifyToken } = require("../middleware/auth");
 
 // Controllers
 const { requestOtp, verifyOtp } = require("../controllers/login.controller");
-const { userDetails, saveUserDetails, getUserDetails } = require("../controllers/userdetails.controller");
+const { userDetails, saveUserDetails, getUserDetails, getMyProperties, updateProperty, deleteProperty } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
 const { saveUserPreferencesRENTALARIA , saveUserPreferencesSALEARIA } = require("../controllers/userPreferencesARIA.controller.js");
 
@@ -17,7 +17,6 @@ const {
   createRentalProperty,
   getAllProperties,
   bulkUploadProperties,
-  getMyProperties,
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
 const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests } = require("../controllers/admin.controller");
@@ -52,12 +51,16 @@ router.post("/api/user/save-details", verifyToken, saveUserDetails);
 router.get("/api/user/details", verifyToken, getUserDetails);
 router.get("/api/user/dashboard", verifyToken, getUserDashboard);
 
+router.get("/api/properties/my", verifyToken, getMyProperties);
+router.put("/api/user/update-property/:id", verifyToken, updateProperty);
+router.delete("/api/user/delete-property/:id", verifyToken, deleteProperty);
+
 // Property routes
 
 router.post("/api/properties/bulk-upload", verifyToken, excelUpload.single("file"), bulkUploadProperties);
 router.post("/api/properties/bulk-upload-csv", verifyToken, excelUpload.single("file"), bulkUploadProperties);
 router.get("/api/properties",  getAllProperties);
-router.get("/api/properties/my", verifyToken, getMyProperties);
+// router.get("/api/properties/my", verifyToken, getMyProperties);
 router.get("/api/getRentalproperties/:id", getRentalPropertyById);
 
 
