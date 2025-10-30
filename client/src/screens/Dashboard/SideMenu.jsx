@@ -38,62 +38,7 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
           <button onClick={() => setIsOpen(false)} style={{background: 'none', border: 'none', cursor: 'pointer', padding: '8px'}}><X size={24} color="#4A6A8A" /></button>
         </div>
 
-        {/* Promotional Banner */}
-        <div style={{margin: '20px', padding: '20px', background: 'linear-gradient(135deg, #E0F7F4 0%, #B8E6E0 100%)', borderRadius: '12px', position: 'relative', overflow: 'hidden'}}>
-          <div style={{position: 'absolute', right: '0', top: '0', width: '120px', height: '120px', opacity: '0.3'}}>
-           
-          </div>
-          
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            paddingBottom: '125%', // 4:5 ratio
-            borderRadius: '12px',
-            overflow: 'hidden',
-            marginTop: '12px',
-          }}>
-            {[ad1, ad2, ad3, ad4].map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                alt={`Ad ${index + 1}`}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  opacity: index === 0 ? 1 : 0,
-                  transition: 'opacity 1s ease-in-out',
-                  animation: `fade${index} 16s infinite`,
-                }}
-              />
-            ))}
-            <style>
-              {`
-                @keyframes fade0 {
-                  0%, 25% { opacity: 1; }
-                  26%, 100% { opacity: 0; }
-                }
-                @keyframes fade1 {
-                  0%, 25% { opacity: 0; }
-                  26%, 50% { opacity: 1; }
-                  51%, 100% { opacity: 0; }
-                }
-                @keyframes fade2 {
-                  0%, 50% { opacity: 0; }
-                  51%, 75% { opacity: 1; }
-                  76%, 100% { opacity: 0; }
-                }
-                @keyframes fade3 {
-                  0%, 75% { opacity: 0; }
-                  76%, 100% { opacity: 1; }
-                }
-              `}
-            </style>
-          </div>
-        </div>
+        
 
         
 

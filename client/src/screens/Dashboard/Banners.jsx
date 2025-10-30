@@ -298,7 +298,7 @@ export default function Banners(user) {
               lineHeight: '1',
               marginBottom: isMobile ? '4px' : '8px'
             }}>
-              ₹5K
+              ₹2K
             </div>
             <div style={{
               color: '#00A79D',
