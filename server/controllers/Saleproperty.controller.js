@@ -33,11 +33,11 @@ const createSaleProperty = async (req, res) => {
         normalizedSector = cleaned.replace(/\b\w/g, c => c.toUpperCase());
       }
 
-      await Sector.findOneAndUpdate(
-        { name: normalizedSector },
-        { name: normalizedSector },
-        { upsert: true, new: true }
-      );
+      // ✅ Check first, then create only if not found
+      const existingSector = await Sector.findOne({ name: normalizedSector });
+      if (!existingSector) {
+        await Sector.create({ name: normalizedSector });
+      }
     }
 
     const totalArea = {
@@ -87,7 +87,6 @@ const toggleSalePropertyStatus = async (req, res) => {
 
     res.status(200).json({ message: `Property ${property.isActive ? 'activated' : 'deactivated'} successfully`, property });
   } catch (error) {
-    console.error("❌ Error toggling sale property status:", error);
     res.status(500).json({ message: "Failed to toggle property status", error: error.message });
   }
 };

@@ -48,13 +48,13 @@ const createRentalProperty = async (req, res) => {
 
     const propertyData = { ...req.body, owner: ownerId, images };
 
-    // 🏠 Handle totalArea as an object with sqft and configuration
-    if (req.body.totalAreaSqft || req.body.totalAreaConfiguration) {
-      propertyData.totalArea = {
-        sqft: Number(req.body.totalAreaSqft) || 0,
-        configuration: req.body.totalAreaConfiguration?.trim() || "",
-      };
-    }
+// 🏠 Handle totalArea as an object with sqft and configuration
+if (req.body.totalAreaSqft || req.body.totalAreaConfiguration) {
+  propertyData.totalArea = {
+    sqft: Number(req.body.totalAreaSqft) || 0,
+    configuration: req.body.totalAreaConfiguration?.trim() || "",
+  };
+}
 
     // 🧩 Extract sector name (e.g., "Sector-9" or "Sector 9") from full string
     if (propertyData.Sector) {
@@ -66,14 +66,13 @@ const createRentalProperty = async (req, res) => {
           : propertyData.Sector.trim();
 
       // Save or update in Sector collection
-      await Sector.findOneAndUpdate(
-        { name: cleanSector.toLowerCase() },
-        { name: cleanSector },
-        { upsert: true, new: true }
-      );
+      const existingSector = await Sector.findOne({
+        name: { $regex: new RegExp(`^${cleanSector}$`, "i") },
+      });
+      if (!existingSector) {
+        await Sector.create({ name: cleanSector });
+      }
     }
-
-    propertyData.isActive = true;
 
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
@@ -83,6 +82,7 @@ const createRentalProperty = async (req, res) => {
       property: savedProperty,
     });
   } catch (error) {
+    console.error("❌ Property creation error:", error);
     res.status(500).json({
       message: "Server error while creating property",
       error: error.message,
@@ -119,7 +119,6 @@ const bulkUploadProperties = async (req, res) => {
     const propertiesToInsert = propertiesData.map((data) => ({
       ...data,
       owner: ownerId,
-      isActive: true,
     }));
 
     const insertedProperties = await RentalProperty.insertMany(propertiesToInsert);
@@ -142,53 +141,11 @@ const bulkUploadProperties = async (req, res) => {
 // @access Public
 const getAllProperties = async (req, res) => {
   try {
-    const properties = await RentalProperty.find({ isActive: true }).populate("owner", "name email");
+    const properties = await RentalProperty.find().populate("owner", "name email");
     res.status(200).json(properties);
   } catch (error) {
     res.status(500).json({
       message: "Server error while fetching properties",
-      error: error.message,
-    });
-  }
-};
-
-// @desc Get all properties (active + inactive) for admin
-// @route GET /api/admin/properties
-// @access Private (admin only)
-const getAllPropertiesAdmin = async (req, res) => {
-  try {
-    const properties = await RentalProperty.find().populate("owner", "name email role");
-    res.status(200).json(properties);
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error while fetching all properties (admin)",
-      error: error.message,
-    });
-  }
-};
-
-// @desc Toggle property active/inactive
-// @route PATCH /api/properties/:id/toggle
-// @access Private (admin or owner)
-const togglePropertyStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const property = await RentalProperty.findById(id);
-
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
-    property.isActive = !property.isActive;
-    await property.save();
-
-    res.status(200).json({
-      message: `Property marked as ${property.isActive ? "active" : "inactive"}`,
-      property,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error toggling property status",
       error: error.message,
     });
   }
@@ -208,6 +165,5 @@ module.exports = {
   createRentalProperty,
   getAllProperties,
   bulkUploadProperties,
-  togglePropertyStatus,
-  getAllPropertiesAdmin,
+
 };
