@@ -35,7 +35,6 @@ const createEnquiry = async (req, res) => {
     await enquiry.save();
     return res.status(201).json({ success: true, enquiry });
   } catch (err) {
-    console.error("Error creating enquiry:", err);
     return res.status(500).json({ success: false, message: "Failed to create enquiry" });
   }
 };
@@ -46,7 +45,6 @@ const getEnquiries = async (req, res) => {
     const enquiries = await Enquiry.find().sort({ createdAt: -1 });
     return res.status(200).json({ success: true, enquiries });
   } catch (err) {
-    console.error("Failed to fetch enquiries:", err);
     return res.status(500).json({ success: false, message: "Failed to fetch enquiries" });
   }
 };

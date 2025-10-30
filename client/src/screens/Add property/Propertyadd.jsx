@@ -609,7 +609,7 @@ Object.entries(formData).forEach(([key, value]) => {
                   name="Sector"
                   value={formData.Sector}
                   onChange={handleChange}
-                  placeholder="e.g., Sector 46"
+                  placeholder="e.g., Sector 46, Gurugram , Haryana"
                   style={inputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}

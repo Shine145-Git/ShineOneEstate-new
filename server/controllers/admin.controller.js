@@ -145,11 +145,8 @@ const updatePaymentStatus = async (req, res) => {
 
 
 const getApprovedPayments = async (req, res) => {
-  console.log("✅ getApprovedPayments called");
   try {
     const approvedPayments = await Payment.find({ status: 'approved' }).populate('resident');
-
-    console.log("✅ Approved payments fetched:", approvedPayments.length, approvedPayments.slice(0,2));
 
     const populatedPayments = await Promise.all(
       approvedPayments.map(async (payment) => {
@@ -179,10 +176,10 @@ const getApprovedPayments = async (req, res) => {
 
 const getAdminOverview = async (req, res) => {
   try {
-    // Property counts
+    // Property counts (only active)
     const [rentalCount, saleCount] = await Promise.all([
-      RentalProperty.countDocuments(),
-      SaleProperty.countDocuments()
+      RentalProperty.countDocuments({ isActive: true }),
+      SaleProperty.countDocuments({ isActive: true })
     ]);
     const totalProperties = rentalCount + saleCount;
 
@@ -223,11 +220,11 @@ const getAdminOverview = async (req, res) => {
     // Fetch distinct user emails from UserPreferencesARIA (AI Assistant users)
     const aiUsers = await UserPreferencesARIA.distinct('email');
 
-    // Recent activity
+    // Recent activity (only active properties)
     const [recentUsers, recentRentalProperties, recentSaleProperties, recentPayments] = await Promise.all([
       User.find().sort({ createdAt: -1 }).limit(5),
-      RentalProperty.find().sort({ createdAt: -1 }).limit(2),
-      SaleProperty.find().sort({ createdAt: -1 }).limit(1),
+      RentalProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(2),
+      SaleProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(1),
       Payment.find().populate('resident').sort({ paymentDate: -1 }).limit(5)
     ]);
     const recentProperties = [...recentRentalProperties, ...recentSaleProperties];
@@ -304,9 +301,9 @@ const getAdminOverview = async (req, res) => {
     const averagePropertyRating = avgRatingAgg.length > 0 ? avgRatingAgg[0].avgRating : 0;
 
     // --- Property statistics ---
-    // Use PropertyAnalysis for engagement stats
-    const rentalPropertyIds = await RentalProperty.find({}, '_id').then(docs => docs.map(d => d._id));
-    const salePropertyIds = await SaleProperty.find({}, '_id').then(docs => docs.map(d => d._id));
+    // Use PropertyAnalysis for engagement stats (only active properties)
+    const rentalPropertyIds = await RentalProperty.find({ isActive: true }, '_id').then(docs => docs.map(d => d._id));
+    const salePropertyIds = await SaleProperty.find({ isActive: true }, '_id').then(docs => docs.map(d => d._id));
     // Rental stats
     const rentalStatsAgg = await PropertyAnalysis.aggregate([
       { $match: { property: { $in: rentalPropertyIds } } },
@@ -356,11 +353,11 @@ const getAdminOverview = async (req, res) => {
         { $sort: { count: -1 } },
         { $limit: limit }
       ]);
-      // Populate property details
+      // Populate property details (ensure only active properties)
       return Promise.all(
         agg.map(async entry => {
-          let property = await RentalProperty.findById(entry.property);
-          if (!property) property = await SaleProperty.findById(entry.property);
+          let property = await RentalProperty.findOne({ _id: entry.property, isActive: true });
+          if (!property) property = await SaleProperty.findOne({ _id: entry.property, isActive: true });
           return { property, [field + 'Count']: entry.count };
         })
       );
@@ -374,8 +371,8 @@ const getAdminOverview = async (req, res) => {
       { $sort: { avgRating: -1 } },
       { $limit: 3 }
     ]).then(async arr => Promise.all(arr.map(async entry => {
-      let property = await RentalProperty.findById(entry._id);
-      if (!property) property = await SaleProperty.findById(entry._id);
+      let property = await RentalProperty.findOne({ _id: entry._id, isActive: true });
+      if (!property) property = await SaleProperty.findOne({ _id: entry._id, isActive: true });
       return { property, avgRating: entry.avgRating };
     })));
     const topViewedSale = await getTopProperties(salePropertyIds, 'views', 3);
@@ -387,8 +384,8 @@ const getAdminOverview = async (req, res) => {
       { $sort: { avgRating: -1 } },
       { $limit: 3 }
     ]).then(async arr => Promise.all(arr.map(async entry => {
-      let property = await RentalProperty.findById(entry._id);
-      if (!property) property = await SaleProperty.findById(entry._id);
+      let property = await RentalProperty.findOne({ _id: entry._id, isActive: true });
+      if (!property) property = await SaleProperty.findOne({ _id: entry._id, isActive: true });
       return { property, avgRating: entry.avgRating };
     })));
 

@@ -25,7 +25,6 @@ exports.requestOtp = async (req, res) => {
 
     // Development mode: skip sending email, just log OTP
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🔑 [DEV] OTP for ${email}: ${otp}`);
       return res.status(200).json({ message: "OTP sent successfully (DEV mode)", otp }); // optional: send otp in response for dev testing
     }
 
@@ -41,11 +40,9 @@ exports.requestOtp = async (req, res) => {
       await sendEmail(emailParams);
       return res.status(200).json({ message: "OTP sent successfully" });
     } catch (emailError) {
-      console.error(`❌ Failed to send OTP email to ${email}: ${emailError.message}`);
       return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -98,7 +95,6 @@ exports.verifyOtp = async (req, res) => {
       user: { email: user.email, role: user.role, name: user.name, mobileNumber: user.mobileNumber },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };

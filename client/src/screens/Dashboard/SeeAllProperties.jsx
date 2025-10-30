@@ -17,6 +17,7 @@ const SeeAllProperties = ({ properties = [] }) => {
   // Use recommendedProperties from previous page if passed
   const recommendedProperties = location.state?.recommendedProperties;
   const displayProperties = recommendedProperties?.length > 0 ? recommendedProperties : properties;
+  const activeProperties = displayProperties.filter(p => p.isActive !== false);
 
 
   const handleLogout = async () => {
@@ -279,7 +280,7 @@ const SeeAllProperties = ({ properties = [] }) => {
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap: '24px'
             }}>
-              {displayProperties.map((property) => (
+              {activeProperties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
             </div>

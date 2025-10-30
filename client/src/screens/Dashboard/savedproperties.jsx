@@ -22,7 +22,7 @@ function SavedProperties({ savedProperties = [] }) {
       })
       .then((res) => {
         console.log("✅ Saved properties loaded:", res.data);
-        setProperties(res.data || []);
+        setProperties((res.data || []).filter(p => p.isActive));
         setLoading(false);
       })
       .catch((err) => {

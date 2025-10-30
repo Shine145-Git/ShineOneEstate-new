@@ -36,15 +36,24 @@ export default function AdminProperties() {
     }
   }, [activeTab]);
 
+  // Fetch all properties (both rental and sale) with their isActive field
   const fetchAllProperties = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}`,
-        {
-          withCredentials: true,
-        }
+      // Fetch rental properties
+      const rentalRes = await axios.get(
+        `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}?category=rent`,
+        { withCredentials: true }
       );
-      setProperties(response.data);
+      // Fetch sale properties
+      const saleRes = await axios.get(
+        `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}?category=sale`,
+        { withCredentials: true }
+      );
+      // Add propertyCategory for clarity
+      const rentals = (rentalRes.data || []).map(p => ({ ...p, propertyCategory: 'rent' }));
+      const sales = (saleRes.data || []).map(p => ({ ...p, propertyCategory: 'sale' }));
+      // Merge and set
+      setProperties([...rentals, ...sales]);
     } catch (error) {
       console.error("Error fetching properties:", error);
       setError("Error fetching properties");
@@ -633,18 +642,32 @@ export default function AdminProperties() {
                       style={styles.propertyImage}
                     />
                   )}
+                  {/* Tags row: Active/Inactive and Sale/Rent */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{
+                      background: property.isActive ? '#00A79D' : '#EF4444',
+                      color: '#FFFFFF',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      {property.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    <span style={{
+                      background: property.propertyCategory === 'sale' ? '#3B82F6' : '#F59E0B',
+                      color: '#FFFFFF',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      {property.propertyCategory === 'sale' ? 'Sale Property' : 'Rental Property'}
+                    </span>
+                  </div>
+                  {/* Home icon row (optional, keep for design consistency) */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
                     <Home size={24} color="#00A79D" />
-                    <span style={{
-                      background: property.status === "Active" ? "#00A79D" : "#4A6A8A",
-                      color: "#FFFFFF",
-                      padding: "4px 12px",
-                      borderRadius: "20px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                    }}>
-                      {property.status}
-                    </span>
                   </div>
                   <h3 style={{ color: "#333333", fontSize: "18px", margin: "10px 0", fontWeight: "600" }}>
                     {property.name}

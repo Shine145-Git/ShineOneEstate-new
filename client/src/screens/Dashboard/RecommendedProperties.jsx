@@ -249,7 +249,7 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }
 
         <div style={carouselStyle}>
           <div style={cardsContainerStyle}>
-            {properties.map((property, idx) => (
+            {properties.filter(p => p.isActive !== false).map((property, idx) => (
               <div
                 key={property._id || property.id || idx}
                 style={cardStyle}

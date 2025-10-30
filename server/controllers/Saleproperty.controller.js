@@ -23,7 +23,6 @@ const createSaleProperty = async (req, res) => {
 
     const images = req.files ? req.files.map(file => file.path) : req.body.images || [];
 
-    // Normalize Sector name like "Sector-9"
     let normalizedSector = null;
     if (sectorRaw && typeof sectorRaw === "string") {
       const cleaned = sectorRaw.trim().toLowerCase();
@@ -34,7 +33,6 @@ const createSaleProperty = async (req, res) => {
         normalizedSector = cleaned.replace(/\b\w/g, c => c.toUpperCase());
       }
 
-      // Add sector to Sector model if not exists
       await Sector.findOneAndUpdate(
         { name: normalizedSector },
         { name: normalizedSector },
@@ -42,7 +40,6 @@ const createSaleProperty = async (req, res) => {
       );
     }
 
-    // Handle totalArea with both sqft and configuration
     const totalArea = {
       sqft: totalAreaSqft ? Number(totalAreaSqft) : 0,
       configuration: totalAreaConfiguration?.trim() || "",
@@ -59,26 +56,44 @@ const createSaleProperty = async (req, res) => {
       images,
       ownerId,
       Sector: normalizedSector,
+      isActive: true, // ✅ Added default active state
     });
 
     const savedProperty = await newProperty.save();
     res.status(201).json(savedProperty);
   } catch (error) {
-    console.error("❌ Error creating sale property:", error);
     res.status(500).json({ message: "Failed to create property", error: error.message });
   }
 };
 
 const getSaleProperties = async (req, res) => {
   try {
-    const properties = await SaleProperty.find();
+    const properties = await SaleProperty.find({ isActive: true }); // ✅ Only fetch active
     res.json(properties);
   } catch (error) {
     res.status(500).json({ error: 'Failed to retrieve properties' });
   }
 };
 
+// ✅ Toggle isActive status
+const toggleSalePropertyStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const property = await SaleProperty.findById(id);
+    if (!property) return res.status(404).json({ message: "Property not found" });
+
+    property.isActive = !property.isActive;
+    await property.save();
+
+    res.status(200).json({ message: `Property ${property.isActive ? 'activated' : 'deactivated'} successfully`, property });
+  } catch (error) {
+    console.error("❌ Error toggling sale property status:", error);
+    res.status(500).json({ message: "Failed to toggle property status", error: error.message });
+  }
+};
+
 module.exports = {
   createSaleProperty,
-  getSaleProperties
+  getSaleProperties,
+  toggleSalePropertyStatus, // ✅ Exported new function
 };

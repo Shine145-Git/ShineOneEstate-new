@@ -7,7 +7,6 @@ const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
 // Search for properties by address or area and save search history if user is logged in
 exports.searchProperties = async (req, res) => {
   try {
-    // console.log("User detected in search?", req.user);
     const { query, type } = req.query;
     const userId = req.user?._id;
 
@@ -43,14 +42,19 @@ exports.searchProperties = async (req, res) => {
 
     // --- MAIN RENTAL SEARCH ---
     const rentalMain = await RentalProperty.find({
-  $or: [
-    { address: fullQueryRegex },
-    { localAmenities: fullQueryRegex },
-    { propertyType: fullQueryRegex },
-    { neighborhoodVibe: fullQueryRegex },
-    { "totalArea.configuration": fullQueryRegex },
-  ],
-}).populate("owner", "name email");
+      $and: [
+        { isActive: true },
+        {
+          $or: [
+            { address: fullQueryRegex },
+            { localAmenities: fullQueryRegex },
+            { propertyType: fullQueryRegex },
+            { neighborhoodVibe: fullQueryRegex },
+            { "totalArea.configuration": fullQueryRegex },
+          ],
+        },
+      ],
+    }).populate("owner", "name email");
 
     // --- MAIN SALE SEARCH ---
     let saleOrConditions = [
@@ -82,7 +86,12 @@ exports.searchProperties = async (req, res) => {
       saleOrConditions.push({ area: { $gte: numQuery * 0.8, $lte: numQuery * 1.2 } });
     }
 
-    const saleMain = await SaleProperty.find({ $or: saleOrConditions })
+    const saleMain = await SaleProperty.find({
+      $and: [
+        { isActive: true },
+        { $or: saleOrConditions },
+      ],
+    })
       .populate({ path: "ownerId", select: "name email", strictPopulate: false });
 
     if (type === "rent") mainResults = rentalMain;
@@ -99,16 +108,26 @@ exports.searchProperties = async (req, res) => {
       let saleSector = [];
       if (type === "rent" || !type) {
         rentalSector = await RentalProperty.find({
-          $or: [
-            { address: sectorRegex },
-            { localAmenities: sectorRegex },
+          $and: [
+            { isActive: true },
+            {
+              $or: [
+                { address: sectorRegex },
+                { localAmenities: sectorRegex },
+              ],
+            },
           ],
         }).populate("owner", "name email");
       }
       if (type === "sale" || !type) {
         saleSector = await SaleProperty.find({
-          $or: [
-            { location: sectorRegex },
+          $and: [
+            { isActive: true },
+            {
+              $or: [
+                { location: sectorRegex },
+              ],
+            },
           ],
         }).populate({ path: "ownerId", select: "name email", strictPopulate: false });
       }
@@ -256,7 +275,6 @@ exports.searchProperties = async (req, res) => {
 
     res.status(200).json(allResultsFinal);
   } catch (error) {
-    console.error("Enhanced search error:", error);
     res.status(500).json({ message: "Server error while searching properties", error: error.message });
   }
 };
@@ -279,7 +297,6 @@ exports.getSectorSuggestions = async (req, res) => {
 
     res.status(200).json({ sectors });
   } catch (error) {
-    console.error("Error fetching sector suggestions:", error);
     res.status(500).json({ message: "Server error fetching sector suggestions" });
   }
 };
@@ -303,7 +320,6 @@ exports.getSectorSuggestions = async (req, res) => {
 //     const combined = [...rentalProperties, ...saleProperties];
 //     res.status(200).json({ properties: combined });
 //   } catch (error) {
-//     console.error("Error fetching properties by sector:", error);
 //     res.status(500).json({ message: "Server error fetching properties by sector" });
 //   }
 // };
@@ -361,7 +377,12 @@ exports.searchPropertiesonLocation = async (req, res) => {
       ];
     });
 
-    const results = await RentalProperty.find({ $or: orConditions }).populate(
+    const results = await RentalProperty.find({
+      $and: [
+        { isActive: true },
+        { $or: orConditions }
+      ]
+    }).populate(
       "owner",
       "name email"
     );
@@ -405,7 +426,12 @@ exports.getUserDashboard = async (req, res) => {
         { neighborhoodVibe: r },
       ]);
 
-      recommended = await RentalProperty.find({ $or: orConditions })
+      recommended = await RentalProperty.find({
+        $and: [
+          { isActive: true },
+          { $or: orConditions }
+        ]
+      })
         .limit(10)
         .populate("owner", "name email");
     }

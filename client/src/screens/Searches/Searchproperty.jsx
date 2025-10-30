@@ -140,6 +140,8 @@ const handleLogout = async () => {
     } else if (propertyTypeFilter === "sale") {
       filteredData = res.data.filter(p => p.price !== undefined);
     }
+    // Only include active properties
+    filteredData = filteredData.filter(p => p.isActive !== false);
 
     // console.log("Property match percentages received:", filteredData.map(p => ({ id: p._id, matchPercentage: p.matchPercentage })));
     setFilteredPayments(filteredData);

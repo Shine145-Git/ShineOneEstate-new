@@ -29,7 +29,6 @@ const saveAiResponses = async (req, res) => {
 
     res.status(201).json({ message: 'AI responses saved successfully.', data: aiEntry });
   } catch (error) {
-    console.error('Error saving AI responses:', error);
     res.status(500).json({ message: 'Server error while saving AI responses.' });
   }
 };
@@ -46,7 +45,6 @@ const getAiResponses = async (req, res) => {
 
     res.status(200).json({ data: aiResponses });
   } catch (error) {
-    console.error('Error fetching AI responses:', error);
     res.status(500).json({ message: 'Server error while fetching AI responses.' });
   }
 };

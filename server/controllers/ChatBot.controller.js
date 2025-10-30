@@ -4,9 +4,6 @@ const path = require('path');
 exports.getChatResponse = (req, res) => {
   const { message, parentId } = req.body;
 
-  // console.log('Incoming message:', message);
-  // console.log('Parent ID:', parentId);
-
   // Load the JSON dataset
   const datasetPath = path.join(__dirname, '../utils/Dataset.json');
   const rawData = fs.readFileSync(datasetPath);
@@ -14,7 +11,6 @@ exports.getChatResponse = (req, res) => {
 
   // Log normalized questions in the dataset
   const normalizedQuestions = dataset.map(q => q.question.toLowerCase());
-  // console.log('Normalized top-level questions:', normalizedQuestions);
 
   // Find the matching question
   let rule;
@@ -26,7 +22,6 @@ exports.getChatResponse = (req, res) => {
         .map(f => dataset.find(d => d.id === f.id))
         .filter(r => r);
       const normalizedFollowUpQuestions = followUpRules.map(r => r.question.toLowerCase());
-      // console.log('Normalized follow-up questions:', normalizedFollowUpQuestions);
       rule = followUpRules.find(r => r.question.toLowerCase() === message.toLowerCase());
     }
     // If no match found in followUps, fallback to top-level search
@@ -37,8 +32,6 @@ exports.getChatResponse = (req, res) => {
     // Top-level search
     rule = dataset.find(r => r.question.toLowerCase() === message.toLowerCase());
   }
-
-  // console.log('Matched rule:', rule ? rule.question : 'None');
 
   // Fallback if not found
   if (!rule) {

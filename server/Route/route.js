@@ -28,7 +28,7 @@ const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
 const {getRentalPropertyById , getSalePropertyById} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
-const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties } = require("../controllers/PropertyAnalysis.controller.js");
+const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -123,6 +123,7 @@ router.post("/api/property-analysis/addRating", verifyToken, addRating);
 router.get("/api/property-analysis/:id", verifyToken, getMetrics);
 router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
 router.get("/api/property-analysis/saved-properties", verifyToken, getSavedProperties);
+router.get("/api/property-analytics/user-metrics", verifyToken, getUserPropertyMetrics);
 
 // User Preferences (ARIA Assistant)
 

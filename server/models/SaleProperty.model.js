@@ -26,6 +26,7 @@ const SalePropertySchema = new mongoose.Schema({
   },
   Sector: { type: String },
   images: [String],
+  isActive: { type: Boolean, default: true },
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

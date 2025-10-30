@@ -263,7 +263,7 @@ const PropertyDashboard = ({
 
         <div style={carouselStyle}>
           <div style={cardsContainerStyle}>
-            {properties.map((property, idx) => (
+            {properties.filter(property => property.isActive).map((property, idx) => (
               <div key={property._id || property.id || idx} style={cardStyle}>
                 <div
                   onClick={() => {
