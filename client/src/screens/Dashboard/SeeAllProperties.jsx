@@ -20,7 +20,7 @@ const SeeAllProperties = ({ properties = [] }) => {
 
 
   const handleLogout = async () => {
-    await fetch("http://localhost:2000/auth/logout", {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
       method: "POST",
       credentials: "include",
     });
@@ -31,7 +31,7 @@ const SeeAllProperties = ({ properties = [] }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:2000/auth/me", {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
           method: "GET",
           credentials: "include",
         });
