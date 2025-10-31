@@ -90,52 +90,6 @@ if (req.body.totalAreaSqft || req.body.totalAreaConfiguration) {
   }
 };
 
-// @desc Bulk upload properties from Excel file
-// @route POST /api/properties/bulk-upload
-// @access Private (owner only)
-const bulkUploadProperties = async (req, res) => {
-  try {
-    const ownerId = req.user?._id || req.user?.id;
-    if (!ownerId) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: Owner ID not found" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const propertiesData = xlsx.utils.sheet_to_json(worksheet);
-
-    if (!propertiesData.length) {
-      return res.status(400).json({ message: "Excel file is empty" });
-    }
-
-    // Add owner to each property data
-    const propertiesToInsert = propertiesData.map((data) => ({
-      ...data,
-      owner: ownerId,
-    }));
-
-    const insertedProperties = await RentalProperty.insertMany(propertiesToInsert);
-
-    res.status(201).json({
-      message: "Bulk properties uploaded successfully",
-      count: insertedProperties.length,
-      properties: insertedProperties,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error while bulk uploading properties",
-      error: error.message,
-    });
-  }
-};
-
 // @desc Get all properties with populated owner details
 // @route GET /api/properties
 // @access Public
@@ -164,6 +118,6 @@ const getAllProperties = async (req, res) => {
 module.exports = {
   createRentalProperty,
   getAllProperties,
-  bulkUploadProperties,
+  
 
 };

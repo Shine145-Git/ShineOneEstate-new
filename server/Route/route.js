@@ -16,7 +16,7 @@ const { saveUserPreferencesRENTALARIA , saveUserPreferencesSALEARIA } = require(
 const {
   createRentalProperty,
   getAllProperties,
-  bulkUploadProperties,
+  
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
 const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests } = require("../controllers/admin.controller");
@@ -60,8 +60,7 @@ router.delete("/api/user/delete-property/:id", verifyToken, deleteProperty);
 
 // Property routes
 
-router.post("/api/properties/bulk-upload", verifyToken, excelUpload.single("file"), bulkUploadProperties);
-router.post("/api/properties/bulk-upload-csv", verifyToken, excelUpload.single("file"), bulkUploadProperties);
+
 router.get("/api/properties",  getAllProperties);
 // router.get("/api/properties/my", verifyToken, getMyProperties);
 router.get("/api/getRentalproperties/:id", getRentalPropertyById);

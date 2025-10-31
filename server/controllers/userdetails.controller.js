@@ -139,7 +139,7 @@ exports.getMyProperties = async (req, res) => {
     // Fetch both rental and sale properties
     const [rentalProperties, saleProperties] = await Promise.all([
       RentalProperty.find({ owner: userId }).sort({ createdAt: -1 }).lean(),
-      SaleProperty.find({ owner: userId }).sort({ createdAt: -1 }).lean(),
+      SaleProperty.find({ ownerId: userId }).sort({ createdAt: -1 }).lean(),
     ]);
 
     const allProperties = [

@@ -6,7 +6,7 @@ import LoginModal from "./screens/Login Page/login";
 import RentalPropertydetails from "./screens/Property View/RentalPropertyPageView";
 import SalePropertyPage from "./screens/Property View/SalePropertyPageView";
 import PropertyCheckout from "./screens/Visit Schedule/Clientvist";
-import TestUser from "./screens/Testing/test";
+
 import PropertySearchInterface from "./screens/AI Assistant/ai";
 import VoiceAssistantRent from "./screens/AI Assistant/RENTAL_CLIENT_RASA_MODEL";
 import VoiceAssistantSale from "./screens/AI Assistant/SALE_CLIENT_RASA_MODEL";
@@ -44,7 +44,7 @@ function App() {
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
       <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
 
-      <Route path="/test" element={<TestUser />} />
+     
       <Route path="/AIassistant" element={<PropertySearchInterface />} />
       <Route path="/AIassistant-Rent" element={<VoiceAssistantRent />} />
       <Route path="/AIassistant-Sale" element={<VoiceAssistantSale />} />

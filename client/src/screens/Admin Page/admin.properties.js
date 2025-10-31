@@ -37,28 +37,18 @@ export default function AdminProperties() {
   }, [activeTab]);
 
   // Fetch all properties (both rental and sale) with their isActive field
-  const fetchAllProperties = async () => {
-    try {
-      // Fetch rental properties
-      const rentalRes = await axios.get(
-        `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}?category=rent`,
-        { withCredentials: true }
-      );
-      // Fetch sale properties
-      const saleRes = await axios.get(
-        `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}?category=sale`,
-        { withCredentials: true }
-      );
-      // Add propertyCategory for clarity
-      const rentals = (rentalRes.data || []).map(p => ({ ...p, propertyCategory: 'rent' }));
-      const sales = (saleRes.data || []).map(p => ({ ...p, propertyCategory: 'sale' }));
-      // Merge and set
-      setProperties([...rentals, ...sales]);
-    } catch (error) {
-      console.error("Error fetching properties:", error);
-      setError("Error fetching properties");
-    }
-  };
+const fetchAllProperties = async () => {
+  const rentalRes = await axios.get(
+    `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}?category=rent`,
+    { withCredentials: true }
+  );
+  
+
+  const rentals = (rentalRes.data || []).map(p => ({ ...p, propertyCategory: 'rent' }));
+  
+
+  setProperties([...rentals]);
+};
 
   const fetchApprovedPayments = async () => {
     try {
@@ -469,6 +459,68 @@ export default function AdminProperties() {
   return (
     <div style={styles.container}>
       <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
+
+      {/* Excel Upload Section */}
+      <div style={{
+        background: "#fff",
+        padding: "20px 40px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderBottom: "1px solid #E5E7EB"
+      }}>
+        <h3 style={{ color: "#003366", fontWeight: 600, fontSize: "18px" }}>
+          Upload Property Data (Excel/CSV)
+        </h3>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <input
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => setBulkFile(e.target.files[0])}
+            style={{ border: "1px solid #D1D5DB", borderRadius: "6px", padding: "6px" }}
+          />
+          <button
+            onClick={async () => {
+              if (!bulkFile) {
+                alert("Please select a file first");
+                return;
+              }
+              setUploading(true);
+              try {
+                const formData = new FormData();
+                formData.append("file", bulkFile);
+                const response = await axios.post(
+                  `${process.env.REACT_APP_Base_API}/api/properties/bulk-upload`,
+                  formData,
+                  {
+                    withCredentials: true,
+                    headers: { "Content-Type": "multipart/form-data" },
+                  }
+                );
+                alert(response.data.message || "Upload successful!");
+              } catch (error) {
+                console.error("Excel upload error:", error);
+                alert(error.response?.data?.message || "Error uploading Excel file");
+              } finally {
+                setUploading(false);
+                setBulkFile(null);
+              }
+            }}
+            disabled={uploading}
+            style={{
+              backgroundColor: uploading ? "#E5E7EB" : "#00A79D",
+              color: "#fff",
+              border: "none",
+              padding: "10px 16px",
+              borderRadius: "8px",
+              cursor: uploading ? "not-allowed" : "pointer",
+              fontWeight: "600"
+            }}
+          >
+            {uploading ? "Uploading..." : "Upload"}
+          </button>
+        </div>
+      </div>
 
       {/* Navigation Tabs */}
       <div style={styles.navTabs}>

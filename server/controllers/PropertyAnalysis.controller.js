@@ -116,23 +116,80 @@ const getMetrics = async (req, res) => {
 };
 const getSavedProperties = async (req, res) => {
   try {
+    // 1️⃣ Get authenticated user
     const userId = req.user?._id || req.cookies?.userId;
     if (!userId) {
+      console.log("❌ Authentication failed. No userId found.");
       return res.status(400).json({ error: "User not authenticated" });
     }
 
-    const savedDocs = await PropertyAnalysis.find({ 'saves.user': userId })
-      .populate('property')
-      .populate('saves.user', 'name email');
+    console.log(`Fetching saved properties for user: ${userId}`);
 
-    const saved = savedDocs.filter(item => item.property && item.property.isActive);
+    // 2️⃣ Find PropertyAnalysis docs
+    const savedDocs = await PropertyAnalysis.find({ "saves.user": userId })
+      .populate("saves.user", "name email")
+      .lean();
 
-    if (!saved || saved.length === 0) {
+    if (!savedDocs || savedDocs.length === 0) {
+      console.log("No saved property analysis docs found for this user.");
       return res.status(404).json({ message: "No saved properties found" });
     }
 
-    res.status(200).json(saved);
+    // 3️⃣ For each saved doc, fetch property from either Rental or Sale collection
+    const populatedProperties = await Promise.all(
+      savedDocs.map(async (item) => {
+        
+        // 💡💡💡 --- FIX IS HERE --- 💡💡💡
+        // Check if item.property is a valid ID before querying
+        if (!item.property || !mongoose.Types.ObjectId.isValid(item.property)) {
+          console.warn(`Skipping invalid property reference: ${item.property}`);
+          return null; // Skip this item
+        }
+        // 💡💡💡 --------------------- 💡💡💡
+
+        // Try fetching from RentalProperty and SaleProperty with try-catch to prevent CastError
+        let property = null;
+        try {
+          property = await RentalProperty.findById(item.property).lean();
+          if (!property) {
+            property = await SaleProperty.findById(item.property).lean();
+          }
+        } catch (error) {
+          console.warn(`Error fetching property with ID ${item.property}:`, error.message);
+          return null; // Skip this item on error
+        }
+
+        if (property && property.isActive) {
+          return {
+            ...item,
+            property,
+            propertyType: property.price ? "sale" : "rental", 
+          };
+        }
+
+        console.log(`Property ${item.property} not found or is not active.`);
+        return null; // skip if invalid, deleted, or inactive
+      })
+    );
+
+    // 4️⃣ Filter out nulls
+    const validSaved = populatedProperties.filter(Boolean);
+
+    if (validSaved.length === 0) {
+      console.log("User has saved properties, but none are active or valid.");
+      return res.status(404).json({ message: "No active saved properties found" });
+    }
+
+    // 5️⃣ Send clean unified response
+    console.log(`Successfully found ${validSaved.length} saved properties.`);
+    res.status(200).json({
+      total: validSaved.length,
+      properties: validSaved,
+    });
+
   } catch (err) {
+    // Removed CastError catch to prevent 400 on invalid property IDs
+    console.error("❌ Error in getSavedProperties controller:", err);
     res.status(500).json({ error: "Server error while fetching saved properties" });
   }
 };

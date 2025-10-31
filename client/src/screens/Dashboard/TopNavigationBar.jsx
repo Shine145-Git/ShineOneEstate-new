@@ -46,21 +46,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch saved properties from API
-  useEffect(() => {
-    console.log("Fetching saved properties from API...");
-    axios
-      .get(process.env.REACT_APP_FETCHING_SAVED_PROPERTIES, {
-        withCredentials: true,
-      })
-      .then((response) => {
-        console.log("Fetched saved properties successfully:", response.data);
-        setProperties(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching saved properties:", error);
-      });
-  }, []);
+ 
 
   // Show preference popup on login/component load, but only on dashboard route
   useEffect(() => {
@@ -352,8 +338,8 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                   <Square size={20} color="#4A6A8A" />
                   <span>Properties</span>
                 </button>
-                      {/* Saved Properties Button
-      <button
+                      {/* Saved Properties Button */}
+      {/* <button
         style={{
           padding: "8px 20px",
           backgroundColor: "#00A79D",
