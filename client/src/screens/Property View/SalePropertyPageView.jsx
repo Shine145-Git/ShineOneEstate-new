@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Home, Bed, Bath, Maximize, DollarSign, MapPin, Share2 } from 'lucide-react';
+import { Home, Bed, Bath, Maximize, DollarSign, MapPin, Share2, Heart, Calendar, Phone, Mail } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
 
 const addEngagementTime = async (propertyId, seconds) => {
@@ -37,6 +37,7 @@ export default function SalePropertyPage() {
   const [user, setUser] = useState(null);
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     async function fetchProperty() {
@@ -58,7 +59,6 @@ export default function SalePropertyPage() {
   }, [id]);
 
   const handleLogout = async () => {
-    // Logout endpoint is configurable via .env
     await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
       method: "POST",
       credentials: "include",
@@ -70,7 +70,6 @@ export default function SalePropertyPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // User info endpoint is configurable via .env
         const res = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
           method: "GET",
           credentials: "include",
@@ -95,30 +94,29 @@ export default function SalePropertyPage() {
 
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
-  // Share button handler
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      // Optionally, show a notification
       alert('Link copied to clipboard!');
     } catch (err) {
       alert('Failed to copy link');
     }
   };
+
   const handleSave = async () => {
-  try {
-    await fetch(`${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propertyId: property._id }),
-    });
-    alert('Property saved!');
-  } catch (err) {
-    console.error('Error saving property:', err);
-    alert('Failed to save property');
-  }
-};
+    try {
+      await fetch(`${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId: property._id }),
+      });
+      alert('Property saved!');
+    } catch (err) {
+      console.error('Error saving property:', err);
+      alert('Failed to save property');
+    }
+  };
 
   const handleSubmitRating = async () => {
     if (userRating < 1) {
@@ -131,171 +129,430 @@ export default function SalePropertyPage() {
     setUserComment('');
   };
 
-  if (loading) return <div style={{padding:'20px'}}>Loading property...</div>;
-  if (!property) return <div style={{padding:'20px'}}>Property not found.</div>;
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+        <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', color: '#4A6A8A' }}>Loading property details...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!property) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+        <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', color: '#4A6A8A' }}>Property not found.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const images = property.images && property.images.length > 0 ? property.images : ['https://via.placeholder.com/800x600?text=No+Image'];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily:'system-ui,-apple-system,sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
       <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
 
-      <div style={{maxWidth:'1200px',margin:'40px auto',padding:'32px 20px',background:'#FFFFFF',borderRadius:'16px',boxShadow:'0 2px 8px rgba(0,0,0,0.1)'}}>
-        {/* Images Carousel */}
-        <div style={{overflowX:'auto',display:'flex',gap:'12px',padding:'20px',background:'#FFFFFF',WebkitOverflowScrolling:'touch',scrollbarWidth:'thin',marginBottom:'24px'}}>
-          {(property.images && property.images.length > 0 ? property.images : ['https://via.placeholder.com/480x320?text=No+Image']).map((img,i)=>(
-            <img key={i} src={img} alt={`Property Image ${i+1}`} style={{height:'320px',minWidth:'480px',objectFit:'cover',borderRadius:'12px',cursor:'pointer',transition:'transform 0.2s'}} onMouseOver={e=>e.target.style.transform='scale(1.02)'} onMouseOut={e=>e.target.style.transform='scale(1)'} />
-          ))}
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
+        {/* Breadcrumb */}
+        <div style={{ padding: '12px 0', fontSize: '14px', color: '#4A6A8A' }}>
+          <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>Home</span>
+          <span style={{ margin: '0 8px' }}>›</span>
+          <span style={{ cursor: 'pointer' }}>Properties for Sale</span>
+          <span style={{ margin: '0 8px' }}>›</span>
+          <span style={{ color: '#003366', fontWeight: '500' }}>{property.Sector || 'Property Details'}</span>
         </div>
 
-        {/* Header */}
-        <div style={{background:'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',padding:'32px',borderRadius:'16px',marginBottom:'32px',boxShadow:'0 4px 16px rgba(0,51,102,0.2)'}}>
-          <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px'}}>
-            <Home size={32} style={{color:'#22D3EE'}} />
-            <h1 style={{color:'#FFFFFF',fontSize:'32px',fontWeight:'700',margin:0}}>
-              {property.title || 'N.A'}
-            </h1>
-           <div style={{ display: 'flex', marginLeft: 'auto', gap: '8px' }}>
-  <button
-    onClick={handleShare}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      background: '#22D3EE',
-      color: '#fff',
-      border: 'none',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      fontWeight: 600,
-      fontSize: '16px',
-      cursor: 'pointer',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-      transition: 'background 0.2s'
-    }}
-    onMouseOver={e => e.target.style.background = '#00A79D'}
-    onMouseOut={e => e.target.style.background = '#22D3EE'}
-    title="Copy page link"
-  >
-    <Share2 size={20} style={{ marginRight: '6px' }} /> Share
-  </button>
+        {/* Main Content Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
+          {/* Left Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Image Gallery */}
+            <div style={{ background: '#FFFFFF', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+              <div style={{ position: 'relative', width: '100%', height: '500px', background: '#000' }}>
+                <img 
+                  src={images[currentImageIndex]} 
+                  alt="Property" 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex((currentImageIndex - 1 + images.length) % images.length)}
+                      style={{
+                        position: 'absolute',
+                        left: '20px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        cursor: 'pointer',
+                        fontSize: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >‹</button>
+                    <button
+                      onClick={() => setCurrentImageIndex((currentImageIndex + 1) % images.length)}
+                      style={{
+                        position: 'absolute',
+                        right: '20px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        cursor: 'pointer',
+                        fontSize: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >›</button>
+                  </>
+                )}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '20px',
+                  right: '20px',
+                  background: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}>
+                  {currentImageIndex + 1} / {images.length}
+                </div>
+              </div>
+              {images.length > 1 && (
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '8px', 
+                  padding: '16px', 
+                  overflowX: 'auto',
+                  background: '#FAFAFA'
+                }}>
+                  {images.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img}
+                      alt={`Thumbnail ${i + 1}`}
+                      onClick={() => setCurrentImageIndex(i)}
+                      style={{
+                        width: '100px',
+                        height: '75px',
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        border: i === currentImageIndex ? '2px solid #00A79D' : '2px solid transparent',
+                        opacity: i === currentImageIndex ? 1 : 0.6
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
-  <button
-    onClick={handleSave}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      background: '#22D3EE',
-      color: '#fff',
-      border: 'none',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      fontWeight: 600,
-      fontSize: '16px',
-      cursor: 'pointer',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-      transition: 'background 0.2s'
-    }}
-    onMouseOver={e => e.target.style.background = '#00A79D'}
-    onMouseOut={e => e.target.style.background = '#22D3EE'}
-    title="Save property"
-  >
-    💾 Save
-  </button>
-</div>
+            {/* Property Overview */}
+            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+              <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#003366', marginBottom: '12px', lineHeight: '1.3' }}>
+                {property.title || 'Property Title Not Available'}
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <MapPin size={18} style={{ color: '#00A79D' }} />
+                <span style={{ fontSize: '16px', color: '#4A6A8A' }}>{property.Sector || 'Location not specified'}</span>
+              </div>
+
+              {/* Price Section */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)', 
+                padding: '20px', 
+                borderRadius: '8px',
+                marginBottom: '24px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#F4F7F9', marginBottom: '4px' }}>Property Price</div>
+                <div style={{ fontSize: '36px', fontWeight: '800', color: '#FFFFFF' }}>
+                  {property.price ? `₹${property.price.toLocaleString()}` : 'Price on Request'}
+                </div>
+              </div>
+
+              {/* Property Stats */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(3, 1fr)', 
+                gap: '16px',
+                paddingBottom: '24px',
+                borderBottom: '1px solid #E5E7EB'
+              }}>
+                <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
+                  <Bed size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
+                    {property.bedrooms != null ? property.bedrooms : '-'}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#4A6A8A' }}>Bedrooms</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
+                  <Bath size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
+                    {property.bathrooms != null ? property.bathrooms : '-'}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#4A6A8A' }}>Bathrooms</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
+                  <Maximize size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
+                    {property.totalArea
+                      ? typeof property.totalArea === 'object'
+                        ? property.totalArea.sqft ?? '-'
+                        : property.totalArea
+                      : '-'}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#4A6A8A' }}>
+                    {property.totalArea && typeof property.totalArea === 'object' && property.totalArea.configuration
+                      ? property.totalArea.configuration
+                      : 'Sq. Ft.'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div style={{ marginTop: '24px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '12px' }}>
+                  About this Property
+                </h2>
+                <p style={{ fontSize: '15px', color: '#333333', lineHeight: '1.8', margin: 0 }}>
+                  {property.description || 'No description available for this property.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Rating Section */}
+            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
+                Rate this Property
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    onClick={() => setUserRating(star)}
+                    style={{
+                      fontSize: '32px',
+                      cursor: 'pointer',
+                      color: star <= userRating ? '#FFD700' : '#E5E7EB',
+                      transition: 'color 0.2s'
+                    }}
+                  >★</span>
+                ))}
+                {userRating > 0 && (
+                  <span style={{ marginLeft: '12px', fontSize: '16px', color: '#4A6A8A' }}>
+                    {userRating} out of 5
+                  </span>
+                )}
+              </div>
+              <textarea
+                value={userComment}
+                onChange={(e) => setUserComment(e.target.value)}
+                placeholder="Share your thoughts about this property (optional)"
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #E5E7EB',
+                  fontSize: '15px',
+                  marginBottom: '16px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical'
+                }}
+              />
+              <button
+                onClick={handleSubmitRating}
+                style={{
+                  background: '#00A79D',
+                  color: '#fff',
+                  padding: '12px 32px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s'
+                }}
+                onMouseOver={e => e.target.style.background = '#00887a'}
+                onMouseOut={e => e.target.style.background = '#00A79D'}
+              >
+                Submit Rating
+              </button>
+            </div>
           </div>
-          <p style={{color:'#F4F7F9',fontSize:'18px',marginBottom:'24px'}}>📍 Sector: {property.Sector || 'N.A'}</p>
-          <div style={{display:'flex',alignItems:'baseline',gap:'8px'}}>
-            <span style={{fontSize:'48px',fontWeight:'800',color:'#22D3EE'}}>
-              {property.price ? `₹${property.price.toLocaleString()}` : 'N.A'}
-            </span>
-            <span style={{fontSize:'24px',color:'#F4F7F9',fontWeight:'500'}}></span>
+
+          {/* Right Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Action Buttons */}
+            <div style={{ 
+              background: '#FFFFFF', 
+              padding: '20px', 
+              borderRadius: '8px', 
+              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              position: 'sticky',
+              top: '20px'
+            }}>
+              <button
+                onClick={() => navigate(`/property-visit/${property._id}`)}
+                style={{
+                  width: '100%',
+                  background: '#00A79D',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '14px',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'background 0.2s'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = '#00887a'}
+                onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
+              >
+                <Calendar size={20} />
+                Schedule a Visit
+              </button>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={handleShare}
+                  style={{
+                    flex: 1,
+                    background: '#F4F7F9',
+                    color: '#003366',
+                    border: '1px solid #E5E7EB',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.background = '#E5E7EB';
+                    e.currentTarget.style.borderColor = '#00A79D';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.background = '#F4F7F9';
+                    e.currentTarget.style.borderColor = '#E5E7EB';
+                  }}
+                  title="Share this property"
+                >
+                  <Share2 size={18} />
+                  Share
+                </button>
+
+                <button
+                  onClick={handleSave}
+                  style={{
+                    flex: 1,
+                    background: '#F4F7F9',
+                    color: '#003366',
+                    border: '1px solid #E5E7EB',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.background = '#E5E7EB';
+                    e.currentTarget.style.borderColor = '#00A79D';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.background = '#F4F7F9';
+                    e.currentTarget.style.borderColor = '#E5E7EB';
+                  }}
+                  title="Save to favorites"
+                >
+                  <Heart size={18} />
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
+                Contact Information
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px',
+                  padding: '12px',
+                  background: '#F4F7F9',
+                  borderRadius: '6px'
+                }}>
+                  <Phone size={18} style={{ color: '#00A79D' }} />
+                  <span style={{ fontSize: '15px', color: '#333333' }}>9310994032</span>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px',
+                  padding: '12px',
+                  background: '#F4F7F9',
+                  borderRadius: '6px'
+                }}>
+                  <Mail size={18} style={{ color: '#00A79D' }} />
+                  <span
+                    onClick={() => navigate('/support')}
+                    style={{
+                      fontSize: '15px',
+                      color: '#00A79D',
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Send inquiry
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Property ID */}
+            <div style={{ background: '#F4F7F9', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+              <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '4px' }}>Property ID</div>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#003366', fontFamily: 'monospace' }}>
+                #{property._id ? property._id.slice(0, property._id.length / 2).toUpperCase() : 'N/A'}
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Property Details */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:'24px',marginBottom:'32px'}}>
-          <div style={{background:'#FFFFFF',padding:'24px',borderRadius:'12px',boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'20px'}}>
-              <Home size={24} style={{color:'#00A79D'}} />
-              <h2 style={{fontSize:'20px',fontWeight:'600',color:'#003366',margin:0}}>Property Details</h2>
-            </div>
-            <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'20px'}}>
-                <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <Bed size={18} style={{color:'#00A79D'}} />
-                  <span style={{color:'#333333',fontWeight:'600'}}>{property.bedrooms != null ? `${property.bedrooms} Beds` : 'N.A'}</span>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <Bath size={18} style={{color:'#00A79D'}} />
-                  <span style={{color:'#333333',fontWeight:'600'}}>{property.bathrooms != null ? `${property.bathrooms} Baths` : 'N.A'}</span>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <Maximize size={18} style={{color:'#00A79D'}} />
-                  <span style={{color:'#333333',fontWeight:'600'}}>{property.area != null ? `${property.area} sqft` : 'N.A'}</span>
-                </div>
-              </div>
-              <div style={{paddingTop:'8px',borderTop:'1px solid #F4F7F9'}}>
-                <p style={{color:'#4A6A8A',fontWeight:'500',marginBottom:'8px'}}>Description:</p>
-                <p style={{color:'#333333',margin:0,lineHeight:'1.8'}}>{property.description || 'N.A'}</p>
-              </div>
-              <div style={{paddingTop:'8px',borderTop:'1px solid #F4F7F9'}}>
-                {/* <p style={{color:'#4A6A8A',fontWeight:'500',marginBottom:'8px'}}>Owner ID:</p> */}
-                {/* <p style={{color:'#333333',margin:0,lineHeight:'1.8'}}>{property.ownerId?._id || 'N.A'}</p> */}
-              </div>
-            </div>
-          </div>
-              </div>
-              <div style={{marginTop:'16px'}}>
-  <button
-    onClick={() => navigate(`/property-visit/${property._id}`)}
-    style={{
-      backgroundColor: '#00A79D',
-      color: '#fff',
-      border: 'none',
-      padding: '12px 24px',
-      borderRadius: '8px',
-      fontWeight: 600,
-      fontSize: '16px',
-      cursor: 'pointer',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-      transition: 'background 0.2s',
-    }}
-    onMouseOver={e => e.currentTarget.style.background = '#00887a'}
-    onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
-  >
-    Schedule a Visit
-  </button>
-</div>
-
-{/* Rating & Comment Section */}
-<div style={{background:'#FFFFFF',padding:'24px',borderRadius:'12px',boxShadow:'0 2px 8px rgba(0,0,0,0.08)',marginTop:'32px'}}>
-  <h2 style={{fontSize:'20px',fontWeight:'600',color:'#003366',marginBottom:'16px'}}>Rate this Property</h2>
-  <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
-    {[1,2,3,4,5].map((star) => (
-      <span 
-        key={star} 
-        onClick={() => setUserRating(star)}
-        style={{
-          fontSize:'24px', 
-          cursor:'pointer', 
-          color: star <= userRating ? '#FFD700' : '#CCC'
-        }}
-      >★</span>
-    ))}
-  </div>
-  <textarea 
-    value={userComment} 
-    onChange={(e) => setUserComment(e.target.value)}
-    placeholder="Write a comment (optional)"
-    style={{width:'100%',padding:'12px',borderRadius:'8px',border:'1px solid #E5E7EB',marginBottom:'12px'}}
-  />
-  <button 
-    onClick={handleSubmitRating}
-    style={{background:'#22D3EE',color:'#fff',padding:'10px 20px',border:'none',borderRadius:'8px',fontWeight:'600',cursor:'pointer'}}
-  >
-    Submit Rating
-  </button>
-</div>
       </div>
     </div>
   );

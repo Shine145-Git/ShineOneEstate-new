@@ -1,5 +1,5 @@
 // Properties in your area component
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Image, MapPin, Home, Maximize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +7,12 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }
   const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerPage = 4;
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 7000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleNext = () => {
     if (currentIndex + itemsPerPage < properties.length) {
@@ -227,113 +233,228 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }
         >
           See all Properties <ChevronRight size={20} />
         </a>
-      </div>¯
+      </div>
 
-      <div style={carouselWrapperStyle}>
-        {currentIndex > 0 && (
-          <button
-            onClick={handlePrev}
-            style={navButtonStyle('left')}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#003366';
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#FFFFFF';
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-            }}
-          >
-            <ChevronLeft size={24} color="#003366" />
-          </button>
-        )}
-
-        <div style={carouselStyle}>
-          <div style={cardsContainerStyle}>
-            {properties.filter(p => p.isActive !== false).map((property, idx) => (
-              <div
-                key={property._id || property.id || idx}
-                style={cardStyle}
-                onClick={() => {
-                  if (onPropertyClick) onPropertyClick(property._id);
-                  if (user) {
-                    navigate(`/Rentaldetails/${property._id}`);
-                  } else {
-                    navigate("/login");
-                  }
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-8px)';
-                  e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 51, 102, 0.15)';
-                  const img = e.currentTarget.querySelector('img');
-                  if (img) img.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 12px rgba(0, 51, 102, 0.08)';
-                  const img = e.currentTarget.querySelector('img');
-                  if (img) img.style.transform = 'scale(1)';
-                }}
-              >
-                <div style={imageContainerStyle}>
-                  <img
-                    src={property.images?.[0] || '/default-property.jpg'}
-                    alt={property.type}
-                    style={imageStyle}
-                    onError={(e) => { e.target.src = '/default-property.jpg'; }}
-                  />
-                  <div style={imageCountStyle}>
-                    <Image size={14} /> {property.images?.length || 0}
-                  </div>
-                </div>
-                <div style={contentStyle}>
-                  <div style={typeStyle}>
-                    <Home size={18} color="#003366" />
-                    {property.type}
-                  </div>
-                  <div style={priceAreaStyle}>
-                    <span style={priceStyle}>₹{property.monthlyRent}</span>
-                    <span style={separatorStyle}>|</span>
-                    <span style={areaStyle}>
-                      <Maximize size={14} style={{display: 'inline', marginRight: '4px'}} />
-                      {property.area}
-                    </span>
-                  </div>
-                  <div style={areaStyle}>
-                    Move-in Date:{' '}
-                    {property.moveInDate
-                      ? new Date(property.moveInDate).toLocaleDateString()
-                      : 'N/A'}
-                  </div>
-                  <div style={locationStyle}>
-                    <MapPin size={14} color="#00A79D" />
-                    {property.Sector}
-                  </div>
-                  <div style={statusStyle}>
-                    {property.status}
-                  </div>
+      {loading ? (
+        <div className="shimmer-loader-wrapper">
+          <div className="shimmer-cards-row">
+            {[...Array(itemsPerPage)].map((_, idx) => (
+              <div className="shimmer-card" key={idx}>
+                <div className="shimmer-image" />
+                <div className="shimmer-content">
+                  <div className="shimmer-title shimmer-animate" />
+                  <div className="shimmer-price shimmer-animate" />
+                  <div className="shimmer-area shimmer-animate" />
+                  <div className="shimmer-location shimmer-animate" />
+                  <div className="shimmer-status shimmer-animate" />
                 </div>
               </div>
             ))}
           </div>
         </div>
+      ) : (
+        <div style={carouselWrapperStyle}>
+          {currentIndex > 0 && (
+            <button
+              onClick={handlePrev}
+              style={navButtonStyle('left')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#003366';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              }}
+            >
+              <ChevronLeft size={24} color="#003366" />
+            </button>
+          )}
 
-        {currentIndex + itemsPerPage < properties.length && (
-          <button
-            onClick={handleNext}
-            style={navButtonStyle('right')}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#003366';
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#FFFFFF';
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-            }}
-          >
-            <ChevronRight size={24} color="#003366" />
-          </button>
-        )}
-      </div>
+          <div style={carouselStyle}>
+            <div style={cardsContainerStyle} className="fade-in">
+              {properties.filter(p => p.isActive !== false).map((property, idx) => (
+                <div
+                  key={property._id || property.id || idx}
+                  style={cardStyle}
+                  onClick={() => {
+                    if (onPropertyClick) onPropertyClick(property._id);
+                    if (!user) {
+                      navigate("/login");
+                    } else {
+                      if (property.defaultpropertytype === "rental") {
+                        navigate(`/Rentaldetails/${property._id}`);
+                      } else {
+                        navigate(`/Saledetails/${property._id}`);
+                      }
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-8px)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 51, 102, 0.15)';
+                    const img = e.currentTarget.querySelector('img');
+                    if (img) img.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 12px rgba(0, 51, 102, 0.08)';
+                    const img = e.currentTarget.querySelector('img');
+                    if (img) img.style.transform = 'scale(1)';
+                  }}
+                >
+                  <div style={imageContainerStyle}>
+                    <img
+                      src={property.images?.[0] || '/default-property.jpg'}
+                      alt={property.type}
+                      style={imageStyle}
+                      onError={(e) => { e.target.src = '/default-property.jpg'; }}
+                    />
+                    <div style={imageCountStyle}>
+                      <Image size={14} /> {property.images?.length || 0}
+                    </div>
+                  </div>
+                  <div style={contentStyle}>
+                    <div style={typeStyle}>
+                      <Home size={18} color="#003366" />
+                      {property.type}
+                    </div>
+                    <div style={priceAreaStyle}>
+                      <span style={priceStyle}>₹{property.monthlyRent}</span>
+                      <span style={separatorStyle}>|</span>
+                      <span style={areaStyle}>
+                        <Maximize size={14} style={{display: 'inline', marginRight: '4px'}} />
+                        {property.area}
+                      </span>
+                    </div>
+                    <div style={areaStyle}>
+                      Move-in Date:{' '}
+                      {property.moveInDate
+                        ? new Date(property.moveInDate).toLocaleDateString()
+                        : 'N/A'}
+                    </div>
+                    <div style={locationStyle}>
+                      <MapPin size={14} color="#00A79D" />
+                      {property.Sector}
+                    </div>
+                    <div style={statusStyle}>
+                      {property.status}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {currentIndex + itemsPerPage < properties.length && (
+            <button
+              onClick={handleNext}
+              style={navButtonStyle('right')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#003366';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              }}
+            >
+              <ChevronRight size={24} color="#003366" />
+            </button>
+          )}
+        </div>
+      )}
+      <style>
+      {`
+        .fade-in {
+          opacity: 0;
+          transform: translateY(20px);
+          animation: fadeInProperties 0.8s ease-in-out forwards;
+        }
+
+        @keyframes fadeInProperties {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Shimmer Loader Styles */
+        .shimmer-loader-wrapper {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 24px 0 36px 0;
+        }
+        .shimmer-cards-row {
+          display: flex;
+          gap: 24px;
+        }
+        .shimmer-card {
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 2px 12px rgba(0, 51, 102, 0.08);
+          flex: 0 0 calc(25% - 18px);
+          overflow: hidden;
+          border: 1px solid rgba(74, 106, 138, 0.1);
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        .shimmer-image {
+          background: #e0e6ed;
+          height: 220px;
+          width: 100%;
+          position: relative;
+          overflow: hidden;
+        }
+        .shimmer-content {
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .shimmer-title, .shimmer-price, .shimmer-area, .shimmer-location, .shimmer-status {
+          border-radius: 6px;
+          background: #e0e6ed;
+          position: relative;
+          overflow: hidden;
+        }
+        .shimmer-title {
+          height: 22px;
+          width: 70%;
+          margin-bottom: 6px;
+        }
+        .shimmer-price {
+          height: 18px;
+          width: 50%;
+        }
+        .shimmer-area {
+          height: 16px;
+          width: 60%;
+        }
+        .shimmer-location {
+          height: 14px;
+          width: 40%;
+        }
+        .shimmer-status {
+          height: 13px;
+          width: 30%;
+          margin-top: 10px;
+        }
+        .shimmer-animate {
+          background: linear-gradient(90deg, #e0e6ed 0%, #f4f7f9 40%, #e0e6ed 80%);
+          background-size: 200% 100%;
+          animation: shimmer-move 1.3s linear infinite;
+        }
+        @keyframes shimmer-move {
+          0% {
+            background-position: -150% 0;
+          }
+          100% {
+            background-position: 150% 0;
+          }
+        }
+      `}
+      </style>
     </div>
   );
 };

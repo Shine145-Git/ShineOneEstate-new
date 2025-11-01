@@ -47,6 +47,7 @@ const RentalpropertySchema = new mongoose.Schema(
 
     // Image upload
     images: [{ type: String }],
+   defaultpropertytype: { type: String, default: "rental", immutable: true },
 
     // Ownership info
     owner: {

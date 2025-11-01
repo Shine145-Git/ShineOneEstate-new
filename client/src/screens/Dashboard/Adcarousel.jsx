@@ -1,3 +1,5 @@
+/* The above code is a React component called AdCarousel that creates a carousel for displaying images
+with navigation buttons, dot indicators, and slide counter. */
 // AdCarousel Component - Place this in your dashboard.jsx file
 
 import React, { useState, useEffect } from 'react';

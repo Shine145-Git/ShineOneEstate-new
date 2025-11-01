@@ -62,21 +62,28 @@ const SeeAllProperties = ({ properties = [] }) => {
     <div
       style={{
         background: '#FFFFFF',
-        borderRadius: '16px',
+        borderRadius: '12px',
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0, 51, 102, 0.08)',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
         transition: 'all 0.3s ease',
         cursor: 'pointer',
-        border: '1px solid #F4F7F9',
+        border: '1px solid #E8EEF3',
       }}
-      onClick={() => navigate(`/Rentaldetails/${property._id}`)}
+      onClick={() => {
+        const type = property.defaultpropertytype?.toLowerCase();
+        if (type === "rental") {
+          navigate(`/Rentaldetails/${property._id}`);
+        } else {
+          navigate(`/Saledetails/${property._id}`);
+        }
+      }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-8px)';
         e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 51, 102, 0.15)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 51, 102, 0.08)';
+        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.08)';
       }}
     >
       <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
@@ -155,9 +162,9 @@ const SeeAllProperties = ({ properties = [] }) => {
         </div>
       </div>
       
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: '16px' }}>
         <div style={{
-          fontSize: '26px',
+          fontSize: '22px',
           fontWeight: '700',
           color: '#003366',
           marginBottom: '8px'
@@ -203,7 +210,11 @@ const SeeAllProperties = ({ properties = [] }) => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4A6A8A' }}>
             <Square size={18} />
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>{property.totalArea || 0} sqft</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>
+              {property.totalArea
+                ? `${property.totalArea.configuration || ""} (${property.totalArea.sqft || "N/A"} sqft)`
+                : "N/A"}
+            </span>
           </div>
         </div>
       </div>
@@ -214,13 +225,14 @@ const SeeAllProperties = ({ properties = [] }) => {
     <div style={{
       background: gradient,
       borderRadius: '16px',
-      padding: '28px',
+      padding: '22px',
       color: '#FFFFFF',
       marginBottom: '24px',
       boxShadow: '0 6px 24px rgba(0, 51, 102, 0.12)',
       position: 'relative',
       overflow: 'hidden',
-      cursor: onClick ? 'pointer' : 'default'
+      cursor: onClick ? 'pointer' : 'default',
+      fontSize: '20px'
     }} onClick={onClick}>
       <div style={{
         position: 'absolute',
@@ -255,19 +267,19 @@ const SeeAllProperties = ({ properties = [] }) => {
   return (
     <div>
       <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} />
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
           <h1 style={{
-            fontSize: '36px',
+            fontSize: '30px',
             fontWeight: '800',
             color: '#003366',
-            marginBottom: '8px',
-            letterSpacing: '-0.5px'
+            marginBottom: '6px',
+            letterSpacing: '-0.3px'
           }}>
             Recommended Properties
           </h1>
-          <p style={{ fontSize: '16px', color: '#4A6A8A' }}>
+          <p style={{ fontSize: '15px', color: '#4A6A8A' }}>
             Discover your perfect home from our curated selection
           </p>
         </div>
@@ -277,8 +289,8 @@ const SeeAllProperties = ({ properties = [] }) => {
           <div style={{ flex: '1 1 700px', minWidth: 0 }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap: '24px'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '20px'
             }}>
               {activeProperties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
@@ -351,6 +363,36 @@ const SeeAllProperties = ({ properties = [] }) => {
           </div>
         </div>
       </div>
+       <footer style={{
+        background: "linear-gradient(135deg, #003366 0%, #004b6b 100%)",
+        color: "#FFFFFF",
+        padding: "3rem 1.5rem",
+        textAlign: "center",
+        marginTop: "3rem"
+      }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
+            ggnRentalDeals – Find Your Dream Home
+          </h3>
+          <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
+            Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+            <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Home</a>
+            <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>About</a>
+            <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Contact</a>
+            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Post Property</a>
+          </div>
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.15)",
+            paddingTop: "1rem",
+            fontSize: "0.8rem",
+            color: "#B0C4DE"
+          }}>
+            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -15,21 +15,50 @@ const PropertyHeroSection = () => {
 
   const tabs = ["News", "Tax & Legal", "Help Guides", "Investment"];
 
-  // API URLs can be configured via .env file for easier management
-  const apiUrls = {
-    News: `${process.env.REACT_APP_NEWS_API_URL_NEWS}`,
-    "Tax & Legal": `${process.env.REACT_APP_NEWS_API_URL_TAX}`,
-    "Help Guides": `${process.env.REACT_APP_NEWS_API_URL_GUIDES}`,
-    Investment: `${process.env.REACT_APP_NEWS_API_URL_INVESTMENT}`,
+  // GNews API base URL and key
+  const gnewsApiKey = process.env.REACT_APP_GNEWS_API_KEY;
+  const gnewsBaseUrl = "https://gnews.io/api/v4/search";
+
+  // Queries for each category
+  const queries = {
+    News: "real estate news",
+    "Tax & Legal": "property tax",
+    "Help Guides": "home buying guide",
+    Investment: "real estate investment",
   };
 
   useEffect(() => {
     const fetchArticles = async () => {
       try {
         setLoading(true);
+        const cachedData = localStorage.getItem("articlesByCategory");
+        const cachedTimestamp = localStorage.getItem("articlesTimestamp");
+        const now = Date.now();
+
+        if (cachedData && cachedTimestamp) {
+          setArticlesByCategory(JSON.parse(cachedData));
+        }
+
+        if (cachedTimestamp) {
+          const lastFetchDate = new Date(parseInt(cachedTimestamp, 10));
+          // Calculate midnight of the next day
+          const nextMidnight = new Date(lastFetchDate);
+          nextMidnight.setHours(24, 0, 0, 0); // set to midnight next day
+
+          if (now < nextMidnight.getTime()) {
+            // Current time is before next midnight, skip fetching
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Fetch new articles from API
         const newArticles = {};
         for (const tab of tabs) {
-          const res = await fetch(apiUrls[tab]);
+          const url = `${gnewsBaseUrl}?q=${encodeURIComponent(
+            queries[tab]
+          )}&token=${gnewsApiKey}&lang=en&max=10`;
+          const res = await fetch(url);
           const data = await res.json();
           const articlesData = Array.isArray(data.articles)
             ? data.articles
@@ -39,7 +68,7 @@ const PropertyHeroSection = () => {
             const link = item.url || "#";
             const title = item.title || "No Title";
             const image =
-              item.urlToImage ||
+              item.image ||
               "https://via.placeholder.com/150?text=No+Image";
             const date = item.publishedAt
               ? new Date(item.publishedAt).toDateString()
@@ -57,8 +86,16 @@ const PropertyHeroSection = () => {
           });
         }
         setArticlesByCategory(newArticles);
+        localStorage.setItem("articlesByCategory", JSON.stringify(newArticles));
+        localStorage.setItem("articlesTimestamp", now.toString());
       } catch (err) {
-        console.error(err);
+        const cachedData = localStorage.getItem("articlesByCategory");
+        if (cachedData) {
+          setArticlesByCategory(JSON.parse(cachedData));
+          console.warn("Failed to fetch new articles, loaded cached data instead.");
+        } else {
+          console.error(err);
+        }
       } finally {
         setLoading(false);
       }

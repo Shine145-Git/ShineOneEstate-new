@@ -167,7 +167,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
           else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
         }}
       >
-        <span>{isSmallScreen ? "ARIA" : "ARIA"}</span>
+        <span>{isSmallScreen ? "AI Search" : "AI Search"}</span>
         <span
           style={{
             backgroundColor: "#FFFFFF",

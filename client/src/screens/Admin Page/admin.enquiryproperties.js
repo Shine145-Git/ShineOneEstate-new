@@ -21,6 +21,7 @@ const AdminEnquiryProperties = () => {
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [loadingProperty, setLoadingProperty] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
@@ -415,13 +416,20 @@ const AdminEnquiryProperties = () => {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    .fade-out {
+      animation: fadeOut 0.4s ease-in forwards;
+    }
   `;
 
   return (
     <div style={styles.pageWrapper}>
       <style>{keyframesStyle}</style>
       {/* <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} /> */}
-      
+
       <div style={styles.container}>
         <div style={styles.header}>
           <div style={styles.headerTop}>
@@ -477,6 +485,24 @@ const AdminEnquiryProperties = () => {
         </div>
 
         <div style={styles.mainCard}>
+          {loadingProperty && (
+            <div style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "rgba(255,255,255,0.8)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999
+            }}>
+              <div style={styles.spinner}></div>
+              <span style={styles.loadingText}>Loading property details...</span>
+            </div>
+          )}
           {loading && (
             <div style={styles.loadingContainer}>
               <div style={styles.spinner}></div>
@@ -581,29 +607,16 @@ const AdminEnquiryProperties = () => {
                           {enquiry.propertyId && (
                             <button
                               style={styles.viewButton}
-                              onClick={async () => {
-                                try {
-                                  let res = await fetch(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${enquiry.propertyId}`, { credentials: 'include' });
-                                  let property = null;
-                                  if (res.ok) {
-                                    property = await res.json();
-                                    if (property && property.monthlyRent != null) {
-                                      navigate(`/Rentaldetails/${enquiry.propertyId}`);
-                                      return;
-                                    }
-                                  }
-                                  res = await fetch(`${process.env.REACT_APP_SALE_PROPERTY_API}/${enquiry.propertyId}`, { credentials: 'include' });
-                                  if (res.ok) {
-                                    property = await res.json();
-                                    if (property && property.price != null) {
-                                      navigate(`/Saledetails/${enquiry.propertyId}`);
-                                      return;
-                                    }
-                                  }
-                                  alert("Property type could not be determined.");
-                                } catch (err) {
-                                  console.error("Error fetching property details:", err);
-                                  alert("Failed to fetch property details");
+                              onClick={() => {
+                                const propertyId = enquiry.propertyId;
+                                const type = enquiry.propertyType;
+
+                                if (type === "rental") {
+                                  navigate(`/Rentaldetails/${propertyId}`);
+                                } else if (type === "sale") {
+                                  navigate(`/Saledetails/${propertyId}`);
+                                } else {
+                                  alert("⚠️ Could not determine property type.");
                                 }
                               }}
                               onMouseEnter={(e) => {

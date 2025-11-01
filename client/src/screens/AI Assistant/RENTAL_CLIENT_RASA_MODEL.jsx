@@ -182,9 +182,10 @@ const VoiceAssistantRent = () => {
                 credentials: "include",
               });
               if (resp.ok) {
+                navigate("/");
                 console.log("✅ User preferences saved successfully.");
                 console.log("✅ Backend acknowledged preference save.");
-                navigate("/");
+                
               } else {
                 const errText = await resp.text();
                 console.error("❌ Failed to save preferences:", errText);

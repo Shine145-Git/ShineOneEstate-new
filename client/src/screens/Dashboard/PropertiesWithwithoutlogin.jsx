@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -16,8 +16,14 @@ const PropertyDashboard = ({
   onPropertyClick,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 4;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 7000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleNext = () => {
     if (currentIndex + itemsPerPage < properties.length) {
@@ -262,46 +268,50 @@ const PropertyDashboard = ({
         )}
 
         <div style={carouselStyle}>
-          <div style={cardsContainerStyle}>
-            {properties.filter(property => property.isActive).map((property, idx) => (
-              <div key={property._id || property.id || idx} style={cardStyle}>
+          {loading ? (
+            <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="skeleton-card"></div>
+              ))}
+            </div>
+          ) : (
+            <div style={cardsContainerStyle}>
+              {properties.filter(property => property.isActive).map((property, idx) => (
                 <div
+                  key={property._id || property.id || idx}
+                  style={cardStyle}
                   onClick={() => {
                     if (onPropertyClick) onPropertyClick(property._id);
-                    if (user) navigate(`/Rentaldetails/${property._id}`);
-                    else navigate("/login");
+                    if (!user) {
+                      navigate("/login");
+                    } else {
+                      if (property.defaultpropertytype === "rental") {
+                        navigate(`/Rentaldetails/${property._id}`);
+                      } else {
+                        navigate(`/Saledetails/${property._id}`);
+                      }
+                    }
                   }}
-                ></div>
-                <div
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-8px)";
-                    e.currentTarget.style.boxShadow =
-                      "0 12px 24px rgba(0, 51, 102, 0.15)";
+                    e.currentTarget.style.boxShadow = "0 12px 24px rgba(0, 51, 102, 0.15)";
                     const img = e.currentTarget.querySelector("img");
                     if (img) img.style.transform = "scale(1.1)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow =
-                      "0 2px 12px rgba(0, 51, 102, 0.08)";
+                    e.currentTarget.style.boxShadow = "0 2px 12px rgba(0, 51, 102, 0.08)";
                     const img = e.currentTarget.querySelector("img");
                     if (img) img.style.transform = "scale(1)";
                   }}
                 >
                   <div style={imageContainerStyle}>
                     <img
-                      src={
-                        property.images?.[0]
-                          ? property.images[0]
-                          : "/default-property.jpg"
-                      }
+                      src={property.images?.[0] ? property.images[0] : "/default-property.jpg"}
                       alt={property.type}
                       style={imageStyle}
                       onError={(e) => {
-                        if (
-                          e.target.src !==
-                          window.location.origin + "/default-property.jpg"
-                        ) {
+                        if (e.target.src !== window.location.origin + "/default-property.jpg") {
                           e.target.src = "/default-property.jpg";
                         }
                       }}
@@ -323,7 +333,9 @@ const PropertyDashboard = ({
                           size={14}
                           style={{ display: "inline", marginRight: "4px" }}
                         />
-                        {property.area}
+                        {property.totalArea
+                          ? `${property.totalArea.configuration || ""} (${property.totalArea.sqft || "N/A"} sqft)`
+                          : "N/A"}
                       </span>
                     </div>
                     <div style={areaStyle}>
@@ -339,9 +351,9 @@ const PropertyDashboard = ({
                     <div style={statusStyle}>{property.status}</div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {currentIndex + itemsPerPage < properties.length && (
@@ -361,6 +373,28 @@ const PropertyDashboard = ({
           </button>
         )}
       </div>
+      <style>
+      {`
+        .skeleton-card {
+          flex: 0 0 calc(25% - 18px);
+          height: 350px;
+          border-radius: 12px;
+          background: linear-gradient(90deg, #f6f7f8 25%, #edeef1 37%, #f6f7f8 63%);
+          background-size: 400% 100%;
+          animation: shimmer 1.4s ease infinite;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -400px 0;
+          }
+          100% {
+            background-position: 400px 0;
+          }
+        }
+      `}
+      </style>
     </div>
   );
 };

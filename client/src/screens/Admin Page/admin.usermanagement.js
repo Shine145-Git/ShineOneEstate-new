@@ -547,7 +547,7 @@ const UserManagementDashboard = () => {
                                   </div>
                                   <div style={styles.infoItem}>
                                     <div style={styles.infoLabel}>Address</div>
-                                    <div style={styles.infoValue}>{property.address || 'N/A'}</div>
+                                    <div style={styles.infoValue}>{property.address  + property.Sector|| 'N/A'}</div>
                                   </div>
                                   {property.locality && (
                                     <div style={styles.infoItem}>

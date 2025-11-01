@@ -28,6 +28,8 @@ import Savedproperties from "./screens/Dashboard/savedproperties";
 import AdminDashboard from "./screens/Admin Page/admin.dashboardoverview";
 import UserManagementSystem from "./screens/Admin Page/admin.usermanagement";
 import AdminLandingPage from "./screens/Admin Page/LandingAdminPage";
+import EnquiryPage from "./screens/Visit Schedule/enquiry";
+import AboutPage from "./screens/Customer Support/About";
 
 function App() {
   const navigate = useNavigate();
@@ -43,8 +45,7 @@ function App() {
       {/* These two routes basically show the details page of the property by id */}
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
       <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
-
-     
+      <Route path="/about" element={<AboutPage />} />
       <Route path="/AIassistant" element={<PropertySearchInterface />} />
       <Route path="/AIassistant-Rent" element={<VoiceAssistantRent />} />
       <Route path="/AIassistant-Sale" element={<VoiceAssistantSale />} />
@@ -73,6 +74,7 @@ function App() {
       <Route path="/seeAllproperties" element={<SeeAllProperties />} />
       <Route path="/savedproperties" element={<Savedproperties />} />
       <Route path="/property-analytics/:id" element={<PropertyAnalytics />} />
+      <Route path="/enquiry-page/:id" element={<EnquiryPage />} />
     </Routes>
   );
 }

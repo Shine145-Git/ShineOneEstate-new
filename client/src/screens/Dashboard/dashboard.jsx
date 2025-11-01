@@ -48,6 +48,7 @@ export default function RealEstateDashboard() {
   const [recommended, setRecommended] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
   const [areaSuggestions, setAreaSuggestions] = useState([]);
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState("all");
   // Area suggestions effect
   useEffect(() => {
     // If searchQuery is empty, clear suggestions and show history
@@ -59,7 +60,9 @@ export default function RealEstateDashboard() {
     const fetchSuggestions = async () => {
       try {
         const res = await fetch(
-          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(searchQuery.trim())}`,
+          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(
+            searchQuery.trim()
+          )}`,
           { method: "GET", credentials: "include" }
         );
         if (res.ok) {
@@ -184,7 +187,7 @@ export default function RealEstateDashboard() {
               credentials: "include",
             }
           );
-          
+
           if (res.ok) {
             const data = await res.json();
 
@@ -237,12 +240,11 @@ export default function RealEstateDashboard() {
   };
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    if (!user) return navigate("/login"); // redirect only on search
     try {
       await fetch(
-        `${
-          process.env.REACT_APP_SEARCH_PROPERTIES_API
-        }?query=${encodeURIComponent(searchQuery.trim())}`,
+        `${process.env.REACT_APP_SEARCH_PROPERTIES_API}?query=${encodeURIComponent(
+          searchQuery.trim()
+        )}&type=${encodeURIComponent(propertyTypeFilter)}`,
         { method: "GET", credentials: "include" }
       );
     } catch (err) {
@@ -258,7 +260,7 @@ export default function RealEstateDashboard() {
         credentials: "include",
       });
       setUser(null);
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       console.error("Logout error:", err);
     }
@@ -271,11 +273,11 @@ export default function RealEstateDashboard() {
     "Insights",
   ];
   const tabs = [
+    { name: "All Properties", new: false },
     { name: "Buy", new: false },
     { name: "Rent", new: false },
     { name: "New Launch", new: true },
     { name: "Commercial", new: false },
-    { name: "Plots/Land", new: false },
     { name: "Projects", new: false },
     { name: "Post Property", new: false, free: true },
   ];
@@ -377,6 +379,13 @@ export default function RealEstateDashboard() {
           .chat-modal-close:hover {
             background: #e5e7eb;
           }
+          @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+          }
+          .slide-out {
+            animation: slideOutRight 0.6s ease-in forwards;
+          }
         `}
       </style>
       <button
@@ -436,6 +445,7 @@ export default function RealEstateDashboard() {
 
         {/* Search Box positioned below carousel */}
         <div
+          className="search-box-container"
           style={{
             position: "absolute",
             bottom: window.innerWidth < 768 ? "-260px" : "-135px",
@@ -464,7 +474,27 @@ export default function RealEstateDashboard() {
               {tabs.map((tab) => (
                 <button
                   key={tab.name}
-                  onClick={() => setActiveTab(tab.name)}
+                  onClick={() => {
+                    setActiveTab(tab.name);
+                    if (tab.name === "All Properties") {
+                      setPropertyTypeFilter("All");
+                    } else if (tab.name === "Buy") {
+                      setPropertyTypeFilter("Sale");
+                    } else if (tab.name === "Rent") {
+                      setPropertyTypeFilter("Rent");
+                    } else if (tab.name === "Post Property") {
+                      const searchBox = document.querySelector(".search-box-container");
+                      if (searchBox) {
+                        searchBox.classList.add("slide-out");
+                        setTimeout(() => {
+                          navigate("/add-property");
+                          searchBox.classList.remove("slide-out");
+                        }, 600);
+                      } else {
+                        navigate("/add-property");
+                      }
+                    }
+                  }}
                   style={{
                     padding: "16px 24px",
                     border: "none",
@@ -529,7 +559,27 @@ export default function RealEstateDashboard() {
               {tabs.map((tab) => (
                 <button
                   key={tab.name}
-                  onClick={() => setActiveTab(tab.name)}
+                  onClick={() => {
+                    setActiveTab(tab.name);
+                    if (tab.name === "All Properties") {
+                      setPropertyTypeFilter("All");
+                    } else if (tab.name === "Buy") {
+                      setPropertyTypeFilter("Sale");
+                    } else if (tab.name === "Rent") {
+                      setPropertyTypeFilter("Rent");
+                    } else if (tab.name === "Post Property") {
+                      const searchBox = document.querySelector(".search-box-container");
+                      if (searchBox) {
+                        searchBox.classList.add("slide-out");
+                        setTimeout(() => {
+                          navigate("/add-property");
+                          searchBox.classList.remove("slide-out");
+                        }, 600);
+                      } else {
+                        navigate("/add-property");
+                      }
+                    }
+                  }}
                   style={{
                     padding: "12px 16px",
                     border: "none",
@@ -590,7 +640,9 @@ export default function RealEstateDashboard() {
             }}
           >
             <div style={{ position: "relative", minWidth: "180px" }}>
-              <div
+              <select
+                value={propertyTypeFilter}
+                onChange={(e) => setPropertyTypeFilter(e.target.value)}
                 style={{
                   padding: "12px 16px",
                   border: "1px solid #E5E7EB",
@@ -603,8 +655,10 @@ export default function RealEstateDashboard() {
                   fontWeight: "500",
                 }}
               >
-                All Residential
-              </div>
+                <option value="All">All</option>
+                <option value="Rent">Rent</option>
+                <option value="Sale">Sale</option>
+              </select>
             </div>
             <div
               style={{
@@ -627,7 +681,7 @@ export default function RealEstateDashboard() {
               />
               <input
                 type="text"
-                placeholder='Search "Farm house in Punjab below 1 cr"'
+                placeholder='Search "3 BHK" or "Sector-46 or 3 BHK in Sector-46"'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => {
@@ -679,7 +733,8 @@ export default function RealEstateDashboard() {
                   }}
                 >
                   {/* If searchQuery is empty, show recentSearches */}
-                  {!searchQuery.trim() && recentSearches.length > 0 &&
+                  {!searchQuery.trim() &&
+                    recentSearches.length > 0 &&
                     recentSearches.map((search, idx) => (
                       <div
                         key={search._id || idx}
@@ -710,10 +765,10 @@ export default function RealEstateDashboard() {
                       >
                         {search.query}
                       </div>
-                    ))
-                  }
+                    ))}
                   {/* If searchQuery is not empty and areaSuggestions exist, show suggestions */}
-                  {searchQuery.trim() && areaSuggestions.length > 0 &&
+                  {searchQuery.trim() &&
+                    areaSuggestions.length > 0 &&
                     areaSuggestions.map((sector, idx) => (
                       <div
                         key={sector.id || sector.name || idx}
@@ -743,8 +798,7 @@ export default function RealEstateDashboard() {
                       >
                         {sector.name}
                       </div>
-                    ))
-                  }
+                    ))}
                 </div>
               )}
 
@@ -897,8 +951,9 @@ export default function RealEstateDashboard() {
                 e.target.style.backgroundColor = "#00A79D";
                 e.target.style.transform = "translateY(0)";
               }}
+              onClick={() => navigate("/about")}
             >
-              Learn More
+              About
             </button>
             <button
               style={{
@@ -929,55 +984,36 @@ export default function RealEstateDashboard() {
       </div>
 
       {/* Footer */}
-      <footer
-        style={{
-          backgroundColor: "#003366",
-          color: "#FFFFFF",
-          padding: "32px 4%",
-          fontSize: "14px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "20px",
-          }}
-        >
-          <div style={{ opacity: "0.8" }}>
-            © 2025 99acres. All rights reserved.
+               <footer style={{
+        background: "linear-gradient(135deg, #003366 0%, #004b6b 100%)",
+        color: "#FFFFFF",
+        padding: "3rem 1.5rem",
+        textAlign: "center",
+        marginTop: "3rem"
+      }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
+            ggnRentalDeals – Find Your Dream Home
+          </h3>
+          <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
+            Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+            <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Home</a>
+            <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>About</a>
+            <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Contact</a>
+            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Post Property</a>
           </div>
-          <div style={{ display: "flex", gap: "24px" }}>
-            {[
-              "Privacy Policy",
-              "Cookie Policy",
-              "Terms & Conditions",
-              "Sitemap",
-            ].map((item, idx) => (
-              <a
-                key={idx}
-                href="#"
-                style={{
-                  color: "#FFFFFF",
-                  textDecoration: "none",
-                  opacity: "0.8",
-                  transition: "opacity 0.2s",
-                }}
-                onMouseEnter={(e) => (e.target.style.opacity = "1")}
-                onMouseLeave={(e) => (e.target.style.opacity = "0.8")}
-              >
-                {item}
-              </a>
-            ))}
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.15)",
+            paddingTop: "1rem",
+            fontSize: "0.8rem",
+            color: "#B0C4DE"
+          }}>
+            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
           </div>
         </div>
       </footer>
-
-   
     </div>
   );
 }

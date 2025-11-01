@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 // Icon imports
 import { CreditCard, Smartphone, Building2, MapPin, Home, X, ChevronRight, DollarSign, CheckCircle } from 'lucide-react';
+// Enquiry Page import
+import EnquiryPage from './enquiry';
 // HTTP client
 import axios from 'axios';
 // Top navigation bar component
@@ -25,18 +27,13 @@ export default function PropertyCheckout() {
   const [showModal, setShowModal] = useState(false);
   // Modal visibility for payment approval modal
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  // Modal visibility for Enquiry modal
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   // State for current logged-in user
   const [user, setUser] = useState(null);
   // Navigation hook
   const navigate = useNavigate();
 
-  // Enquiry modal state and confirmation
-  // Modal visibility for enquiry modal
-  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
-  // State for enquiry message input
-  const [enquiryMessage, setEnquiryMessage] = useState('');
-  // State for showing enquiry success confirmation
-  const [enquirySuccess, setEnquirySuccess] = useState(false);
 
   // Fetch property details when component mounts or ID changes
   useEffect(() => {
@@ -529,24 +526,15 @@ export default function PropertyCheckout() {
               </button>
               <button
                 style={{
-                  background: '#FFFFFF',
-                  color: '#00A79D',
-                  padding: '14px 32px',
+                  background: '#003366',
+                  color: '#FFFFFF',
+                  padding: '14px 40px',
                   borderRadius: '8px',
                   fontSize: '16px',
                   fontWeight: '600',
-                  border: '2px solid #00A79D',
+                  border: 'none',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(0,167,157,0.08)',
-                  transition: 'background 0.2s, color 0.2s'
-                }}
-                onMouseOver={e => {
-                  e.target.style.background = '#00A79D';
-                  e.target.style.color = '#FFFFFF';
-                }}
-                onMouseOut={e => {
-                  e.target.style.background = '#FFFFFF';
-                  e.target.style.color = '#00A79D';
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                 }}
                 onClick={() => setShowEnquiryModal(true)}
               >
@@ -555,150 +543,6 @@ export default function PropertyCheckout() {
             </div>
           </div>
         </div>
-      {/* Enquiry Modal: allows user to send a message to owner/agent */}
-      {showEnquiryModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1200,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '32px 28px 24px 28px',
-            width: '90%',
-            maxWidth: '420px',
-            position: 'relative',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-            textAlign: 'center',
-          }}>
-            <button
-              onClick={() => setShowEnquiryModal(false)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: '#F4F7F9',
-                border: 'none',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#4A6A8A',
-              }}
-              aria-label="Close enquiry modal"
-            >
-              <X size={20} />
-            </button>
-            <h2 style={{ marginBottom: '12px', color: '#003366', fontSize: '22px', fontWeight: '700' }}>
-              Enquire about this Property
-            </h2>
-            <p style={{ color: '#4A6A8A', fontSize: '15px', marginBottom: '16px' }}>
-              Send a message to the property owner or agent. This is optional.
-            </p>
-            <textarea
-              placeholder="Type your message (optional)..."
-              style={{
-                width: '100%',
-                minHeight: '80px',
-                borderRadius: '8px',
-                border: '1.5px solid #E5E7EB',
-                padding: '10px',
-                fontSize: '15px',
-                marginBottom: '18px',
-                resize: 'vertical',
-                color: '#003366'
-              }}
-              value={enquiryMessage}
-              onChange={e => setEnquiryMessage(e.target.value)}
-            />
-            <button
-              style={{
-                background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
-                color: '#FFFFFF',
-                padding: '13px 32px',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer',
-                width: '100%',
-                boxShadow: '0 4px 12px rgba(0,167,157,0.15)'
-              }}
-              onClick={async () => {
-                if (!property || !user) {
-                  console.error('Property or user info missing');
-                  return;
-                }
-                
-                  
-                try {
-                  const payload = {
-                    propertyId: property._id,
-                    
-                    message: enquiryMessage,
-                  };
-                
-
-                  const res = await axios.post(
-                    process.env.REACT_APP_CREATE_ENQUIRY_API,
-                    payload,
-                    { withCredentials: true }
-                  );
-                  // Optional: could keep minimal success info if needed
-                  // console.log('Enquiry response:', res.data);
-                  setShowEnquiryModal(false);
-                  setEnquiryMessage('');
-                  setEnquirySuccess(true);
-                  setTimeout(() => setEnquirySuccess(false), 2500);
-                } catch (error) {
-                  console.error('Failed to send enquiry:', error);
-                
-                  
-                }
-              }}
-            >
-              Send Enquiry
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Enquiry Confirmation: shows success after sending enquiry */}
-      {enquirySuccess && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.0)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'flex-end',
-          zIndex: 1300,
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            background: '#00A79D',
-            color: '#fff',
-            borderRadius: '8px 8px 0 0',
-            fontSize: '16px',
-            fontWeight: 600,
-            padding: '20px 36px',
-            marginBottom: '60px',
-            boxShadow: '0 4px 16px rgba(0,167,157,0.18)',
-            opacity: 0.96
-          }}>
-            Enquiry sent successfully!
-          </div>
-        </div>
-      )}
       </div>
 
       {/* Payment Modal: for QR code and confirming payment */}
@@ -896,6 +740,59 @@ export default function PropertyCheckout() {
           </div>
         </div>
       )}
+    {/* Enquiry Modal */}
+    {showEnquiryModal && (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1200,
+          backdropFilter: 'blur(4px)',
+        }}
+      >
+        <div
+          style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '600px',
+            position: 'relative',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }}
+        >
+          <button
+            onClick={() => setShowEnquiryModal(false)}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: '#F4F7F9',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#4A6A8A',
+            }}
+          >
+            <X size={20} />
+          </button>
+
+          <EnquiryPage propertyId={property._id} />
+        </div>
+      </div>
+    )}
     </div>
   );
 

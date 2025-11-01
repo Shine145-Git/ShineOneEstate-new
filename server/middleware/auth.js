@@ -26,4 +26,19 @@ const verifyToken = async (req, res, next) => {
     next();
 };
 
-module.exports = { verifyToken };
+
+const verifyTokenOptional = async (req, res, next) => {
+  try {
+    const accessToken = req.cookies.accessToken;
+    if (!accessToken) return next(); // allow guest access
+
+    const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    const user = await User.findById(decodedAccessToken.id).select('-password');
+    if (user) req.user = user;
+  } catch (error) {
+    console.warn("⚠️ Optional token verification failed or invalid. Proceeding as guest.");
+  }
+  next();
+};
+
+module.exports = { verifyToken, verifyTokenOptional };

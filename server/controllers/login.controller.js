@@ -18,10 +18,16 @@ exports.requestOtp = async (req, res) => {
       user = new User({ email, role: "renter" });
     }
 
-    const otp = generateOtp();
-    user.otp = otp;
-    user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
-    await user.save();
+    // Check if an existing OTP is still valid; reuse if so
+    let otp;
+    if (user.otp && user.otpExpiry > Date.now()) {
+      otp = user.otp; // reuse existing OTP
+    } else {
+      otp = generateOtp();
+      user.otp = otp;
+      user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
+      await user.save();
+    }
 
     // Development mode: skip sending email, just log OTP
     if (process.env.NODE_ENV === 'development') {

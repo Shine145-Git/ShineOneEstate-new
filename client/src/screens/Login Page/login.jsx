@@ -105,6 +105,29 @@ export default function LoginModal() {
     }
   };
 
+  const handleResendOtp = async () => {
+    try {
+      console.log("Resending OTP for email:", email);
+      const response = await fetch(`${process.env.REACT_APP_LOGIN_REQUEST_OTP_API}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ text: "OTP resent successfully!", type: "success" });
+        setTime(180);
+        setOtp("");
+      } else {
+        setMessage({ text: data.message || "Error resending OTP", type: "error" });
+      }
+    } catch (err) {
+      console.error("Resend OTP error:", err);
+      setMessage({ text: "Error resending OTP", type: "error" });
+    }
+  };
+
   const formatTime = () => {
     const m = Math.floor(time / 60);
     const s = time % 60;
@@ -351,10 +374,7 @@ export default function LoginModal() {
               </span>
               <button
                 type="button"
-                onClick={() => {
-                  setTime(180);
-                  setOtp("");
-                }}
+                onClick={handleResendOtp}
                 style={{
                   color: "#00A79D",
                   fontSize: "14px",

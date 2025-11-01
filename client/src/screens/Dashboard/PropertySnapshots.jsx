@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // Removed import of content.json
+import AdsColumn from "./adscolumn";
 
 export default function PropertySnapshot() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -96,37 +97,44 @@ export default function PropertySnapshot() {
   ];
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>
-        {cityData.name} Property Snapshot
-        <span style={styles.underline}></span>
-      </h2>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: "24px", flexWrap: "wrap", padding: "2rem" }}>
+      <div style={{ flex: "3 1 700px", minWidth: "60%" }}>
+        <div style={styles.container}>
+          <h2 style={styles.heading}>
+            {cityData.name} Property Snapshot
+            <span style={styles.underline}></span>
+          </h2>
 
-      <div style={styles.card}>
-        <p style={styles.description}>
-          {isExpanded ? cityData.description : truncatedText}{' '}
-          <span
-            style={styles.readMore}
-            onClick={() => setIsExpanded(!isExpanded)}
-            onMouseEnter={(e) => {
-              e.target.style.color = '#00A79D';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.color = '#003366';
-            }}
-          >
-            {isExpanded ? 'Read less' : 'Read more'}
-          </span>
-        </p>
+          <div style={styles.card}>
+            <p style={styles.description}>
+              {isExpanded ? cityData.description : truncatedText}{" "}
+              <span
+                style={styles.readMore}
+                onClick={() => setIsExpanded(!isExpanded)}
+                onMouseEnter={(e) => {
+                  e.target.style.color = "#00A79D";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = "#003366";
+                }}
+              >
+                {isExpanded ? "Read less" : "Read more"}
+              </span>
+            </p>
 
-        <div style={styles.statsGrid}>
-          {stats.map((stat, index) => (
-            <div key={index} style={styles.statItem}>
-              <div style={styles.statNumber}>{stat.number}</div>
-              <div style={styles.statLabel}>{stat.label}</div>
+            <div style={styles.statsGrid}>
+              {stats.map((stat, index) => (
+                <div key={index} style={styles.statItem}>
+                  <div style={styles.statNumber}>{stat.number}</div>
+                  <div style={styles.statLabel}>{stat.label}</div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
+      </div>
+      <div style={{ flex: "1 1 300px", minWidth: "280px" }}>
+        <AdsColumn />
       </div>
     </div>
   );

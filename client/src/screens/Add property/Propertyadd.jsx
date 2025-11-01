@@ -203,18 +203,33 @@ export default function PropertyListingForm() {
           .replace(/\s+/g, " ")
           .toLowerCase();
 
+        let normalized;
         const match = formattedSector.match(/sector\s*(\d+)/);
         if (match) {
-          formData.Sector = `Sector-${match[1]}`;
+          normalized = `Sector-${match[1]}`;
         } else if (/^\d+$/.test(formattedSector)) {
-          formData.Sector = `Sector-${formattedSector}`;
+          normalized = `Sector-${formattedSector}`;
         } else if (formattedSector.startsWith("sec")) {
           const num = formattedSector.replace("sec", "").trim();
-          formData.Sector = `Sector-${num}`;
+          normalized = `Sector-${num}`;
         } else {
-          formData.Sector =
-            formattedSector.charAt(0).toUpperCase() + formattedSector.slice(1);
+          normalized = formattedSector.charAt(0).toUpperCase() + formattedSector.slice(1);
         }
+
+        // Use setFormData to update React state rather than mutating the object directly
+        setFormData(prev => ({ ...prev, Sector: normalized }));
+
+        // Debug log to confirm normalization
+        console.log("Normalized Sector ->", normalized);
+      }
+      // ✅ Normalize configuration for both Rent and Sale (ensure consistent "X BHK" format)
+      if (formData.totalArea?.configuration) {
+        const rawConfig = formData.totalArea.configuration.trim().toUpperCase();
+        const bhkMatch = rawConfig.match(/(\d+)\s*-?\s*BHK?/i);
+        const normalizedConfig = bhkMatch ? `${bhkMatch[1]} BHK` : rawConfig;
+
+        formData.totalArea.configuration = normalizedConfig;
+        console.log("✅ Normalized Configuration ->", normalizedConfig);
       }
       const form = new FormData();
     // Build FormData object
@@ -1161,7 +1176,26 @@ Object.entries(formData).forEach(([key, value]) => {
                   </select>
                 </div>
                 <div>
-                  <label style={inputLabelStyle}>Area (sqft)</label>
+                  <label style={inputLabelStyle}>Total Area *</label>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <input
+                      type="number"
+                      name="totalArea.sqft"
+                      value={formData.totalArea.sqft}
+                      onChange={handleChange}
+                      placeholder="Area in sqft (e.g., 1200)"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <input
+                      type="text"
+                      name="totalArea.configuration"
+                      value={formData.totalArea.configuration}
+                      onChange={handleChange}
+                      placeholder="Configuration (e.g., 3 BHK)"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                  </div>
+                  {/*
                   <input
                     type="number"
                     name="area"
@@ -1172,6 +1206,7 @@ Object.entries(formData).forEach(([key, value]) => {
                     onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                     onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   />
+                  */}
                 </div>
               </div>
               <div style={gridStyle}>

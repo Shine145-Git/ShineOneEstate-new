@@ -12,9 +12,10 @@ const SalePropertySchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  area: {
-    type: Number
-  },
+totalArea: {
+      sqft: { type: Number }, // Numeric area, e.g., 1200
+      configuration: { type: String }, // e.g., "3 BHK"
+    },
   bedrooms: {
     type: Number
   },
@@ -26,6 +27,7 @@ const SalePropertySchema = new mongoose.Schema({
   },
   Sector: { type: String },
   images: [String],
+  defaultpropertytype: { type: String, default: "sale", immutable: true },
   isActive: { type: Boolean, default: true },
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,

@@ -516,50 +516,38 @@ export default function CustomerSupportPage() {
           </div>
         </div>
 
-        {/* Additional Info Section */}
-        <div style={{
-          background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
-          borderRadius: '20px',
-          padding: '40px',
-          marginTop: '40px',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '400px',
-            height: '400px',
-            background: 'radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 70%)',
-            borderRadius: '50%'
-          }}></div>
-          <h3 style={{ 
-            color: '#FFFFFF',
-            fontSize: '24px',
-            fontWeight: '700',
-            marginBottom: '15px',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            We're Here to Help
-          </h3>
-          <p style={{ 
-            color: '#22D3EE',
-            fontSize: '16px',
-            maxWidth: '700px',
-            margin: '0 auto',
-            lineHeight: '1.6',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            Our dedicated support team is committed to providing you with the best service possible. 
-            Whether you choose to call us directly or request a callback, we'll make sure your concerns are addressed promptly.
-          </p>
+       
         </div>
-      </div>
+         <footer style={{
+        background: "linear-gradient(135deg, #003366 0%, #004b6b 100%)",
+        color: "#FFFFFF",
+        padding: "3rem 1.5rem",
+        textAlign: "center",
+        marginTop: "3rem"
+      }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
+            ggnRentalDeals – Find Your Dream Home
+          </h3>
+          <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
+            Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+            <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Home</a>
+            <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>About</a>
+            <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Contact</a>
+            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Post Property</a>
+          </div>
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.15)",
+            paddingTop: "1rem",
+            fontSize: "0.8rem",
+            color: "#B0C4DE"
+          }}>
+            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
+          </div>
+        </div>
+      </footer>
       </div>
       </>
   );

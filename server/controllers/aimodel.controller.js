@@ -1,4 +1,11 @@
+// Controller for handling AI model price predictions based on city-specific features.
+// Validates input, prepares payloads according to city requirements, and communicates with a Flask API to obtain predicted prices.
+
 const axios = require('axios');
+
+// --------------------
+// Configuration
+// --------------------
 
 const validCities = ['delhi', 'gurgaon'];
 
@@ -7,20 +14,33 @@ const cityFeatureKeys = {
   gurgaon: ['areaWithType', 'address'],
 };
 
+// --------------------
+// Controller Functions
+// --------------------
+
 const predictPrice = async (req, res) => {
+  
+  // Destructure input and initialize variables
+  const { city, features } = req.body;
+  const cityLower = city ? city.toLowerCase() : null;
+  let payload = {};
+
   try {
-    const { city, features } = req.body;
+    // --------------------
+    // Validation
+    // --------------------
     if (!city || !features) {
       return res.status(400).json({ error: 'City and features are required' });
     }
 
-    const cityLower = city.toLowerCase();
     if (!validCities.includes(cityLower)) {
       return res.status(404).json({ error: `City ${city} not supported` });
     }
 
-    // Prepare payload for Flask API
-    let payload = { city: cityLower };
+    // --------------------
+    // Payload Construction
+    // --------------------
+    payload.city = cityLower;
 
     if (cityLower === 'delhi') {
       // Delhi requires full features
@@ -34,10 +54,15 @@ const predictPrice = async (req, res) => {
       payload.address = features.address; // text
     }
 
+    // --------------------
     // Call Flask API
-    // Flask API URL configurable via .env
+    // --------------------
     try {
       const response = await axios.post(`${process.env.FLASK_API_URL}/predict`, payload);
+
+      // --------------------
+      // Response Handling
+      // --------------------
       if (response.data && response.data.predicted_price !== undefined) {
         return res.json({ predictedPrice: response.data.predicted_price });
       } else {
