@@ -129,41 +129,35 @@ const handleLogout = async () => {
     const searchVal =
       typeof queryToSearch === "string" ? queryToSearch : searchQuery;
     if (searchVal.trim() === "") return;
+
     setLoading(true);
+    const startTime = Date.now(); // start timer
+
     try {
       const params = new URLSearchParams();
       params.append("query", searchVal.trim());
-      // console.log("🔍 Sending search params:", params.toString());
       const apiUrl = process.env.REACT_APP_SEARCH_PROPERTIES_API;
       const res = await axios.get(`${apiUrl}?${params.toString()}`);
-      // console.log("Search API response:", res);
 
-      // Attach type field using defaultpropertytype only
       let filteredData = res.data.map(p => ({
         ...p,
         type: p.defaultpropertytype || "rental"
       }));
 
-      // Filter only by defaultpropertytype if specified
       if (propertyTypeFilter) {
         const normalizedFilter =
-          propertyTypeFilter.toLowerCase() === "rent" ? "rental" : propertyTypeFilter.toLowerCase();
+          propertyTypeFilter.toLowerCase() === "rent"
+            ? "rental"
+            : propertyTypeFilter.toLowerCase();
         filteredData = filteredData.filter(
           (p) => p.defaultpropertytype?.toLowerCase() === normalizedFilter
         );
       }
 
-      // Debug log
-      // console.log("🔎 Filtered properties:", filteredData.length, " | Filter:", propertyTypeFilter);
-
-      // 🔍 Additional dashboard-type-based filtering and sorting
       const dashboardType = location.state?.type;
-
       if (dashboardType === "new") {
-        // Sort by newest first
         filteredData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } else if (dashboardType === "commercial") {
-        // Prefer large areas or commercial keywords
         filteredData = filteredData
           .filter(
             (p) =>
@@ -173,28 +167,28 @@ const handleLogout = async () => {
           )
           .sort(() => Math.random() - 0.5);
       } else if (dashboardType === "project") {
-        // Prefer properties with more images or newer ones
         filteredData = filteredData
           .filter((p) => (p.images?.length || 0) > 2)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       }
 
-      // Only include active properties
       filteredData = filteredData.filter(p => p.isActive !== false);
       setFilteredPayments(filteredData);
     } catch (error) {
       console.error("Search API error:", error);
       setFilteredPayments([]);
     } finally {
-      setLoading(false);
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 2000 - elapsed); // ensures 3s total
+      setTimeout(() => setLoading(false), delay);
     }
   };
 
 // Trigger search when search query or property type changes
-useEffect(() => {
-  if (searchQuery.trim() === "") return;
-  fetchSearchResults(searchQuery);
-}, [searchQuery, propertyTypeFilter]);
+// useEffect(() => {
+//   if (searchQuery.trim() === "") return;
+//   fetchSearchResults(searchQuery);
+// }, [searchQuery, propertyTypeFilter]);
 
   const getSortedProperties = () => {
     let sorted = [...filteredPayments];
@@ -436,6 +430,33 @@ useEffect(() => {
 
   return (
     <div className={fadeOut ? "fade-out" : "fade-in"}>
+      {/* --- Loading Overlay --- */}
+      {loading && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(255,255,255,0.8)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "6px solid #E5E7EB",
+            borderTop: "6px solid #00A79D",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite"
+          }} />
+          <p style={{ marginTop: "1rem", color: "#003366", fontWeight: "600" }}>Loading...</p>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
       <div style={{ minHeight: "100vh", backgroundColor: "#F9FAFB" }}>
       {/* Animations and transitions for property cards, buttons, ripple */}
       <style>
@@ -645,8 +666,10 @@ useEffect(() => {
               )}
             </div>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                createRipple(e);
                 if (searchQuery.trim() !== "") {
+                  setLoading(true);
                   fetchSearchResults(searchQuery.trim());
                   setShowSuggestions(false);
                 }
@@ -671,7 +694,6 @@ useEffect(() => {
               }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#008A82"; e.currentTarget.style.transform = "scale(1.045)"; }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#00A79D"; e.currentTarget.style.transform = "scale(1)"; }}
-              onClick={createRipple}
             >
               <Search size={16} />Search
             </button>

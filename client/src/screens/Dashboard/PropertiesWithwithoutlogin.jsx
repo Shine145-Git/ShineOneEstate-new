@@ -17,6 +17,8 @@ const PropertyDashboard = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
   const itemsPerPage = 4;
   const navigate = useNavigate();
 
@@ -34,6 +36,22 @@ const PropertyDashboard = ({
   const handlePrev = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.changedTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    setTouchEndX(e.changedTouches[0].clientX);
+    if (touchStartX !== null) {
+      const distance = touchStartX - e.changedTouches[0].clientX;
+      if (distance > 50) {
+        handleNext();
+      } else if (distance < -50) {
+        handlePrev();
+      }
     }
   };
 
@@ -267,7 +285,7 @@ const PropertyDashboard = ({
           </button>
         )}
 
-        <div style={carouselStyle}>
+        <div style={carouselStyle} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {loading ? (
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
               {[...Array(4)].map((_, i) => (
@@ -391,6 +409,65 @@ const PropertyDashboard = ({
           }
           100% {
             background-position: 400px 0;
+          }
+        }
+      `}
+      </style>
+      <style>
+      {`
+        @media (max-width: 768px) {
+          /* Property card & skeleton responsive */
+          .skeleton-card,
+          div[style*="calc(25%"] {
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+            height: 220px !important;
+            min-width: 0 !important;
+          }
+          /* Reduce gaps and paddings */
+          div[style*="display: flex"][style*="gap: 24px"] {
+            gap: 12px !important;
+          }
+          div[style*="padding: 18px"] {
+            padding: 10px !important;
+          }
+          /* Adjust image container height */
+          div[style*="position: relative"][style*="height: 220px"] {
+            height: 180px !important;
+            min-height: 0 !important;
+          }
+          /* Title smaller and margins reduced */
+          h1[style*="font-size: 32px"] {
+            font-size: 24px !important;
+            margin-bottom: 10px !important;
+            padding-bottom: 6px !important;
+          }
+          /* Header: stack vertically on mobile */
+          div[style*="max-width: 1400px"][style*="display: flex"][style*="justify-content: space-between"] {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 6px !important;
+            margin-bottom: 18px !important;
+          }
+          /* Carousel wrapper: less padding, no horizontal scroll */
+          div[style*="max-width: 1400px"][style*="position: relative"] {
+            padding: 0 0 !important;
+            overflow-x: hidden !important;
+          }
+          /* Navigation buttons: smaller and closer to edge */
+          button[style*="position: absolute"] {
+            width: 40px !important;
+            height: 40px !important;
+            [left]: "-10px" !important;
+            [right]: "-10px" !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            box-shadow: 0 2px 8px rgba(0,51,102,0.12) !important;
+          }
+          /* Navigation icons smaller */
+          button[style*="position: absolute"] svg {
+            width: 20px !important;
+            height: 20px !important;
           }
         }
       `}

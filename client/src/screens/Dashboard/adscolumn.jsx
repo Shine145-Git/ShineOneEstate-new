@@ -134,8 +134,30 @@ export default function AutoRotatingAds() {
     }
   };
 
+  // Responsive media query for mobile
+  let isMobile = false;
+  if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+    isMobile = true;
+    styles.container.margin = '0 auto';
+    styles.container.maxWidth = '380px';
+    styles.container.aspectRatio = '4 / 5';
+  }
+
+  const MainContainer = ({ children }) => {
+    if (isMobile) {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+          <div style={{ marginTop: '120px' }}>
+            {children}
+          </div>
+        </div>
+      );
+    }
+    return <div style={{ marginTop: '120px' }}>{children}</div>;
+  };
+
   return (
-    <div style={{ marginTop: '120px' }}>
+    <MainContainer>
       <div style={styles.container}>
       <style>
         {`
@@ -207,6 +229,6 @@ export default function AutoRotatingAds() {
         </button>
       </div>
       </div>
-    </div>
+    </MainContainer>
   );
 }

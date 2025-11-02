@@ -173,6 +173,9 @@ const VoiceAssistantRent = () => {
             };
             setMessages(prev => [...prev, { type: "bot", text: questions[questions.length - 1] }]);
             speak(questions[questions.length - 1]);
+            setTimeout(() => {
+              navigate("/");
+            }, 3000);
             // Save to backend
             try {
               const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {

@@ -36,6 +36,8 @@ import Adcarousel from "./Adcarousel";
 
 export default function RealEstateDashboard() {
   const [activeTab, setActiveTab] = useState("Buy");
+  // Loading state for search
+  const [isLoading, setIsLoading] = useState(false);
   // Floating Chat Button Modal State
   const [showChatModal, setShowChatModal] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
@@ -240,17 +242,40 @@ export default function RealEstateDashboard() {
   };
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
+    setIsLoading(true);
+    const start = Date.now();
+    let fetchPromise = fetch(
+      `${process.env.REACT_APP_SEARCH_PROPERTIES_API}?query=${encodeURIComponent(
+        searchQuery.trim()
+      )}&type=${encodeURIComponent(propertyTypeFilter)}`,
+      { method: "GET", credentials: "include" }
+    );
+    let navPromise = (async () => {
+      try {
+        await fetchPromise;
+      } catch (err) {
+        // error handled below
+      }
+      try {
+        navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
+      } catch (err) {
+        // navigation error, do nothing
+      }
+    })();
+    // Wait for both navigation and at least 2s
     try {
-      await fetch(
-        `${process.env.REACT_APP_SEARCH_PROPERTIES_API}?query=${encodeURIComponent(
-          searchQuery.trim()
-        )}&type=${encodeURIComponent(propertyTypeFilter)}`,
-        { method: "GET", credentials: "include" }
-      );
+      await Promise.all([
+        navPromise,
+        new Promise((resolve) => {
+          const elapsed = Date.now() - start;
+          if (elapsed >= 2000) resolve();
+          else setTimeout(resolve, 2000 - elapsed);
+        }),
+      ]);
     } catch (err) {
-      console.error("Error sending search history:", err);
+      // error handled below
     }
-    navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
+    setIsLoading(false);
   };
 
   const handleLogout = async () => {
@@ -297,13 +322,173 @@ export default function RealEstateDashboard() {
         position: "relative",
       }}
     >
+      {isLoading && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(255,255,255,0.8)",
+          zIndex: 2000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          backdropFilter: "blur(6px)"
+        }}>
+          <div className="spinner" style={{
+            border: "4px solid #f3f3f3",
+            borderTop: "4px solid #00A79D",
+            borderRadius: "50%",
+            width: "50px",
+            height: "50px",
+            animation: "spin 1s linear infinite"
+          }} />
+          <p style={{ marginTop: "16px", color: "#003366", fontWeight: "600" }}>Searching properties...</p>
+        </div>
+      )}
       {/* Floating Chat Button */}
       <style>
         {`
+          /* Responsive improvements for dashboard */
+          @media (max-width: 767px) {
+            .search-box-container {
+              position: static !important;
+              bottom: unset !important;
+              left: unset !important;
+              transform: none !important;
+              width: 98vw !important;
+              max-width: 100vw !important;
+              margin: 0.5rem auto 0.5rem auto !important;
+              border-radius: 12px !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+              padding: 0 !important;
+            }
+            .search-box-container input[type="text"] {
+              font-size: 15px !important;
+              border: none !important;
+              flex: 1 !important;
+              padding: 10px !important;
+              border-radius: 8px !important;
+              background: transparent !important;
+              min-height: 44px !important;
+              margin: 0 !important;
+            }
+            .search-box-container select {
+              font-size: 15px !important;
+            }
+            .search-row-mobile {
+              display: flex !important;
+              align-items: center !important;
+              gap: 8px !important;
+              padding: 8px 10px !important;
+              background: #fff !important;
+              border-radius: 10px !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+              margin: 0 !important;
+              min-height: 44px !important;
+            }
+            .search-row-mobile input[type="text"] {
+              border: none !important;
+              outline: none !important;
+              background: transparent !important;
+              flex: 1 !important;
+              font-size: 15px !important;
+              padding: 10px 0 !important;
+              margin: 0 !important;
+              border-radius: 8px !important;
+              min-height: 44px !important;
+            }
+            .search-row-mobile .search-icon-btn,
+            .search-row-mobile .mic-icon-btn {
+              background: none !important;
+              border: none !important;
+              padding: 0 !important;
+              margin: 0 6px !important;
+              min-width: 44px !important;
+              min-height: 44px !important;
+              height: 44px !important;
+              width: 44px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 8px !important;
+              cursor: pointer !important;
+              font-size: 20px !important;
+            }
+            .search-row-mobile .search-icon-btn:active,
+            .search-row-mobile .mic-icon-btn:active {
+              background: #f4f7f9 !important;
+            }
+            .floating-chat-btn {
+              width: 68px !important;
+              height: 68px !important;
+              right: 16px !important;
+              bottom: 16px !important;
+              font-size: 34px !important;
+            }
+            .chat-modal-content {
+              max-width: 99vw !important;
+              min-width: 0 !important;
+              width: 99vw !important;
+              min-height: 70vh !important;
+              max-height: 95vh !important;
+              border-radius: 16px !important;
+            }
+            .property-snapshot-section,
+            .news-section,
+            .footer-section,
+            .hero-banner-section {
+              padding: 1.2rem 0.5rem !important;
+              margin: 0.5rem 0 !important;
+            }
+            .property-dashboard-section {
+              padding: 1.2rem 0.5rem !important;
+            }
+            .dashboard-footer-btns {
+              flex-direction: column !important;
+              gap: 12px !important;
+            }
+            .dashboard-footer-btns button {
+              width: 100% !important;
+              padding: 16px 0 !important;
+              font-size: 16px !important;
+            }
+            .dashboard-footer-links {
+              flex-direction: column !important;
+              gap: 10px !important;
+            }
+          }
+          /* Card/Ad modern look */
+          .dashboard-card,
+          .dashboard-ad {
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+            background: #fff;
+            margin-bottom: 16px;
+            overflow: hidden;
+          }
+          @media (max-width: 767px) {
+            .dashboard-card,
+            .dashboard-ad {
+              margin-bottom: 14px !important;
+              border-radius: 13px !important;
+            }
+            .dashboard-cards-section,
+            .dashboard-ads-section {
+              flex-direction: column !important;
+              gap: 0 !important;
+            }
+          }
           @keyframes floatUpDown {
             0% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0); }
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
           .floating-chat-btn {
             position: fixed;
@@ -438,26 +623,34 @@ export default function RealEstateDashboard() {
       />
 
       {/* Hero Banner with Search */}
-      <div style={{ width: "100%", position: "relative" }}>
+      <div
+        className="hero-banner-section"
+        style={{
+          width: "100%",
+          position: "relative",
+          padding: isMobile ? "0" : "0",
+          marginBottom: isMobile ? "1.5rem" : "2.5rem",
+        }}
+      >
         {/* Hero Banner / Carousel */}
-
         <Adcarousel />
-
         {/* Search Box positioned below carousel */}
         <div
           className="search-box-container"
           style={{
-            position: "absolute",
-            bottom: window.innerWidth < 768 ? "-260px" : "-135px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "90%",
-            maxWidth: "1200px",
+            position: isMobile ? "static" : "absolute",
+            bottom: isMobile ? "unset" : "-135px",
+            left: isMobile ? "unset" : "50%",
+            transform: isMobile ? "none" : "translateX(-50%)",
+            width: isMobile ? "98vw" : "90%",
+            maxWidth: isMobile ? "100vw" : "1200px",
             backgroundColor: "#FFFFFF",
-            borderRadius: "12px",
+            borderRadius: isMobile ? "14px" : "12px",
             boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
             zIndex: 10,
             overflow: "visible",
+            margin: isMobile ? "0.5rem auto" : "unset",
+            padding: isMobile ? "0.3rem 0" : "unset",
           }}
         >
           {/* Tabs */}
@@ -630,273 +823,513 @@ export default function RealEstateDashboard() {
           )}
 
           {/* Detailed Search Input */}
-          <div
-            style={{
-              padding: "20px 24px",
-              display: "flex",
-              gap: "12px",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ position: "relative", minWidth: "180px" }}>
-              <select
-                value={propertyTypeFilter}
-                onChange={(e) => setPropertyTypeFilter(e.target.value)}
+          {/* Search Input Layout */}
+          {isMobile ? (
+            <>
+              <div
+                className="search-row-mobile"
                 style={{
-                  padding: "12px 16px",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  color: "#333333",
-                  backgroundColor: "#FFFFFF",
-                  cursor: "pointer",
-                  width: "100%",
-                  fontWeight: "500",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 10px",
+                  background: "#fff",
+                  borderRadius: "10px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  margin: 0,
+                  minHeight: "44px",
                 }}
               >
-                <option value="All">All</option>
-                <option value="Rent">Rent</option>
-                <option value="Sale">Sale</option>
-              </select>
-            </div>
-            <div
-              style={{
-                flex: "1",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px 16px",
-                border: "1px solid #E5E7EB",
-                borderRadius: "8px",
-                backgroundColor: "#FFFFFF",
-                minWidth: "320px",
-                position: "relative",
-              }}
-            >
-              <Search
-                size={20}
-                color="#4A6A8A"
-                style={{ marginRight: "8px" }}
-              />
-              <input
-                type="text"
-                placeholder='Search "3 BHK" or "Sector-46 or 3 BHK in Sector-46"'
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => {
-                  if (!user) {
-                    console.log(
-                      "User not logged in, search disabled until login"
-                    );
-                    return; // do nothing on focus
+                <button
+                  className="search-icon-btn"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    margin: "0 6px",
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    height: "44px",
+                    width: "44px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "20px",
+                  }}
+                  onClick={handleSearch}
+                  aria-label="Search"
+                  type="button"
+                >
+                  <Search size={20} color="#4A6A8A" />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Search area or property type"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (!user) {
+                      console.log(
+                        "User not logged in, search disabled until login"
+                      );
+                      return; // do nothing on focus
+                    }
+                    setShowRecentDropdown(true);
+                  }}
+                  onBlur={() =>
+                    setTimeout(() => setShowRecentDropdown(false), 400)
                   }
-                  setShowRecentDropdown(true);
-                }}
-                onBlur={() =>
-                  setTimeout(() => setShowRecentDropdown(false), 400)
-                }
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  flex: 1,
-                  fontSize: "14px",
-                  color: "#333333",
-                  backgroundColor: "transparent",
-                }}
-              />
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  style={{
+                    border: "none",
+                    outline: "none",
+                    flex: 1,
+                    fontSize: "15px",
+                    color: "#333333",
+                    backgroundColor: "transparent",
+                    width: "100%",
+                    padding: "10px 0",
+                    margin: 0,
+                    borderRadius: "8px",
+                    minHeight: "44px",
+                  }}
+                />
+                {showRecentDropdown && user && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      marginTop: "0.5rem",
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      width: "100%",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                      zIndex: 10,
+                    }}
+                  >
+                    {/* If searchQuery is empty, show recentSearches */}
+                    {!searchQuery.trim() &&
+                      recentSearches.length > 0 &&
+                      recentSearches.map((search, idx) => (
+                        <div
+                          key={search._id || idx}
+                          style={{
+                            padding: "10px 16px",
+                            cursor: "pointer",
+                            borderBottom:
+                              idx !== recentSearches.length - 1
+                                ? "1px solid #f1f1f1"
+                                : "none",
+                            color: "#333",
+                            fontSize: "14px",
+                            backgroundColor: "#fff",
+                            transition: "background 0.2s",
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSearchQuery(search.query);
+                            setShowRecentDropdown(false);
+                            handleSearch();
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.target.style.backgroundColor = "#F4F7F9")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.backgroundColor = "#fff")
+                          }
+                        >
+                          {search.query}
+                        </div>
+                      ))}
+                    {/* If searchQuery is not empty and areaSuggestions exist, show suggestions */}
+                    {searchQuery.trim() &&
+                      areaSuggestions.length > 0 &&
+                      areaSuggestions.map((sector, idx) => (
+                        <div
+                          key={sector.id || sector.name || idx}
+                          style={{
+                            padding: "10px 16px",
+                            cursor: "pointer",
+                            borderBottom:
+                              idx !== areaSuggestions.length - 1
+                                ? "1px solid #f1f1f1"
+                                : "none",
+                            color: "#333",
+                            fontSize: "14px",
+                            backgroundColor: "#fff",
+                            transition: "background 0.2s",
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSearchQuery(sector.name);
+                            setShowRecentDropdown(false);
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.target.style.backgroundColor = "#F4F7F9")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.backgroundColor = "#fff")
+                          }
+                        >
+                          {sector.name}
+                        </div>
+                      ))}
+                  </div>
+                )}
+                <button
+                  className="mic-icon-btn"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    margin: "0 6px",
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    height: "44px",
+                    width: "44px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "20px",
+                  }}
+                  aria-label="Voice search"
+                  type="button"
+                  onClick={() => {
+                    if (!("webkitSpeechRecognition" in window)) {
+                      alert("Voice recognition not supported");
+                      return;
+                    }
+                    const recognition = new window.webkitSpeechRecognition();
+                    recognition.lang = "en-US";
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+                    recognition.start();
+                    recognition.onresult = (event) => {
+                      const voiceInput = event.results[0][0].transcript;
+                      setSearchQuery(voiceInput);
+                      handleSearch();
+                    };
+                    recognition.onerror = (event) =>
+                      console.error("Voice recognition error:", event.error);
+                  }}
+                >
+                  <Mic size={20} color="#00A79D" />
+                </button>
+              </div>
+              {/* Mobile Search Button */}
               <button
                 onClick={handleSearch}
                 style={{
-                  background: "transparent",
+                  width: "100%",
+                  marginTop: "8px",
+                  padding: "12px 0",
+                  backgroundColor: "#0066FF",
+                  color: "#fff",
                   border: "none",
+                  borderRadius: "10px",
+                  fontSize: "16px",
+                  fontWeight: "600",
                   cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
                 }}
               >
-                <Search size={20} color="#4A6A8A" />
+                Search
               </button>
-
-              {showRecentDropdown && user && (
-                <div
+            </>
+          ) : (
+            <div
+              style={{
+                padding: "20px 24px",
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+                flexWrap: "wrap",
+                flexDirection: "row",
+              }}
+            >
+              <div style={{ position: "relative", minWidth: "180px", width: "auto", marginBottom: 0 }}>
+                <select
+                  value={propertyTypeFilter}
+                  onChange={(e) => setPropertyTypeFilter(e.target.value)}
                   style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    marginTop: "0.5rem",
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
+                    padding: "12px 16px",
+                    border: "1px solid #E5E7EB",
                     borderRadius: "8px",
+                    fontSize: "14px",
+                    color: "#333333",
+                    backgroundColor: "#FFFFFF",
+                    cursor: "pointer",
                     width: "100%",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                    zIndex: 10,
+                    fontWeight: "500",
                   }}
                 >
-                  {/* If searchQuery is empty, show recentSearches */}
-                  {!searchQuery.trim() &&
-                    recentSearches.length > 0 &&
-                    recentSearches.map((search, idx) => (
-                      <div
-                        key={search._id || idx}
-                        style={{
-                          padding: "10px 16px",
-                          cursor: "pointer",
-                          borderBottom:
-                            idx !== recentSearches.length - 1
-                              ? "1px solid #f1f1f1"
-                              : "none",
-                          color: "#333",
-                          fontSize: "14px",
-                          backgroundColor: "#fff",
-                          transition: "background 0.2s",
-                        }}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setSearchQuery(search.query);
-                          setShowRecentDropdown(false);
-                          handleSearch();
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.target.style.backgroundColor = "#F4F7F9")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.target.style.backgroundColor = "#fff")
-                        }
-                      >
-                        {search.query}
-                      </div>
-                    ))}
-                  {/* If searchQuery is not empty and areaSuggestions exist, show suggestions */}
-                  {searchQuery.trim() &&
-                    areaSuggestions.length > 0 &&
-                    areaSuggestions.map((sector, idx) => (
-                      <div
-                        key={sector.id || sector.name || idx}
-                        style={{
-                          padding: "10px 16px",
-                          cursor: "pointer",
-                          borderBottom:
-                            idx !== areaSuggestions.length - 1
-                              ? "1px solid #f1f1f1"
-                              : "none",
-                          color: "#333",
-                          fontSize: "14px",
-                          backgroundColor: "#fff",
-                          transition: "background 0.2s",
-                        }}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setSearchQuery(sector.name);
-                          setShowRecentDropdown(false);
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.target.style.backgroundColor = "#F4F7F9")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.target.style.backgroundColor = "#fff")
-                        }
-                      >
-                        {sector.name}
-                      </div>
-                    ))}
-                </div>
-              )}
-
-              <Mic
-                size={20}
-                color="#00A79D"
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  if (!("webkitSpeechRecognition" in window)) {
-                    alert("Voice recognition not supported");
-                    return;
-                  }
-                  const recognition = new window.webkitSpeechRecognition();
-                  recognition.lang = "en-US";
-                  recognition.interimResults = false;
-                  recognition.maxAlternatives = 1;
-                  recognition.start();
-                  recognition.onresult = (event) => {
-                    const voiceInput = event.results[0][0].transcript;
-                    setSearchQuery(voiceInput);
-                    handleSearch();
-                  };
-                  recognition.onerror = (event) =>
-                    console.error("Voice recognition error:", event.error);
+                  <option value="All">All</option>
+                  <option value="Rent">Rent</option>
+                  <option value="Sale">Sale</option>
+                </select>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "8px",
+                  backgroundColor: "#FFFFFF",
+                  minWidth: "320px",
+                  width: "auto",
+                  position: "relative",
+                  marginBottom: 0,
                 }}
-              />
+              >
+                <Search
+                  size={20}
+                  color="#4A6A8A"
+                  style={{ marginRight: "8px" }}
+                />
+                <input
+                  type="text"
+                  placeholder={'Search "3 BHK" or "Sector-46 or 3 BHK in Sector-46"'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (!user) {
+                      console.log(
+                        "User not logged in, search disabled until login"
+                      );
+                      return; // do nothing on focus
+                    }
+                    setShowRecentDropdown(true);
+                  }}
+                  onBlur={() =>
+                    setTimeout(() => setShowRecentDropdown(false), 400)
+                  }
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  style={{
+                    border: "none",
+                    outline: "none",
+                    flex: 1,
+                    fontSize: "14px",
+                    color: "#333333",
+                    backgroundColor: "transparent",
+                    width: "100%",
+                  }}
+                />
+                <button
+                  onClick={handleSearch}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                  aria-label="Search"
+                  type="button"
+                >
+                  <Search size={20} color="#4A6A8A" />
+                </button>
+                {showRecentDropdown && user && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      marginTop: "0.5rem",
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      width: "100%",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                      zIndex: 10,
+                    }}
+                  >
+                    {/* If searchQuery is empty, show recentSearches */}
+                    {!searchQuery.trim() &&
+                      recentSearches.length > 0 &&
+                      recentSearches.map((search, idx) => (
+                        <div
+                          key={search._id || idx}
+                          style={{
+                            padding: "10px 16px",
+                            cursor: "pointer",
+                            borderBottom:
+                              idx !== recentSearches.length - 1
+                                ? "1px solid #f1f1f1"
+                                : "none",
+                            color: "#333",
+                            fontSize: "14px",
+                            backgroundColor: "#fff",
+                            transition: "background 0.2s",
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSearchQuery(search.query);
+                            setShowRecentDropdown(false);
+                            handleSearch();
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.target.style.backgroundColor = "#F4F7F9")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.backgroundColor = "#fff")
+                          }
+                        >
+                          {search.query}
+                        </div>
+                      ))}
+                    {/* If searchQuery is not empty and areaSuggestions exist, show suggestions */}
+                    {searchQuery.trim() &&
+                      areaSuggestions.length > 0 &&
+                      areaSuggestions.map((sector, idx) => (
+                        <div
+                          key={sector.id || sector.name || idx}
+                          style={{
+                            padding: "10px 16px",
+                            cursor: "pointer",
+                            borderBottom:
+                              idx !== areaSuggestions.length - 1
+                                ? "1px solid #f1f1f1"
+                                : "none",
+                            color: "#333",
+                            fontSize: "14px",
+                            backgroundColor: "#fff",
+                            transition: "background 0.2s",
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSearchQuery(sector.name);
+                            setShowRecentDropdown(false);
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.target.style.backgroundColor = "#F4F7F9")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.backgroundColor = "#fff")
+                          }
+                        >
+                          {sector.name}
+                        </div>
+                      ))}
+                  </div>
+                )}
+                <Mic
+                  size={20}
+                  color="#00A79D"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    if (!("webkitSpeechRecognition" in window)) {
+                      alert("Voice recognition not supported");
+                      return;
+                    }
+                    const recognition = new window.webkitSpeechRecognition();
+                    recognition.lang = "en-US";
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+                    recognition.start();
+                    recognition.onresult = (event) => {
+                      const voiceInput = event.results[0][0].transcript;
+                      setSearchQuery(voiceInput);
+                      handleSearch();
+                    };
+                    recognition.onerror = (event) =>
+                      console.error("Voice recognition error:", event.error);
+                  }}
+                />
+              </div>
+              <button
+                style={{
+                  padding: "12px 48px",
+                  backgroundColor: "#0066FF",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#0052CC";
+                  e.target.style.transform = "translateY(-2px)";
+                  e.target.style.boxShadow = "0 6px 20px rgba(0,102,255,0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "#0066FF";
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "none";
+                }}
+                onClick={handleSearch}
+              >
+                Search
+              </button>
             </div>
-
-            <button
-              style={{
-                padding: "12px 48px",
-                backgroundColor: "#0066FF",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "15px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#0052CC";
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 6px 20px rgba(0,102,255,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#0066FF";
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "none";
-              }}
-              onClick={handleSearch}
-            >
-              Search
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Cards Section */}
-      <CardSection />
+      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+        { <CardSection />}
+      </div>
       {/* Property Dashboard Section */}
-      <PropertyDashboard
-        properties={user ? recommended : properties}
-        user={user}
-        title={user ? "Recommended for you" : "Explore Properties"}
-        onPropertyClick={handlePropertyClick}
-      />
+      <div className="property-dashboard-section" style={{ padding: isMobile ? "1.2rem 0.5rem" : "2rem 0" }}>
+        <PropertyDashboard
+          properties={user ? recommended : properties}
+          user={user}
+          title={user ? "Recommended for you" : "Explore Properties"}
+          onPropertyClick={handlePropertyClick}
+        />
+      </div>
       {/* Property Snapshot Section */}
-      <PropertySnapshot />
+      <div className="property-snapshot-section" style={{ padding: isMobile ? "1.2rem 0.5rem" : "2rem 0" }}>
+        <PropertySnapshot />
+      </div>
       {/* News Section */}
-      <div id="news">
+      <div id="news" className="news-section" style={{ padding: isMobile ? "1.2rem 0.5rem" : "2rem 0" }}>
         <PropertyHeroSection />
       </div>
-
       {/* Advertisement Section */}
-      <LandingPage />
+      <div className="dashboard-ads-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+        <LandingPage />
+      </div>
       {/* {Banners} */}
       <Banners user={user} />
       {/* Property in Area */}
-      <PropertiesInArea
-        properties={propertiesInArea}
-        user={user}
-        title="Properties in your area"
-        onPropertyClick={handlePropertyClick}
-      />
+      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+        <PropertiesInArea
+          properties={propertiesInArea}
+          user={user}
+          title="Properties in your area"
+          onPropertyClick={handlePropertyClick}
+        />
+      </div>
       {/* Tools */}
-      <ToolsShowcase />
+      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+        <ToolsShowcase />
+      </div>
       {/* Property Options */}
-      <PropertyCitiesComponent />
+      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+        <PropertyCitiesComponent />
+      </div>
       {/* Location Section - pass setUserLocation to allow lifting state */}
-      <Location setUserLocation={setUserLocation} />
+      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+        <Location setUserLocation={setUserLocation} />
+      </div>
 
       {/* Bottom Section */}
       <div
+        className="footer-section"
         style={{
           backgroundColor: "#4A6A8A",
-          padding: "48px 4%",
-          marginTop: "40px",
+          padding: isMobile ? "28px 2%" : "48px 4%",
+          marginTop: isMobile ? "16px" : "40px",
         }}
       >
         <div
@@ -904,44 +1337,50 @@ export default function RealEstateDashboard() {
         >
           <h2
             style={{
-              fontSize: "32px",
+              fontSize: isMobile ? "22px" : "32px",
               fontWeight: "700",
               color: "#FFFFFF",
-              marginBottom: "16px",
+              marginBottom: isMobile ? "10px" : "16px",
             }}
           >
             How can we help you?
           </h2>
           <p
             style={{
-              fontSize: "16px",
+              fontSize: isMobile ? "13px" : "16px",
               color: "#FFFFFF",
               opacity: "0.9",
-              marginBottom: "32px",
+              marginBottom: isMobile ? "18px" : "32px",
             }}
           >
             Explore our services and find the perfect solution for your real
             estate needs
           </p>
           <div
+            className="dashboard-footer-btns"
             style={{
               display: "flex",
               justifyContent: "center",
-              gap: "16px",
+              gap: isMobile ? "10px" : "16px",
               flexWrap: "wrap",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: "center",
+              marginBottom: isMobile ? "12px" : "0",
             }}
           >
             <button
               style={{
-                padding: "14px 32px",
+                padding: isMobile ? "16px 0" : "14px 32px",
                 backgroundColor: "#00A79D",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "8px",
-                fontSize: "15px",
+                fontSize: isMobile ? "16px" : "15px",
                 fontWeight: "600",
                 cursor: "pointer",
                 transition: "all 0.3s",
+                width: isMobile ? "100%" : "auto",
+                minWidth: isMobile ? "160px" : "auto",
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = "#22D3EE";
@@ -957,15 +1396,17 @@ export default function RealEstateDashboard() {
             </button>
             <button
               style={{
-                padding: "14px 32px",
+                padding: isMobile ? "16px 0" : "14px 32px",
                 backgroundColor: "transparent",
                 color: "#FFFFFF",
                 border: "2px solid #FFFFFF",
                 borderRadius: "8px",
-                fontSize: "15px",
+                fontSize: isMobile ? "16px" : "15px",
                 fontWeight: "600",
                 cursor: "pointer",
                 transition: "all 0.3s",
+                width: isMobile ? "100%" : "auto",
+                minWidth: isMobile ? "160px" : "auto",
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = "#FFFFFF";
@@ -984,32 +1425,61 @@ export default function RealEstateDashboard() {
       </div>
 
       {/* Footer */}
-               <footer style={{
-        background: "linear-gradient(135deg, #003366 0%, #004b6b 100%)",
-        color: "#FFFFFF",
-        padding: "3rem 1.5rem",
-        textAlign: "center",
-        marginTop: "3rem"
-      }}>
+      <footer
+        style={{
+          background: "linear-gradient(135deg, #003366 0%, #004b6b 100%)",
+          color: "#FFFFFF",
+          padding: isMobile ? "1.2rem 0.4rem" : "3rem 1.5rem",
+          textAlign: "center",
+          marginTop: isMobile ? "1.2rem" : "3rem",
+        }}
+      >
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
+          <h3
+            style={{
+              fontWeight: "800",
+              fontSize: isMobile ? "1.1rem" : "1.6rem",
+              marginBottom: isMobile ? "0.2rem" : "0.5rem",
+            }}
+          >
             ggnRentalDeals – Find Your Dream Home
           </h3>
-          <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
+          <p
+            style={{
+              fontSize: isMobile ? "0.8rem" : "0.9rem",
+              color: "#D1E7FF",
+              marginBottom: isMobile ? "0.8rem" : "1.5rem",
+              maxWidth: "700px",
+              margin: "0 auto",
+            }}
+          >
             Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
           </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem" }}>
-            <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Home</a>
-            <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>About</a>
-            <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Contact</a>
-            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Post Property</a>
+          <div
+            className="dashboard-footer-links"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: isMobile ? "10px" : "2rem",
+              flexWrap: "wrap",
+              marginBottom: isMobile ? "1rem" : "2rem",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: "center",
+            }}
+          >
+            <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>Home</a>
+            <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>About</a>
+            <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>Contact</a>
+            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>Post Property</a>
           </div>
-          <div style={{
-            borderTop: "1px solid rgba(255,255,255,0.15)",
-            paddingTop: "1rem",
-            fontSize: "0.8rem",
-            color: "#B0C4DE"
-          }}>
+          <div
+            style={{
+              borderTop: "1px solid rgba(255,255,255,0.15)",
+              paddingTop: isMobile ? "0.7rem" : "1rem",
+              fontSize: isMobile ? "0.7rem" : "0.8rem",
+              color: "#B0C4DE",
+            }}
+          >
             © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
           </div>
         </div>

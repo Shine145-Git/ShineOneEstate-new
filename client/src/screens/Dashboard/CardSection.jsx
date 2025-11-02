@@ -44,9 +44,24 @@ const CardSection = () => {
     marginLeft: '8px',
   };
 
+  const isMobile = window.innerWidth < 600;
+
+  const containerStyle = isMobile
+    ? {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '16px',
+        justifyContent: 'center',
+      }
+    : {
+        display: 'flex',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+      };
+
   return (
-    <section style={{ padding: '90px', marginTop: window.innerWidth < 600 ? '190px' : '80px', backgroundColor: '#FFFFFF' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
+    <section style={{ padding: '90px', marginTop: '0px', backgroundColor: '#FFFFFF' }}>
+      <div style={containerStyle}>
         {cards.map((card) => (
           <div
             key={card.id}

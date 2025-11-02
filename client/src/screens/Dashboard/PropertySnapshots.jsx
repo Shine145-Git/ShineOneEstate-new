@@ -5,6 +5,7 @@ import AdsColumn from "./adscolumn";
 export default function PropertySnapshot() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [cityData, setCityData] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
     // Fetch content.json from public folder
@@ -16,21 +17,31 @@ export default function PropertySnapshot() {
         setCityData(randomCity);
       })
       .catch((err) => console.error('Failed to load city data:', err));
+  
+  }, []);
+
+  useEffect(() => {
+      function handleResize() {
+      setIsMobile(window.innerWidth <= 768);
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+    
   }, []);
 
   const styles = {
     container: {
       maxWidth: '1400px',
-      margin: '0 auto',
-      padding: '2rem',
+      margin: isMobile ? '0 auto 1rem auto' : '0 auto',
+      padding: isMobile ? '1rem' : '2rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       backgroundColor: '#F4F7F9',
     },
     heading: {
-      fontSize: '2rem',
+      fontSize: isMobile ? '1.4rem' : '2rem',
       fontWeight: '700',
       color: '#333333',
-      marginBottom: '0.5rem',
+      marginBottom: isMobile ? '0.75rem' : '0.5rem',
       position: 'relative',
       paddingBottom: '0.75rem',
     },
@@ -45,7 +56,7 @@ export default function PropertySnapshot() {
     card: {
       backgroundColor: '#FFFFFF',
       borderRadius: '12px',
-      padding: '2.5rem',
+      padding: isMobile ? '1.25rem 1.5rem' : '2.5rem',
       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
       border: '1px solid #E5E5E5',
     },
@@ -64,8 +75,8 @@ export default function PropertySnapshot() {
     },
     statsGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-      gap: '2rem',
+      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '1.5rem',
     },
     statItem: {
       display: 'flex',
@@ -82,6 +93,24 @@ export default function PropertySnapshot() {
       color: '#666666',
       lineHeight: '1.5',
     },
+    mainWrapper: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      gap: '24px',
+      flexWrap: 'wrap',
+      padding: isMobile ? '1rem' : '2rem',
+      flexDirection: isMobile ? 'column' : 'row',
+    },
+    mainContent: {
+      flex: isMobile ? '1 1 100%' : '3 1 700px',
+      minWidth: isMobile ? '100%' : '60%',
+    },
+    adsColumn: {
+      flex: isMobile ? '1 1 100%' : '1 1 300px',
+      minWidth: isMobile ? '100%' : '280px',
+      marginTop: isMobile ? '0rem' : '0',
+    },
   };
 
   if (!cityData) return <div>Loading...</div>;
@@ -97,8 +126,8 @@ export default function PropertySnapshot() {
   ];
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: "24px", flexWrap: "wrap", padding: "2rem" }}>
-      <div style={{ flex: "3 1 700px", minWidth: "60%" }}>
+    <div style={styles.mainWrapper}>
+      <div style={styles.mainContent}>
         <div style={styles.container}>
           <h2 style={styles.heading}>
             {cityData.name} Property Snapshot
@@ -133,7 +162,7 @@ export default function PropertySnapshot() {
           </div>
         </div>
       </div>
-      <div style={{ flex: "1 1 300px", minWidth: "280px" }}>
+      <div style={styles.adsColumn}>
         <AdsColumn />
       </div>
     </div>
