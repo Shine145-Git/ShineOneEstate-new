@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import Similarproperties from './Similarproperties';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Home, Bed, Bath, Maximize, DollarSign, MapPin, Share2, Heart, Calendar, Phone, Mail } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import MapIntegration from './mapsintegration';
+import { Button } from '@mui/material';
 
 const addEngagementTime = async (propertyId, seconds) => {
   try {
@@ -38,6 +41,7 @@ export default function SalePropertyPage() {
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [openMapModal, setOpenMapModal] = useState(false);
 
   useEffect(() => {
     async function fetchProperty() {
@@ -129,12 +133,20 @@ export default function SalePropertyPage() {
     setUserComment('');
   };
 
+  // Responsive logic: detect mobile
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
         <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '18px', color: '#4A6A8A' }}>Loading property details...</div>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '24px 8px' : '40px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: isMobile ? '16px' : '18px', color: '#4A6A8A' }}>Loading property details...</div>
         </div>
       </div>
     );
@@ -144,8 +156,8 @@ export default function SalePropertyPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
         <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '18px', color: '#4A6A8A' }}>Property not found.</div>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? '24px 8px' : '40px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: isMobile ? '16px' : '18px', color: '#4A6A8A' }}>Property not found.</div>
         </div>
       </div>
     );
@@ -153,13 +165,199 @@ export default function SalePropertyPage() {
 
   const images = property.images && property.images.length > 0 ? property.images : ['https://via.placeholder.com/800x600?text=No+Image'];
 
+  // Property ID section (to be reused)
+  const propertyIDSection = (
+    <div style={{
+      background: '#F4F7F9',
+      padding: isMobile ? '12px' : '16px',
+      borderRadius: '8px',
+      border: '1px solid #E5E7EB',
+      boxSizing: 'border-box',
+      marginBottom: isMobile ? '16px' : undefined
+    }}>
+      <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#4A6A8A', marginBottom: '4px' }}>Property ID</div>
+      <div style={{
+        fontSize: isMobile ? '13px' : '15px',
+        fontWeight: '600',
+        color: '#003366',
+        fontFamily: 'monospace',
+        wordBreak: 'break-all'
+      }}>
+        #{property._id ? property._id.slice(0, property._id.length / 2).toUpperCase() : 'N/A'}
+      </div>
+    </div>
+  );
+
+  // Schedule a Visit and Contact Info as a sidebar chunk
+  const sidebarSections = (
+    <>
+      {/* Schedule a Visit */}
+      <div style={{
+        background: '#FFFFFF',
+        padding: isMobile ? '16px' : '20px',
+        borderRadius: '8px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+        position: isMobile ? undefined : 'sticky',
+        top: isMobile ? undefined : '20px',
+        zIndex: 1,
+        boxSizing: 'border-box',
+        marginBottom: isMobile ? '16px' : undefined
+      }}>
+        <button
+          onClick={() => navigate(`/property-visit/${property._id}`)}
+          style={{
+            width: '100%',
+            background: '#00A79D',
+            color: '#fff',
+            border: 'none',
+            padding: isMobile ? '12px' : '14px',
+            borderRadius: '8px',
+            fontWeight: '600',
+            fontSize: isMobile ? '14px' : '16px',
+            cursor: 'pointer',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'background 0.2s',
+            boxSizing: 'border-box'
+          }}
+          onMouseOver={e => e.currentTarget.style.background = '#00887a'}
+          onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
+        >
+          <Calendar size={isMobile ? 18 : 20} />
+          Schedule a Visit
+        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={handleShare}
+            style={{
+              flex: 1,
+              background: '#F4F7F9',
+              color: '#003366',
+              border: '1px solid #E5E7EB',
+              padding: isMobile ? '10px' : '12px',
+              borderRadius: '8px',
+              fontWeight: '600',
+              fontSize: isMobile ? '13px' : '15px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxSizing: 'border-box'
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.background = '#E5E7EB';
+              e.currentTarget.style.borderColor = '#00A79D';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = '#F4F7F9';
+              e.currentTarget.style.borderColor = '#E5E7EB';
+            }}
+            title="Share this property"
+          >
+            <Share2 size={isMobile ? 16 : 18} />
+            Share
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              flex: 1,
+              background: '#F4F7F9',
+              color: '#003366',
+              border: '1px solid #E5E7EB',
+              padding: isMobile ? '10px' : '12px',
+              borderRadius: '8px',
+              fontWeight: '600',
+              fontSize: isMobile ? '13px' : '15px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxSizing: 'border-box'
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.background = '#E5E7EB';
+              e.currentTarget.style.borderColor = '#00A79D';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = '#F4F7F9';
+              e.currentTarget.style.borderColor = '#E5E7EB';
+            }}
+            title="Save to favorites"
+          >
+            <Heart size={isMobile ? 16 : 18} />
+            Save
+          </button>
+        </div>
+      </div>
+      {/* Contact Information */}
+      <div style={{
+        background: '#FFFFFF',
+        padding: isMobile ? '16px' : '20px',
+        borderRadius: '8px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+        boxSizing: 'border-box',
+        marginBottom: isMobile ? '16px' : undefined
+      }}>
+        <h3 style={{
+          fontSize: isMobile ? '16px' : '18px',
+          fontWeight: '600',
+          color: '#003366',
+          marginBottom: '16px'
+        }}>
+          Contact Information
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px',
+            background: '#F4F7F9',
+            borderRadius: '6px'
+          }}>
+            <Phone size={isMobile ? 16 : 18} style={{ color: '#00A79D', flexShrink: 0 }} />
+            <span style={{ fontSize: isMobile ? '13px' : '15px', color: '#333333' }}>9310994032</span>
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px',
+            background: '#F4F7F9',
+            borderRadius: '6px'
+          }}>
+            <Mail size={isMobile ? 16 : 18} style={{ color: '#00A79D', flexShrink: 0 }} />
+            <span
+              onClick={() => navigate('/support')}
+              style={{
+                fontSize: isMobile ? '13px' : '15px',
+                color: '#00A79D',
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              Send inquiry
+            </span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
       <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? '8px' : '20px' }}>
         {/* Breadcrumb */}
-        <div style={{ padding: '12px 0', fontSize: '14px', color: '#4A6A8A' }}>
+        <div style={{ padding: isMobile ? '8px 0' : '12px 0', fontSize: isMobile ? '12px' : '14px', color: '#4A6A8A' }}>
           <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>Home</span>
           <span style={{ margin: '0 8px' }}>›</span>
           <span style={{ cursor: 'pointer' }}>Properties for Sale</span>
@@ -167,393 +365,646 @@ export default function SalePropertyPage() {
           <span style={{ color: '#003366', fontWeight: '500' }}>{property.Sector || 'Property Details'}</span>
         </div>
 
+        {/* Property ID at the top for mobile */}
+        {isMobile && propertyIDSection}
+
         {/* Main Content Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
+            gap: isMobile ? '0' : '24px',
+            alignItems: 'flex-start',
+            width: '100%'
+          }}
+        >
           {/* Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Image Gallery */}
-            <div style={{ background: '#FFFFFF', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              <div style={{ position: 'relative', width: '100%', height: '500px', background: '#000' }}>
-                <img 
-                  src={images[currentImageIndex]} 
-                  alt="Property" 
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                />
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setCurrentImageIndex((currentImageIndex - 1 + images.length) % images.length)}
-                      style={{
-                        position: 'absolute',
-                        left: '20px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'rgba(0,0,0,0.6)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '40px',
-                        height: '40px',
-                        cursor: 'pointer',
-                        fontSize: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >‹</button>
-                    <button
-                      onClick={() => setCurrentImageIndex((currentImageIndex + 1) % images.length)}
-                      style={{
-                        position: 'absolute',
-                        right: '20px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'rgba(0,0,0,0.6)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '40px',
-                        height: '40px',
-                        cursor: 'pointer',
-                        fontSize: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >›</button>
-                  </>
-                )}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: isMobile ? '16px' : '20px',
+            minWidth: 0,
+            width: '100%'
+          }}>
+       
+
+            {/* Main content order for mobile vs desktop */}
+            {isMobile ? (
+              <>
+                {/* Main left column content */}
+                {/* Image Gallery */}
                 <div style={{
-                  position: 'absolute',
-                  bottom: '20px',
-                  right: '20px',
-                  background: 'rgba(0,0,0,0.7)',
-                  color: '#fff',
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  fontSize: '14px'
+                  background: '#FFFFFF',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  marginBottom: '16px'
                 }}>
-                  {currentImageIndex + 1} / {images.length}
-                </div>
-              </div>
-              {images.length > 1 && (
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '8px', 
-                  padding: '16px', 
-                  overflowX: 'auto',
-                  background: '#FAFAFA'
-                }}>
-                  {images.map((img, i) => (
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '40vh',
+                    minHeight: '180px',
+                    background: '#000'
+                  }}>
                     <img
-                      key={i}
-                      src={img}
-                      alt={`Thumbnail ${i + 1}`}
-                      onClick={() => setCurrentImageIndex(i)}
-                      style={{
-                        width: '100px',
-                        height: '75px',
-                        objectFit: 'cover',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        border: i === currentImageIndex ? '2px solid #00A79D' : '2px solid transparent',
-                        opacity: i === currentImageIndex ? 1 : 0.6
-                      }}
+                      src={images[currentImageIndex]}
+                      alt="Property"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Property Overview */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#003366', marginBottom: '12px', lineHeight: '1.3' }}>
-                {property.title || 'Property Title Not Available'}
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                <MapPin size={18} style={{ color: '#00A79D' }} />
-                <span style={{ fontSize: '16px', color: '#4A6A8A' }}>{property.Sector || 'Location not specified'}</span>
-              </div>
-
-              {/* Price Section */}
-              <div style={{ 
-                background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)', 
-                padding: '20px', 
-                borderRadius: '8px',
-                marginBottom: '24px'
-              }}>
-                <div style={{ fontSize: '14px', color: '#F4F7F9', marginBottom: '4px' }}>Property Price</div>
-                <div style={{ fontSize: '36px', fontWeight: '800', color: '#FFFFFF' }}>
-                  {property.price ? `₹${property.price.toLocaleString()}` : 'Price on Request'}
-                </div>
-              </div>
-
-              {/* Property Stats */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
-                gap: '16px',
-                paddingBottom: '24px',
-                borderBottom: '1px solid #E5E7EB'
-              }}>
-                <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
-                  <Bed size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
-                    {property.bedrooms != null ? property.bedrooms : '-'}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex((currentImageIndex - 1 + images.length) % images.length)}
+                          style={{
+                            position: 'absolute',
+                            left: '20px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >‹</button>
+                        <button
+                          onClick={() => setCurrentImageIndex((currentImageIndex + 1) % images.length)}
+                          style={{
+                            position: 'absolute',
+                            right: '20px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >›</button>
+                      </>
+                    )}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      right: '20px',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: '#fff',
+                      padding: '6px 12px',
+                      borderRadius: '4px',
+                      fontSize: '12px'
+                    }}>
+                      {currentImageIndex + 1} / {images.length}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '14px', color: '#4A6A8A' }}>Bedrooms</div>
+                  {images.length > 1 && (
+                    <div className="thumbnail-row" style={{
+                      display: 'flex',
+                      gap: '8px',
+                      padding: '12px',
+                      overflowX: 'auto',
+                      background: '#FAFAFA'
+                    }}>
+                      {images.map((img, i) => (
+                        <img
+                          key={i}
+                          src={img}
+                          alt={`Thumbnail ${i + 1}`}
+                          onClick={() => setCurrentImageIndex(i)}
+                          style={{
+                            width: '80px',
+                            height: '60px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            border: i === currentImageIndex ? '2px solid #00A79D' : '2px solid transparent',
+                            opacity: i === currentImageIndex ? 1 : 0.6,
+                            flexShrink: 0
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
-                  <Bath size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
-                    {property.bathrooms != null ? property.bathrooms : '-'}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#4A6A8A' }}>Bathrooms</div>
-                </div>
-                <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
-                  <Maximize size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
-                    {property.totalArea
-                      ? typeof property.totalArea === 'object'
-                        ? property.totalArea.sqft ?? '-'
-                        : property.totalArea
-                      : '-'}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#4A6A8A' }}>
-                    {property.totalArea && typeof property.totalArea === 'object' && property.totalArea.configuration
-                      ? property.totalArea.configuration
-                      : 'Sq. Ft.'}
-                  </div>
-                </div>
-              </div>
 
-              {/* Description */}
-              <div style={{ marginTop: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '12px' }}>
-                  About this Property
-                </h2>
-                <p style={{ fontSize: '15px', color: '#333333', lineHeight: '1.8', margin: 0 }}>
-                  {property.description || 'No description available for this property.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Rating Section */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
-                Rate this Property
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    onClick={() => setUserRating(star)}
-                    style={{
-                      fontSize: '32px',
-                      cursor: 'pointer',
-                      color: star <= userRating ? '#FFD700' : '#E5E7EB',
-                      transition: 'color 0.2s'
-                    }}
-                  >★</span>
-                ))}
-                {userRating > 0 && (
-                  <span style={{ marginLeft: '12px', fontSize: '16px', color: '#4A6A8A' }}>
-                    {userRating} out of 5
-                  </span>
-                )}
-              </div>
-              <textarea
-                value={userComment}
-                onChange={(e) => setUserComment(e.target.value)}
-                placeholder="Share your thoughts about this property (optional)"
-                style={{
+                {/* Property Overview */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
                   width: '100%',
-                  minHeight: '100px',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: '1px solid #E5E7EB',
-                  fontSize: '15px',
-                  marginBottom: '16px',
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
-              />
-              <button
-                onClick={handleSubmitRating}
-                style={{
-                  background: '#00A79D',
-                  color: '#fff',
-                  padding: '12px 32px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-                onMouseOver={e => e.target.style.background = '#00887a'}
-                onMouseOut={e => e.target.style.background = '#00A79D'}
-              >
-                Submit Rating
-              </button>
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Action Buttons */}
-            <div style={{ 
-              background: '#FFFFFF', 
-              padding: '20px', 
-              borderRadius: '8px', 
-              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-              position: 'sticky',
-              top: '20px'
-            }}>
-              <button
-                onClick={() => navigate(`/property-visit/${property._id}`)}
-                style={{
-                  width: '100%',
-                  background: '#00A79D',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '14px',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  marginBottom: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'background 0.2s'
-                }}
-                onMouseOver={e => e.currentTarget.style.background = '#00887a'}
-                onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
-              >
-                <Calendar size={20} />
-                Schedule a Visit
-              </button>
-
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  onClick={handleShare}
-                  style={{
-                    flex: 1,
-                    background: '#F4F7F9',
-                    color: '#003366',
-                    border: '1px solid #E5E7EB',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    fontWeight: '600',
-                    fontSize: '15px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={e => {
-                    e.currentTarget.style.background = '#E5E7EB';
-                    e.currentTarget.style.borderColor = '#00A79D';
-                  }}
-                  onMouseOut={e => {
-                    e.currentTarget.style.background = '#F4F7F9';
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                  }}
-                  title="Share this property"
-                >
-                  <Share2 size={18} />
-                  Share
-                </button>
-
-                <button
-                  onClick={handleSave}
-                  style={{
-                    flex: 1,
-                    background: '#F4F7F9',
-                    color: '#003366',
-                    border: '1px solid #E5E7EB',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    fontWeight: '600',
-                    fontSize: '15px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={e => {
-                    e.currentTarget.style.background = '#E5E7EB';
-                    e.currentTarget.style.borderColor = '#00A79D';
-                  }}
-                  onMouseOut={e => {
-                    e.currentTarget.style.background = '#F4F7F9';
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                  }}
-                  title="Save to favorites"
-                >
-                  <Heart size={18} />
-                  Save
-                </button>
-              </div>
-            </div>
-
-            {/* Contact Information */}
-            <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
-                Contact Information
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '12px',
-                  padding: '12px',
-                  background: '#F4F7F9',
-                  borderRadius: '6px'
+                  boxSizing: 'border-box',
+                  marginBottom: '16px'
                 }}>
-                  <Phone size={18} style={{ color: '#00A79D' }} />
-                  <span style={{ fontSize: '15px', color: '#333333' }}>9310994032</span>
+                  <h1 style={{ fontSize: '26px', fontWeight: '700', color: '#003366', marginBottom: '10px', lineHeight: '1.3' }}>
+                    {property.title || 'Property Title Not Available'}
+                  </h1>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <MapPin size={16} style={{ color: '#00A79D', flexShrink: 0 }} />
+                    <span style={{ fontSize: '14px', color: '#4A6A8A' }}>{property.Sector || 'Location not specified'}</span>
+                  </div>
+                  {/* Price Section */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ fontSize: '12px', color: '#F4F7F9', marginBottom: '2px' }}>Property Price</div>
+                    <div style={{ fontSize: '34px', fontWeight: '800', color: '#FFFFFF' }}>
+                      {property.price ? `₹${property.price.toLocaleString()}` : 'Price on Request'}
+                    </div>
+                  </div>
+                  {/* Property Stats */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '10px',
+                    paddingBottom: '16px',
+                    borderBottom: '1px solid #E5E7EB'
+                  }}>
+                    <div style={{ textAlign: 'center', padding: '10px', background: '#F4F7F9', borderRadius: '8px' }}>
+                      <Bed size={20} style={{ color: '#00A79D', margin: '0 auto 6px' }} />
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#003366' }}>
+                        {property.bedrooms != null ? property.bedrooms : '-'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#4A6A8A' }}>Bedrooms</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '10px', background: '#F4F7F9', borderRadius: '8px' }}>
+                      <Bath size={20} style={{ color: '#00A79D', margin: '0 auto 6px' }} />
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#003366' }}>
+                        {property.bathrooms != null ? property.bathrooms : '-'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#4A6A8A' }}>Bathrooms</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '10px', background: '#F4F7F9', borderRadius: '8px' }}>
+                      <Maximize size={20} style={{ color: '#00A79D', margin: '0 auto 6px' }} />
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#003366' }}>
+                        {property.totalArea
+                          ? typeof property.totalArea === 'object'
+                            ? property.totalArea.sqft ?? '-'
+                            : property.totalArea
+                          : '-'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#4A6A8A' }}>
+                        {property.totalArea && typeof property.totalArea === 'object' && property.totalArea.configuration
+                          ? property.totalArea.configuration
+                          : 'Sq. Ft.'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '12px',
-                  padding: '12px',
-                  background: '#F4F7F9',
-                  borderRadius: '6px'
+
+                {/* About this Property */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginBottom: '16px'
                 }}>
-                  <Mail size={18} style={{ color: '#00A79D' }} />
-                  <span
-                    onClick={() => navigate('/support')}
+                  <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#003366', marginBottom: '10px' }}>About this Property</h2>
+                  <p style={{ fontSize: '13px', color: '#333333', lineHeight: '1.8', margin: 0 }}>
+                    {property.description || 'No description available for this property.'}
+                  </p>
+                </div>
+
+                {/* Sidebar sections (Schedule a Visit, Contact Info, Property ID) */}
+                {sidebarSections}
+                {propertyIDSection}
+
+                {/* Similar Properties */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginBottom: '16px'
+                }}>
+                  <Similarproperties sector={property.Sector} />
+                </div>
+
+                {/* Rating Section */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#003366', marginBottom: '12px' }}>
+                    Rate this Property
+                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        onClick={() => setUserRating(star)}
+                        style={{
+                          fontSize: '28px',
+                          cursor: 'pointer',
+                          color: star <= userRating ? '#FFD700' : '#E5E7EB',
+                          transition: 'color 0.2s'
+                        }}
+                      >★</span>
+                    ))}
+                    {userRating > 0 && (
+                      <span style={{ marginLeft: '12px', fontSize: '14px', color: '#4A6A8A' }}>
+                        {userRating} out of 5
+                      </span>
+                    )}
+                  </div>
+                  <textarea
+                    value={userComment}
+                    onChange={(e) => setUserComment(e.target.value)}
+                    placeholder="Share your thoughts about this property (optional)"
                     style={{
-                      fontSize: '15px',
-                      color: '#00A79D',
-                      cursor: 'pointer',
-                      textDecoration: 'underline'
+                      width: '100%',
+                      minHeight: '80px',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #E5E7EB',
+                      fontSize: '13px',
+                      marginBottom: '12px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
                     }}
+                  />
+                  <button
+                    onClick={handleSubmitRating}
+                    style={{
+                      background: '#00A79D',
+                      color: '#fff',
+                      padding: '10px 24px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseOver={e => e.target.style.background = '#00887a'}
+                    onMouseOut={e => e.target.style.background = '#00A79D'}
                   >
-                    Send inquiry
-                  </span>
+                    Submit Rating
+                  </button>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                {/* Desktop: left column */}
+                {/* Image Gallery */}
+                <div style={{
+                  background: '#FFFFFF',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%'
+                }}>
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '60vh',
+                    minHeight: '280px',
+                    background: '#000'
+                  }}>
+                    <img
+                      src={images[currentImageIndex]}
+                      alt="Property"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex((currentImageIndex - 1 + images.length) % images.length)}
+                          style={{
+                            position: 'absolute',
+                            left: '20px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >‹</button>
+                        <button
+                          onClick={() => setCurrentImageIndex((currentImageIndex + 1) % images.length)}
+                          style={{
+                            position: 'absolute',
+                            right: '20px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >›</button>
+                      </>
+                    )}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      right: '20px',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: '#fff',
+                      padding: '6px 12px',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}>
+                      {currentImageIndex + 1} / {images.length}
+                    </div>
+                  </div>
+                  {images.length > 1 && (
+                    <div className="thumbnail-row" style={{
+                      display: 'flex',
+                      gap: '8px',
+                      padding: '16px',
+                      overflowX: 'auto',
+                      background: '#FAFAFA'
+                    }}>
+                      {images.map((img, i) => (
+                        <img
+                          key={i}
+                          src={img}
+                          alt={`Thumbnail ${i + 1}`}
+                          onClick={() => setCurrentImageIndex(i)}
+                          style={{
+                            width: '100px',
+                            height: '75px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            border: i === currentImageIndex ? '2px solid #00A79D' : '2px solid transparent',
+                            opacity: i === currentImageIndex ? 1 : 0.6,
+                            flexShrink: 0
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-            {/* Property ID */}
-            <div style={{ background: '#F4F7F9', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '4px' }}>Property ID</div>
-              <div style={{ fontSize: '15px', fontWeight: '600', color: '#003366', fontFamily: 'monospace' }}>
-                #{property._id ? property._id.slice(0, property._id.length / 2).toUpperCase() : 'N/A'}
-              </div>
-            </div>
+                {/* Property Overview */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
+                  <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#003366', marginBottom: '12px', lineHeight: '1.3' }}>
+                    {property.title || 'Property Title Not Available'}
+                  </h1>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                    <MapPin size={18} style={{ color: '#00A79D', flexShrink: 0 }} />
+                    <span style={{ fontSize: '16px', color: '#4A6A8A' }}>{property.Sector || 'Location not specified'}</span>
+                  </div>
+                  {/* Price Section */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    marginBottom: '24px'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#F4F7F9', marginBottom: '4px' }}>Property Price</div>
+                    <div style={{ fontSize: '36px', fontWeight: '800', color: '#FFFFFF' }}>
+                      {property.price ? `₹${property.price.toLocaleString()}` : 'Price on Request'}
+                    </div>
+                  </div>
+                  {/* Property Stats */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '16px',
+                    paddingBottom: '24px',
+                    borderBottom: '1px solid #E5E7EB'
+                  }}>
+                    <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
+                      <Bed size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
+                        {property.bedrooms != null ? property.bedrooms : '-'}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#4A6A8A' }}>Bedrooms</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
+                      <Bath size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
+                        {property.bathrooms != null ? property.bathrooms : '-'}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#4A6A8A' }}>Bathrooms</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '16px', background: '#F4F7F9', borderRadius: '8px' }}>
+                      <Maximize size={24} style={{ color: '#00A79D', margin: '0 auto 8px' }} />
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#003366' }}>
+                        {property.totalArea
+                          ? typeof property.totalArea === 'object'
+                            ? property.totalArea.sqft ?? '-'
+                            : property.totalArea
+                          : '-'}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#4A6A8A' }}>
+                        {property.totalArea && typeof property.totalArea === 'object' && property.totalArea.configuration
+                          ? property.totalArea.configuration
+                          : 'Sq. Ft.'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* About this Property */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '12px' }}>About this Property</h2>
+                  <p style={{ fontSize: '15px', color: '#333333', lineHeight: '1.8', margin: 0 }}>
+                    {property.description || 'No description available for this property.'}
+                  </p>
+                </div>
+
+                {/* Similar Properties */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
+                  <Similarproperties sector={property.Sector} />
+                </div>
+
+                {/* Rating Section */}
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
+                    Rate this Property
+                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        onClick={() => setUserRating(star)}
+                        style={{
+                          fontSize: '32px',
+                          cursor: 'pointer',
+                          color: star <= userRating ? '#FFD700' : '#E5E7EB',
+                          transition: 'color 0.2s'
+                        }}
+                      >★</span>
+                    ))}
+                    {userRating > 0 && (
+                      <span style={{ marginLeft: '12px', fontSize: '16px', color: '#4A6A8A' }}>
+                        {userRating} out of 5
+                      </span>
+                    )}
+                  </div>
+                  <textarea
+                    value={userComment}
+                    onChange={(e) => setUserComment(e.target.value)}
+                    placeholder="Share your thoughts about this property (optional)"
+                    style={{
+                      width: '100%',
+                      minHeight: '100px',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #E5E7EB',
+                      fontSize: '15px',
+                      marginBottom: '16px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    onClick={handleSubmitRating}
+                    style={{
+                      background: '#00A79D',
+                      color: '#fff',
+                      padding: '12px 32px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseOver={e => e.target.style.background = '#00887a'}
+                    onMouseOut={e => e.target.style.background = '#00A79D'}
+                  >
+                    Submit Rating
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+          {/* Right Sidebar for desktop only */}
+          {!isMobile && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              width: '400px',
+              flexShrink: 0
+            }}>
+              {sidebarSections}
+              {propertyIDSection}
+              <h3 style={{ marginTop: "20px", color: "#003366" }}>Map View</h3>
+              <div className="floating-map-btn-container">
+                <Button
+                  variant="contained"
+                  className="floating-map-btn"
+                  sx={{ backgroundColor: "#003366", color: "white", mb: 2 }}
+                  onClick={() => setOpenMapModal(true)}
+                >
+                  View Map
+                </Button>
+              </div>
+
+              <MapIntegration
+                open={openMapModal}
+                onClose={() => setOpenMapModal(false)}
+                sector={property?.Sector}
+                type={property?.propertyType}
+              />
+            </div>
+          )}
         </div>
       </div>
+      {/* Map floating button and modal for mobile */}
+      {isMobile && (
+        <>
+          <Button
+            variant="contained"
+            sx={{
+              position: "fixed",
+              bottom: "20px",
+              right: "20px",
+              backgroundColor: "#003366",
+              color: "white",
+              zIndex: 2000,
+              boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
+            }}
+            onClick={() => setOpenMapModal(true)}
+          >
+            View Map
+          </Button>
+
+          <MapIntegration
+            open={openMapModal}
+            onClose={() => setOpenMapModal(false)}
+            sector={property?.Sector}
+            type={property?.propertyType}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ const { createSaleProperty, getSaleProperties } = require("../controllers/Salepr
 const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllProperties} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
+const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -103,6 +104,9 @@ router.get("/api/getSaleproperties/:id", verifyTokenOptional, getSalePropertyByI
 router.post("/api/addsaleproperties", verifyToken, upload.array("images", 8), createSaleProperty);
 router.post("/api/addrentproperties", verifyToken, upload.array("images", 8), createRentalProperty);
 
+// ================== MAP INTEGRATION ROUTES ==================
+router.get("/api/locationqapi", getLocationIQApiKey);
+
 // ================== PROPERTY ANALYTICS ROUTES ==================
 router.post("/api/property-analysis/addView", verifyToken, addView);
 router.post("/api/property-analysis/addSave", verifyToken, addSave);
@@ -117,5 +121,8 @@ router.get("/api/property-analytics/user-metrics", verifyToken, getUserPropertyM
 // ================== USER PREFERENCES (ARIA ASSISTANT) ==================
 router.post("/api/user/preferences-RENT-aria", verifyToken, saveUserPreferencesRENTALARIA);
 router.post("/api/user/preferences-SALE-aria", verifyToken, saveUserPreferencesSALEARIA);
+
+
+
 
 module.exports = router;

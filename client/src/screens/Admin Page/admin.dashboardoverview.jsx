@@ -20,23 +20,22 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(process.env.REACT_APP_ADMIN_DASHBOARD_API, {
+      // Fetch admin overview data
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/overview`, {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' },
       });
-      
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      
-      const result = await response.json();
-      setData(result);
+      const data = await response.json();
+      console.log("✅ Admin Overview Data:", data);
+      setData(data);
       setLoading(false);
     } catch (err) {
       setError(err.message);
       setLoading(false);
+      console.error("❌ Error fetching admin overview:", err);
     }
   };
 

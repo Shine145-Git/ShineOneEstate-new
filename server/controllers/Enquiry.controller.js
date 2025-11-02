@@ -14,8 +14,8 @@ const SaleProperty = require("../models/SaleProperty.model.js");
 const createEnquiry = async (req, res) => {
   const { propertyId, message } = req.body;
   const user = req.user;
-  console.log("🟢 Enquiry Request Body:", req.body);
-  console.log("👤 Authenticated User:", req.user);
+  // console.log("🟢 Enquiry Request Body:", req.body);
+  // console.log("👤 Authenticated User:", req.user);
 
   try {
     if (!user) {
@@ -52,7 +52,7 @@ const createEnquiry = async (req, res) => {
     const enquiry = new Enquiry(enquiryData);
     await enquiry.save();
 
-    console.log("✅ Enquiry Saved Successfully:", enquiry._id);
+    console.log("✅ Enquiry Saved Successfully:");
     return res.status(201).json({ success: true, enquiry });
 
   } catch (err) {

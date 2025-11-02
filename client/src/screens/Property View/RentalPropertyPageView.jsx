@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Home, Bed, Bath, Maximize, Car, DollarSign, MapPin, Calendar, Shield, Wrench, Flame, Wind, Zap, Droplet, Users, AlertCircle, PawPrint, Cigarette, Share2, Heart, Phone } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import MapIntegration from "./mapsintegration";
+import { Button } from "@mui/material";
+import SimilarProperties from "./Similarproperties";
 
 // Engagement and Rating API helpers
 const addEngagementTime = async (propertyId, seconds) => {
@@ -39,6 +42,7 @@ export default function RentalPropertyPage() {
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [openMapModal, setOpenMapModal] = useState(false);
 
   const handleSubmitRating = async () => {
     if (userRating < 1) {
@@ -169,6 +173,72 @@ export default function RentalPropertyPage() {
       <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
+        {/* Responsive Styles */}
+        <style>
+          {`
+            @media (min-width: 900px) {
+              .property-layout {
+                grid-template-columns: 1fr 380px !important;
+              }
+            }
+
+            @media (max-width: 600px) {
+              img {
+                max-width: 100%;
+                height: auto;
+              }
+              .thumbnail-row {
+                overflow-x: scroll !important;
+              }
+              .thumbnail-row img {
+                width: 80px !important;
+                height: 60px !important;
+              }
+              .property-detail-section {
+                padding: 16px !important;
+              }
+              .rating-section {
+                padding: 16px !important;
+              }
+              button, .MuiButton-root {
+                font-size: 14px !important;
+                padding: 10px 16px !important;
+              }
+            }
+            /* Hide sidebar Property ID on mobile, show mobile Property ID above gallery */
+            @media (max-width: 768px) {
+              .property-id-sidebar {
+                display: none !important;
+              }
+              .property-id-mobile {
+                display: block !important;
+              }
+            }
+            @media (min-width: 769px) {
+              .property-id-mobile {
+                display: none !important;
+              }
+            }
+          `}
+        </style>
+        {/* Floating Map Button Responsive Style */}
+        <style>
+          {`
+            @media (max-width: 768px) {
+              .floating-map-btn {
+                position: fixed;
+                bottom: 80px;
+                right: 20px;
+                z-index: 9999;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                border-radius: 50px;
+                background-color: #003366 !important;
+                color: white !important;
+                padding: 12px 20px !important;
+              }
+            }
+          `}
+        </style>
         {/* Breadcrumb */}
         <div style={{ padding: '12px 0', fontSize: '14px', color: '#4A6A8A' }}>
           <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>Home</span>
@@ -179,15 +249,39 @@ export default function RentalPropertyPage() {
         </div>
 
         {/* Main Content Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr',
+            gap: '20px',
+          }}
+          className="property-layout"
+        >
           {/* Left Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Property ID for mobile (above image gallery) */}
+            <div
+              className="property-id-mobile"
+              style={{
+                background: '#F4F7F9',
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                marginBottom: '0px',
+                display: 'none'
+              }}
+            >
+              <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '4px' }}>Property ID</div>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#003366', fontFamily: 'monospace' }}>
+                #{property._id ? property._id.slice(0, 12).toUpperCase() : 'N/A'}
+              </div>
+            </div>
             {/* Image Gallery */}
             <div style={{ background: '#FFFFFF', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              <div style={{ position: 'relative', width: '100%', height: '500px', background: '#000' }}>
-                <img 
-                  src={images[currentImageIndex]} 
-                  alt="Property" 
+              <div style={{ position: 'relative', width: '100%', height: '60vh', minHeight: '280px', background: '#000' }}>
+                <img
+                  src={images[currentImageIndex]}
+                  alt="Property"
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
                 {images.length > 1 && (
@@ -248,10 +342,10 @@ export default function RentalPropertyPage() {
                 </div>
               </div>
               {images.length > 1 && (
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '8px', 
-                  padding: '16px', 
+                <div className="thumbnail-row" style={{
+                  display: 'flex',
+                  gap: '8px',
+                  padding: '16px',
                   overflowX: 'auto',
                   background: '#FAFAFA'
                 }}>
@@ -277,7 +371,7 @@ export default function RentalPropertyPage() {
             </div>
 
             {/* Property Overview */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+            <div className="property-detail-section" style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                 <Home size={28} style={{ color: '#00A79D' }} />
                 <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#003366', margin: 0, lineHeight: '1.3' }}>
@@ -409,7 +503,7 @@ export default function RentalPropertyPage() {
             </div>
 
             {/* Financial & Lease Terms */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+            <div className="property-detail-section" style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 <DollarSign size={24} style={{ color: '#00A79D' }} />
                 <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', margin: 0 }}>Financial & Lease Terms</h2>
@@ -496,7 +590,7 @@ export default function RentalPropertyPage() {
             </div>
 
             {/* Location & Amenities */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+            <div className="property-detail-section" style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 <MapPin size={24} style={{ color: '#00A79D' }} />
                 <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', margin: 0 }}>Location & Amenities</h2>
@@ -540,7 +634,7 @@ export default function RentalPropertyPage() {
             </div>
 
             {/* Policies & Logistics */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+            <div className="property-detail-section" style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 <Shield size={24} style={{ color: '#00A79D' }} />
                 <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', margin: 0 }}>Policies & Logistics</h2>
@@ -589,65 +683,7 @@ export default function RentalPropertyPage() {
               </div>
             </div>
 
-            {/* Rating Section */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
-                Rate this Property
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    onClick={() => setUserRating(star)}
-                    style={{
-                      fontSize: '32px',
-                      cursor: 'pointer',
-                      color: star <= userRating ? '#FFD700' : '#E5E7EB',
-                      transition: 'color 0.2s'
-                    }}
-                  >★</span>
-                ))}
-                {userRating > 0 && (
-                  <span style={{ marginLeft: '12px', fontSize: '16px', color: '#4A6A8A' }}>
-                    {userRating} out of 5
-                  </span>
-                )}
-              </div>
-              <textarea
-                value={userComment}
-                onChange={(e) => setUserComment(e.target.value)}
-                placeholder="Share your thoughts about this property (optional)"
-                style={{
-                  width: '100%',
-                  minHeight: '100px',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: '1px solid #E5E7EB',
-                  fontSize: '15px',
-                  marginBottom: '16px',
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
-              />
-              <button
-                onClick={handleSubmitRating}
-                style={{
-                  background: '#00A79D',
-                  color: '#fff',
-                  padding: '12px 32px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-                onMouseOver={e => e.target.style.background = '#00887a'}
-                onMouseOut={e => e.target.style.background = '#00A79D'}
-              >
-                Submit Rating
-              </button>
-            </div>
+            {/* Rating Section moved to very bottom of layout */}
           </div>
 
           {/* Right Sidebar */}
@@ -687,11 +723,11 @@ export default function RentalPropertyPage() {
                 Schedule a Viewing
               </button>
 
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
                   onClick={handleShare}
                   style={{
-                    flex: 1,
+                    width: "100%",
                     background: '#F4F7F9',
                     color: '#003366',
                     border: '1px solid #E5E7EB',
@@ -723,7 +759,7 @@ export default function RentalPropertyPage() {
                 <button
                   onClick={handleSave}
                   style={{
-                    flex: 1,
+                    width: "100%",
                     background: '#F4F7F9',
                     color: '#003366',
                     border: '1px solid #E5E7EB',
@@ -833,14 +869,105 @@ export default function RentalPropertyPage() {
               </div>
             </div>
 
-            {/* Property ID */}
-            <div style={{ background: '#F4F7F9', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+            {/* Property ID (sidebar, hidden on mobile) */}
+            <div
+              className="property-id-sidebar"
+              style={{
+                background: '#F4F7F9',
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB'
+              }}
+            >
               <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '4px' }}>Property ID</div>
               <div style={{ fontSize: '15px', fontWeight: '600', color: '#003366', fontFamily: 'monospace' }}>
                 #{property._id ? property._id.slice(0, 12).toUpperCase() : 'N/A'}
               </div>
             </div>
+
+            {/* Map View Section */}
+            <h3 style={{ marginTop: "20px", color: "#003366" }}>Map View</h3>
+            <div className="floating-map-btn-container">
+              <Button
+                variant="contained"
+                className="floating-map-btn"
+                sx={{ backgroundColor: "#003366", color: "white", mb: 2 }}
+                onClick={() => setOpenMapModal(true)}
+              >
+                View Map
+              </Button>
+            </div>
+
+            <MapIntegration
+              open={openMapModal}
+              onClose={() => setOpenMapModal(false)}
+              sector={property?.Sector}
+              type={property?.propertyType}
+            />
           </div>
+        </div>
+        {/* Similar Properties Section */}
+        <div style={{ marginTop: '24px' }}>
+          <SimilarProperties sector={property?.Sector} currentPropertyId={property?._id} />
+        </div>
+        {/* Rating Section moved to very bottom of layout */}
+        <div className="rating-section" style={{ background: '#FFFFFF', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', marginTop: '24px', maxWidth: '700px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#003366', marginBottom: '16px' }}>
+            Rate this Property
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                onClick={() => setUserRating(star)}
+                style={{
+                  fontSize: '32px',
+                  cursor: 'pointer',
+                  color: star <= userRating ? '#FFD700' : '#E5E7EB',
+                  transition: 'color 0.2s'
+                }}
+              >★</span>
+            ))}
+            {userRating > 0 && (
+              <span style={{ marginLeft: '12px', fontSize: '16px', color: '#4A6A8A' }}>
+                {userRating} out of 5
+              </span>
+            )}
+          </div>
+          <textarea
+            value={userComment}
+            onChange={(e) => setUserComment(e.target.value)}
+            placeholder="Share your thoughts about this property (optional)"
+            style={{
+              width: '100%',
+              minHeight: '100px',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '1px solid #E5E7EB',
+              fontSize: '15px',
+              marginBottom: '16px',
+              fontFamily: 'inherit',
+              resize: 'vertical'
+            }}
+          />
+          <button
+            onClick={handleSubmitRating}
+            style={{
+              background: '#00A79D',
+              color: '#fff',
+              padding: '12px 32px',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+            onMouseOver={e => e.target.style.background = '#00887a'}
+            onMouseOut={e => e.target.style.background = '#00A79D'}
+          >
+            Submit Rating
+          </button>
         </div>
       </div>
     </div>

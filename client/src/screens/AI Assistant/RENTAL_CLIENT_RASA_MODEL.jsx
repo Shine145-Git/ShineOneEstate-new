@@ -175,7 +175,7 @@ const VoiceAssistantRent = () => {
             speak(questions[questions.length - 1]);
             setTimeout(() => {
               navigate("/");
-            }, 3000);
+            }, 100);
             // Save to backend
             try {
               const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {

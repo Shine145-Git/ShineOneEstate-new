@@ -23,6 +23,7 @@ const Searchproperty = () => {
   useEffect(() => {
     if (query) {
       setSearchQuery(query);
+      fetchSearchResults(query);
     }
   }, [query]);
   const [searchQuery, setSearchQuery] = useState(query || "");

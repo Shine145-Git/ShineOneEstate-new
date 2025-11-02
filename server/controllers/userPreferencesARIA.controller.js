@@ -103,7 +103,7 @@ exports.saveUserPreferencesSALEARIA = async (req, res) => {
     }
 
     // Respond with success message
-    console.log("✅ Preferences saved");
+    // console.log("✅ Preferences saved");
     return res.status(201).json({ success: true, message: "SALE Preferences saved successfully" });
   } catch (error) {
     // Handle errors and respond with error message

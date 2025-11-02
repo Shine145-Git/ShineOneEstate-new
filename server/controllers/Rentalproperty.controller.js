@@ -124,7 +124,7 @@ const createRentalProperty = async (req, res) => {
         }
       }
 
-      console.log("✅ Normalized Sector ->", cleanSector);
+      // console.log("✅ Normalized Sector ->", cleanSector);
 
       // ------------------------------
       // Save or update Sector collection with configurations
