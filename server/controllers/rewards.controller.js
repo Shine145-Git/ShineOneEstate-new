@@ -38,7 +38,24 @@ exports.distributeReward = async (req, res) => {
       });
     }
 
-    // Create a new reward document with provided details
+    // Check if a reward already exists for this user
+    let existingReward = await Reward.findOne({ userId: targetUserId });
+
+    if (existingReward) {
+      // Update the existing reward instead of creating a new one
+      existingReward.message = message || existingReward.message;
+      existingReward.distributedAt = new Date();
+      existingReward.isActive = true;
+      await existingReward.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Existing reward updated successfully",
+        reward: existingReward,
+      });
+    }
+
+    // If no reward exists, create a new one
     const reward = new Reward({
       userId: targetUserId,
       distributedBy: adminId || null,

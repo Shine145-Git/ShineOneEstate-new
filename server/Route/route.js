@@ -11,7 +11,7 @@ const { verifyToken, verifyTokenOptional } = require("../middleware/auth");
 const { requestOtp, verifyOtp } = require("../controllers/login.controller");
 const { userDetails, saveUserDetails, getUserDetails, getMyProperties, updateProperty, deleteProperty } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
-const { saveUserPreferencesRENTALARIA , saveUserPreferencesSALEARIA } = require("../controllers/userPreferencesARIA.controller.js");
+const { saveUserPreferencesARIA } = require("../controllers/userPreferencesARIA.controller.js");
 
 const {
   createRentalProperty,
@@ -19,7 +19,7 @@ const {
   
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
-const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests } = require("../controllers/admin.controller");
+const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus } = require("../controllers/admin.controller");
 const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
 const { createPayment, getPaymentsForUser } = require("../controllers/payment.controller");
@@ -30,6 +30,8 @@ const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllPro
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
+
+
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = (req, res, next) => {
@@ -79,6 +81,8 @@ router.get("/api/admin/approved-payments", verifyToken, checkAdminEmail, getAppr
 router.get('/api/admin/overview', verifyToken, checkAdminEmail, getAdminOverview);
 router.get('/admin/usermanagement', verifyToken, checkAdminEmail, getAllUsersDetailed);
 router.get("/api/get-callback-requests", verifyToken, checkAdminEmail, getCallbackRequests);
+// New admin route for fetching reward status per user
+router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRewardsStatus);
 
 // ================== AI ROUTES ==================
 router.post("/api/predict-price", verifyToken, predictPrice);
@@ -119,8 +123,15 @@ router.get("/api/property-analysis/saved-properties", verifyToken, getSavedPrope
 router.get("/api/property-analytics/user-metrics", verifyToken, getUserPropertyMetrics);
 
 // ================== USER PREFERENCES (ARIA ASSISTANT) ==================
-router.post("/api/user/preferences-RENT-aria", verifyToken, saveUserPreferencesRENTALARIA);
-router.post("/api/user/preferences-SALE-aria", verifyToken, saveUserPreferencesSALEARIA);
+router.post("/api/user/preferences-RENT-aria", verifyToken, (req, res) => {
+  req.body.assistantType = "rental";
+  saveUserPreferencesARIA(req, res);
+});
+
+router.post("/api/user/preferences-SALE-aria", verifyToken, (req, res) => {
+  req.body.assistantType = "sale";
+  saveUserPreferencesARIA(req, res);
+});
 
 
 

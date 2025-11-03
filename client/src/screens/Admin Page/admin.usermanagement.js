@@ -8,6 +8,12 @@ const UserManagementDashboard = () => {
   const [expandedUsers, setExpandedUsers] = useState({});
   const [expandedProperties, setExpandedProperties] = useState({});
 
+  // Toggle state for expanded AI Assistant preferences per user
+  const [expandedAIUsers, setExpandedAIUsers] = useState({});
+
+  // State to store each user's reward activity summary
+  const [userRewards, setUserRewards] = useState({});
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -38,11 +44,40 @@ const UserManagementDashboard = () => {
     }
   };
 
+  // Fetch reward activity summary for a specific user
+  const fetchUserRewards = async (userId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BASE_API}/api/admin/rewards/${userId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      setUserRewards(prev => ({
+        ...prev,
+        [userId]: {
+          active: data.activeCount || 0,
+          inactive: data.inactiveCount || 0,
+          rewards: data.rewards || [],
+        }
+      }));
+    } catch (error) {
+      console.error("Error fetching rewards:", error);
+    }
+  };
+
+  // Toggle expansion and fetch rewards if expanding
   const toggleUserExpansion = (index) => {
-    setExpandedUsers(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
+    setExpandedUsers(prev => {
+      const isExpanding = !prev[index];
+      if (isExpanding) {
+        fetchUserRewards(users[index]._id);
+      }
+      return {
+        ...prev,
+        [index]: isExpanding
+      };
+    });
   };
 
   const togglePropertyExpansion = (userIndex, propertyIndex) => {
@@ -422,9 +457,99 @@ const UserManagementDashboard = () => {
                       </div>
                       <div style={styles.infoItem}>
                         <div style={styles.infoLabel}>Last Used</div>
-                        <div style={styles.infoValue}>{formatDate(user.aiAssistantUsage.updatedAt)}</div>
+                        <div style={styles.infoValue}>
+                          {user.aiAssistantUsage.updatedAt
+                            ? formatDate(user.aiAssistantUsage.updatedAt)
+                            : user.aiAssistantUsage.createdAt
+                            ? formatDate(user.aiAssistantUsage.createdAt)
+                            : 'N/A'}
+                        </div>
                       </div>
                     </div>
+                    {/* Preferences dropdown */}
+                    {user.aiAssistantUsage.preferences && (
+                      <div style={{
+                        marginTop: '10px',
+                        background: '#FFFFFF',
+                        borderRadius: '10px',
+                        border: '1px solid #E0E7EE',
+                        overflow: 'hidden',
+                      }}>
+                        <div
+                          style={{
+                            padding: '10px 16px',
+                            background: '#F4F7F9',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                          onClick={() =>
+                            setExpandedAIUsers((prev) => ({
+                              ...prev,
+                              [user._id]: !prev[user._id],
+                            }))
+                          }
+                        >
+                          <div style={{ fontWeight: '600', color: '#003366' }}>User Preferences</div>
+                          {expandedAIUsers[user._id] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </div>
+
+                        <div
+                          style={{
+                            maxHeight: expandedAIUsers[user._id] ? '500px' : '0',
+                            overflow: 'hidden',
+                            transition: 'all 0.3s ease',
+                            padding: expandedAIUsers[user._id] ? '10px 16px' : '0 16px',
+                            background: '#FFFFFF',
+                          }}
+                        >
+                          {(user.aiAssistantUsage.preferences) ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                              {/* Rental Preferences */}
+                              <div style={{ background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E0E7EE', padding: '12px' }}>
+                                <h4 style={{ color: '#003366', fontSize: '16px', fontWeight: '700', marginBottom: '10px' }}>Rental Preferences</h4>
+                                {user.aiAssistantUsage.assistantType === 'rental' ? (
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                    <tbody>
+                                      {Object.entries(user.aiAssistantUsage.preferences).map(([key, value], idx) => (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
+                                          <td style={{ padding: '8px', fontWeight: '600', color: '#003366', textTransform: 'capitalize' }}>{key}</td>
+                                          <td style={{ padding: '8px', color: '#4A6A8A' }}>{Array.isArray(value) ? value.join(', ') : value || 'N/A'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No rental preferences available</div>
+                                )}
+                              </div>
+
+                              {/* Sale Preferences */}
+                              <div style={{ background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E0E7EE', padding: '12px' }}>
+                                <h4 style={{ color: '#003366', fontSize: '16px', fontWeight: '700', marginBottom: '10px' }}>Sale Preferences</h4>
+                                {user.aiAssistantUsage.assistantType === 'sale' ? (
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                    <tbody>
+                                      {Object.entries(user.aiAssistantUsage.preferences).map(([key, value], idx) => (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
+                                          <td style={{ padding: '8px', fontWeight: '600', color: '#003366', textTransform: 'capitalize' }}>{key}</td>
+                                          <td style={{ padding: '8px', color: '#4A6A8A' }}>{Array.isArray(value) ? value.join(', ') : value || 'N/A'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No sale preferences available</div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No preferences available</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -447,6 +572,83 @@ const UserManagementDashboard = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Reward Activity (updated section) */}
+                {userRewards[user._id] && (
+                  <div style={styles.section}>
+                    <h3 style={styles.sectionTitle}>
+                      <Award size={20} />
+                      Reward Activity
+                    </h3>
+                    <div style={styles.infoGrid}>
+                      <div style={styles.statBox}>
+                        <div style={styles.statValue}>{userRewards[user._id].active}</div>
+                        <div style={styles.statLabel}>Active Rewards</div>
+                      </div>
+                      <div style={styles.statBox}>
+                        <div style={{ ...styles.statValue, color: '#DC2626' }}>{userRewards[user._id].inactive}</div>
+                        <div style={styles.statLabel}>Inactive Rewards</div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: '20px',
+                        background: '#FFFFFF',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: '1px solid #E0E7EE',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                      }}
+                    >
+                      <h4
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: '700',
+                          color: '#003366',
+                          marginBottom: '12px',
+                        }}
+                      >
+                        Reward Details
+                      </h4>
+
+                      {userRewards[user._id].rewards && userRewards[user._id].rewards.length > 0 ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                            <thead>
+                              <tr style={{ background: '#F4F7F9', textAlign: 'left' }}>
+                                <th style={{ padding: '10px', color: '#003366' }}>Message</th>
+                                <th style={{ padding: '10px', color: '#003366' }}>Distributed At</th>
+                                <th style={{ padding: '10px', color: '#003366' }}>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {userRewards[user._id].rewards.map((reward, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
+                                  <td style={{ padding: '10px', color: '#333' }}>{reward.message}</td>
+                                  <td style={{ padding: '10px', color: '#4A6A8A' }}>
+                                    {formatDate(reward.distributedAt)}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: '10px',
+                                      fontWeight: '600',
+                                      color: reward.isActive ? '#00A79D' : '#DC2626',
+                                    }}
+                                  >
+                                    {reward.isActive ? '🟢 Active' : '🔴 Inactive'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No rewards available</div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Engagement Stats */}
                 <div style={styles.section}>

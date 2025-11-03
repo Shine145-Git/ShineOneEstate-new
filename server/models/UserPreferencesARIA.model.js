@@ -1,5 +1,3 @@
-
-
 const mongoose = require('mongoose');
 
 const userPreferencesSchema = new mongoose.Schema({
@@ -12,8 +10,7 @@ const userPreferencesSchema = new mongoose.Schema({
     furnishing: String,
     propertyType: String,
     amenities: [String]
-  },
-  createdAt: { type: Date, default: Date.now }
-});
+  }
+}, { timestamps: true }); // 👈 enables createdAt and updatedAt automatically
 
 module.exports = mongoose.model('UserPreferencesARIA', userPreferencesSchema);

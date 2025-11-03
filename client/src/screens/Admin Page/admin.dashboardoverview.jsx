@@ -540,6 +540,32 @@ const AdminDashboard = () => {
                     {charts.searchInsights.avgSearchesPerUser.toFixed(2)}
                   </div>
                 </div>
+                {/* Top 5 Searches (Graph) */}
+                <h3 style={{ fontSize: '16px', color: '#003366', margin: '24px 0 16px' }}>Top 5 Searches (Graph)</h3>
+                {charts.searchInsights.topSearches.slice(0, 5).map((search, index) => {
+                  const maxCount = Math.max(...charts.searchInsights.topSearches.map(s => s.count));
+                  const percentage = (search.count / maxCount) * 100;
+
+                  return (
+                    <div key={index} style={{ marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: '600', color: '#333333' }}>{search.query}</span>
+                        <span style={{ color: '#00A79D', fontWeight: '600' }}>{search.count}</span>
+                      </div>
+                      <div style={{ backgroundColor: '#F4F7F9', borderRadius: '8px', height: '10px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${percentage}%`,
+                            height: '100%',
+                            background: 'linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)',
+                            borderRadius: '8px',
+                            transition: 'width 0.5s ease'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

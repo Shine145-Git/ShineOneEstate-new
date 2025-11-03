@@ -6,6 +6,9 @@
 #FFFFFF (White)
 #333333 (Dark Charcoal)
 
+gnews -> tanush1 email id
+locationq -> ggnrentaldeals@gmail.com
+
 const handleLogout = async () => {
     await fetch(process.env.REACT_APP_LOGOUT_API, {
       method: "POST",

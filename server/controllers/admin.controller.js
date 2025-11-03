@@ -686,4 +686,34 @@ const getAllUsersDetailed = async (req, res) => {
 
 
 
-module.exports = { getPendingPayments, updatePaymentStatus, getApprovedPayments, getAdminOverview, getAllUsersDetailed , getCallbackRequests};
+
+// Get user rewards status: active/inactive counts and rewards list for a userId
+const getUserRewardsStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const rewards = await Reward.find({ userId }).select("message isActive distributedAt");
+
+    const activeCount = rewards.filter(r => r.isActive).length;
+    const inactiveCount = rewards.filter(r => !r.isActive).length;
+
+    res.status(200).json({
+      activeCount,
+      inactiveCount,
+      rewards
+    });
+  } catch (error) {
+    console.error("Error fetching user reward status:", error);
+    res.status(500).json({ message: "Error fetching user reward status", error: error.message });
+  }
+};
+
+module.exports = {
+  getPendingPayments,
+  updatePaymentStatus,
+  getApprovedPayments,
+  getAdminOverview,
+  getAllUsersDetailed,
+  getCallbackRequests,
+  getUserRewardsStatus
+};

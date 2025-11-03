@@ -18,6 +18,20 @@ const rewardSchema = new mongoose.Schema({
     type: Boolean,
     default: false, // track if user has seen the message
   },
+  isActive: {
+    type: Boolean,
+    default: true, // active by default
+  },
+});
+
+rewardSchema.pre("save", function (next) {
+  if (this.distributedAt) {
+    const expiryDate = new Date(this.distributedAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+    if (new Date() > expiryDate) {
+      this.isActive = false;
+    }
+  }
+  next();
 });
 
 module.exports = mongoose.model("Reward", rewardSchema);

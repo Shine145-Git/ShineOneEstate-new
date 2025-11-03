@@ -1,4 +1,6 @@
 import React, { useState, useRef } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Home,
   Building2,
@@ -20,6 +22,7 @@ import axios from "axios";
 export default function PropertyListingForm() {
   // --- Hooks at the top ---
   const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     purpose: "",
     address: "",
@@ -194,6 +197,8 @@ export default function PropertyListingForm() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
   const handleSubmit = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       // Normalize Sector input
       if (formData.Sector) {
@@ -232,18 +237,18 @@ export default function PropertyListingForm() {
         console.log("✅ Normalized Configuration ->", normalizedConfig);
       }
       const form = new FormData();
-    // Build FormData object
-Object.entries(formData).forEach(([key, value]) => {
-  if (key === "totalArea" && value && typeof value === "object") {
-    // Append both sqft and configuration separately
-    if (value.sqft) form.append("totalArea.sqft", value.sqft);
-    if (value.configuration) form.append("totalArea.configuration", value.configuration);
-  } else if (Array.isArray(value)) {
-    value.forEach((v) => form.append(`${key}[]`, v));
-  } else if (value !== undefined && value !== null && value !== "") {
-    form.append(key, value);
-  }
-});
+      // Build FormData object
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === "totalArea" && value && typeof value === "object") {
+          // Append both sqft and configuration separately
+          if (value.sqft) form.append("totalArea.sqft", value.sqft);
+          if (value.configuration) form.append("totalArea.configuration", value.configuration);
+        } else if (Array.isArray(value)) {
+          value.forEach((v) => form.append(`${key}[]`, v));
+        } else if (value !== undefined && value !== null && value !== "") {
+          form.append(key, value);
+        }
+      });
       images.forEach((imgObj) => {
         if (imgObj.file) form.append("images", imgObj.file);
       });
@@ -257,14 +262,16 @@ Object.entries(formData).forEach(([key, value]) => {
         credentials: "include",
       });
       if (res.ok) {
-        alert("✅ Property successfully submitted!");
-        navigate("/");
+        toast.success("✅ Property submitted successfully!");
+        setTimeout(() => navigate("/"), 1500);
       } else {
         const err = await res.json();
-        alert("❌ Submission failed: " + (err.message || res.statusText));
+        toast.error("❌ Submission failed: " + (err.message || res.statusText));
       }
     } catch (error) {
-      alert("❌ Submission failed: " + error.message);
+      toast.error("❌ Submission failed: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1337,6 +1344,62 @@ Object.entries(formData).forEach(([key, value]) => {
   // --- Main render ---
   return (
     <div style={containerStyle}>
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        toastStyle={{
+          backgroundColor: "#003366",  // Prussian Blue
+          color: "#FFFFFF",            // White text
+          borderLeft: "6px solid #00A79D", // Teal accent
+          fontWeight: "600",
+        }}
+        progressStyle={{
+          background: "#22D3EE", // Cyan progress bar
+        }}
+      />
+      {/* Loading overlay */}
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(255,255,255,0.8)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+            pointerEvents: "all",
+          }}
+        >
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              border: "8px solid #e0e0e0",
+              borderTop: "8px solid #00A79D",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          <style>
+            {`@keyframes spin {
+                0% { transform: rotate(0deg);}
+                100% { transform: rotate(360deg);}
+              }`}
+          </style>
+        </div>
+      )}
       <TopNavigationBar
         user={user}
         handleLogout={handleLogout}
@@ -1384,11 +1447,11 @@ Object.entries(formData).forEach(([key, value]) => {
                 ← Previous
               </button>
               {currentStep === steps.length - 1 ? (
-                <button onClick={handleSubmit} style={buttonStyle("primary")} >
+                <button onClick={handleSubmit} style={buttonStyle("primary")} disabled={loading}>
                   Submit Property
                 </button>
               ) : (
-                <button onClick={handleNext} style={buttonStyle("primary")}>
+                <button onClick={handleNext} style={buttonStyle("primary")} disabled={loading}>
                   Next <ChevronRight size={isMobile ? 15 : 18} />
                 </button>
               )}
