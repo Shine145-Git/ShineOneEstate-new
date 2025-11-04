@@ -21,6 +21,9 @@ export default function PropertyCards() {
   const [metrics, setMetrics] = useState(null);
   // New state to hold edit form data
   const [editFormData, setEditFormData] = useState({});
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [propertiesPerPage] = useState(20);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -168,6 +171,12 @@ return {
     return 0;
   });
 
+  // Pagination logic
+  const indexOfLastProperty = currentPage * propertiesPerPage;
+  const indexOfFirstProperty = indexOfLastProperty - propertiesPerPage;
+  const currentProperties = sortedProperties.slice(indexOfFirstProperty, indexOfLastProperty);
+  const totalPages = Math.ceil(sortedProperties.length / propertiesPerPage);
+
   // Handle property update (edit)
   const handleUpdateProperty = async (updatedData) => {
     try {
@@ -288,8 +297,9 @@ return {
                   </button>
                 </div>
               ) : (
+                <>
                 <div className="properties-main-card-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {sortedProperties.map((p, idx) => (
+                  {currentProperties.map((p, idx) => (
                     <div key={p._id} className="property-card" style={{ border: '1px solid #E2E8F0', borderRadius: '10px', padding: '20px', transition: 'all 0.2s', cursor: 'pointer', backgroundColor: '#FFF' }} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = '#CBD5E1'; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#E2E8F0'; }}>
                       <div className="property-card-content" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'flex-start' }}>
@@ -434,6 +444,63 @@ return {
                     </div>
                   ))}
                 </div>
+                {/* Pagination controls */}
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '24px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: '6px 14px',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: '6px',
+                        backgroundColor: currentPage === 1 ? '#F1F5F9' : '#FFF',
+                        color: currentPage === 1 ? '#94A3B8' : '#334155',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        fontWeight: 600,
+                        fontSize: '14px'
+                      }}
+                    >
+                      Prev
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                        style={{
+                          padding: '6px 12px',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          backgroundColor: currentPage === i + 1 ? '#3B82F6' : '#FFF',
+                          color: currentPage === i + 1 ? '#FFF' : '#334155',
+                          fontWeight: currentPage === i + 1 ? 700 : 600,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          minWidth: '34px'
+                        }}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      style={{
+                        padding: '6px 14px',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: '6px',
+                        backgroundColor: currentPage === totalPages ? '#F1F5F9' : '#FFF',
+                        color: currentPage === totalPages ? '#94A3B8' : '#334155',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        fontWeight: 600,
+                        fontSize: '14px'
+                      }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+                </>
               )}
             </div>
           </div>

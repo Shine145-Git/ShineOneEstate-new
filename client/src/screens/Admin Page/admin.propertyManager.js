@@ -1,0 +1,787 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import EditPropertyModal from "../User-Properties/editpropertymodal";
+
+const AdminPropertyManager = () => {
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editingPropertyId, setEditingPropertyId] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [stats, setStats] = useState({ total: 0, reviewed: 0, notReviewed: 0, active: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const PROPERTIES_PER_PAGE = 20;
+  const navigate = useNavigate();
+
+  const fetchAllProperties = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${process.env.REACT_APP_Base_API}/api/properties`, {
+        withCredentials: true,
+      });
+      const allProps = response.data || [];
+      setProperties(allProps);
+      // Calculate stats
+      const reviewed = allProps.filter(p => p.isReviewed);
+      const notReviewed = allProps.filter(p => !p.isReviewed);
+      setStats({
+        total: allProps.length,
+        reviewed: reviewed.length,
+        notReviewed: notReviewed.length,
+        active: allProps.filter(p => p.isActive).length
+      });
+      setCurrentPage(1);
+    } catch (err) {
+      console.error("Error loading properties:", err);
+      setError("Failed to load properties");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllProperties();
+  }, []);
+
+  const toggleActive = async (propertyId) => {
+    try {
+      await axios.patch(
+        `${process.env.REACT_APP_Base_API}/api/admin/property/${propertyId}/toggle-active`,
+        {},
+        { withCredentials: true }
+      );
+      // Update local state
+      setProperties(prev => prev.map(p => 
+        p._id === propertyId ? {...p, isActive: !p.isActive} : p
+      ));
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        active: properties.filter(p => p._id === propertyId ? !p.isActive : p.isActive).length
+      }));
+    } catch (err) {
+      console.error("Error toggling active state:", err);
+    }
+  };
+
+  const toggleReview = async (propertyId) => {
+    try {
+      await axios.patch(
+        `${process.env.REACT_APP_Base_API}/api/admin/property/${propertyId}/toggle-review`,
+        {},
+        { withCredentials: true }
+      );
+      // Update local state and move between lists
+      const property = properties.find(p => p._id === propertyId);
+      if (property) {
+        const updatedProperty = {...property, isReviewed: !property.isReviewed};
+        setProperties(prev => prev.map(p => p._id === propertyId ? updatedProperty : p));
+        // Update stats
+        setStats(prev => ({
+          ...prev,
+          reviewed: property.isReviewed ? prev.reviewed - 1 : prev.reviewed + 1,
+          notReviewed: property.isReviewed ? prev.notReviewed + 1 : prev.notReviewed - 1
+        }));
+      }
+    } catch (err) {
+      console.error("Error toggling review status:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.spinner}></div>
+        <p style={styles.loadingText}>Loading properties...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={styles.errorContainer}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: "12px" }}>
+          <circle cx="12" cy="12" r="10" stroke="#DC2626" strokeWidth="2"/>
+          <path d="M12 8v4m0 4h.01" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <p style={styles.errorText}>{error}</p>
+      </div>
+    );
+  }
+
+  const notReviewedList = properties.filter(p => !p.isReviewed);
+  const reviewedList = properties.filter(p => p.isReviewed);
+  const notReviewedTotal = notReviewedList.length;
+  const reviewedTotal = reviewedList.length;
+
+  // Pagination logic
+  const notReviewedPageCount = Math.max(1, Math.ceil(notReviewedTotal / PROPERTIES_PER_PAGE));
+  const reviewedPageCount = Math.max(1, Math.ceil(reviewedTotal / PROPERTIES_PER_PAGE));
+
+  // For this implementation, one pagination bar for both columns, synced page
+  const paginatedNotReviewed = notReviewedList.slice(
+    (currentPage - 1) * PROPERTIES_PER_PAGE,
+    currentPage * PROPERTIES_PER_PAGE
+  );
+  const paginatedReviewed = reviewedList.slice(
+    (currentPage - 1) * PROPERTIES_PER_PAGE,
+    currentPage * PROPERTIES_PER_PAGE
+  );
+  const totalPages = Math.max(
+    Math.ceil(notReviewedTotal / PROPERTIES_PER_PAGE),
+    Math.ceil(reviewedTotal / PROPERTIES_PER_PAGE),
+    1
+  );
+
+  return (
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.mainTitle}>Property Management</h1>
+          <p style={styles.subtitle}>
+            Showing {paginatedNotReviewed.length + paginatedReviewed.length} of {stats.total} properties
+          </p>
+        </div>
+        <div style={styles.statsContainer}>
+          <div style={styles.statCard}>
+            <p style={styles.statNumber}>{stats.notReviewed}</p>
+            <p style={styles.statLabel}>Pending</p>
+          </div>
+          <div style={styles.statCard}>
+            <p style={styles.statNumber}>{stats.reviewed}</p>
+            <p style={styles.statLabel}>Reviewed</p>
+          </div>
+          <div style={styles.statCard}>
+            <p style={styles.statNumber}>{stats.active}</p>
+            <p style={styles.statLabel}>Active</p>
+          </div>
+          <div style={styles.statCard}>
+            <p style={styles.statNumber}>{stats.total}</p>
+            <p style={styles.statLabel}>Total</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Properties Grid */}
+      <div style={styles.grid}>
+        {/* Left Column - Not Reviewed */}
+        <div style={styles.column}>
+          <div style={styles.columnHeader}>
+            <div style={styles.columnTitleContainer}>
+              <div style={{...styles.statusDot, background: "#F59E0B"}}></div>
+              <h2 style={styles.columnTitle}>Pending Review</h2>
+            </div>
+            <span style={{...styles.countBadge, background: "#FEF3C7", color: "#92400E"}}>
+              {paginatedNotReviewed.length} / {notReviewedTotal}
+            </span>
+          </div>
+          <div style={styles.scrollContainer}>
+            {paginatedNotReviewed.length === 0 ? (
+              <div style={styles.emptyState}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: "12px", opacity: 0.3 }}>
+                  <path d="M9 11l3 3L22 4" stroke="#4A6A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="#4A6A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <p style={styles.emptyText}>All properties reviewed</p>
+              </div>
+            ) : (
+              <>
+                {paginatedNotReviewed.map((property) => (
+                  <CompactPropertyCard
+                    key={property._id}
+                    property={property}
+                    onToggleActive={toggleActive}
+                    onToggleReview={toggleReview}
+                    onEdit={() => {
+                      setEditingPropertyId(property._id);
+                      setIsEditModalOpen(true);
+                    }}
+                    isReviewed={false}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+          {/* Pagination bar for Not Reviewed */}
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "12px 0" }}>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              style={{
+                marginRight: "10px",
+                padding: "6px 16px",
+                borderRadius: "6px",
+                border: "none",
+                background: currentPage === 1 ? "#E5E7EB" : "#003366",
+                color: currentPage === 1 ? "#A0AEC0" : "#fff",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: "14px"
+              }}
+            >
+              Prev
+            </button>
+            <span style={{ fontSize: "14px", color: "#4A6A8A" }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                marginLeft: "10px",
+                padding: "6px 16px",
+                borderRadius: "6px",
+                border: "none",
+                background: currentPage === totalPages ? "#E5E7EB" : "#003366",
+                color: currentPage === totalPages ? "#A0AEC0" : "#fff",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: "14px"
+              }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column - Reviewed */}
+        <div style={styles.column}>
+          <div style={styles.columnHeader}>
+            <div style={styles.columnTitleContainer}>
+              <div style={{...styles.statusDot, background: "#00A79D"}}></div>
+              <h2 style={styles.columnTitle}>Reviewed</h2>
+            </div>
+            <span style={{...styles.countBadge, background: "#D1FAE5", color: "#065F46"}}>
+              {paginatedReviewed.length} / {reviewedTotal}
+            </span>
+          </div>
+          <div style={styles.scrollContainer}>
+            {paginatedReviewed.length === 0 ? (
+              <div style={styles.emptyState}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: "12px", opacity: 0.3 }}>
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#4A6A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4A6A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <p style={styles.emptyText}>No reviewed properties</p>
+              </div>
+            ) : (
+              <>
+                {paginatedReviewed.map((property) => (
+                  <CompactPropertyCard
+                    key={property._id}
+                    property={property}
+                    onToggleActive={toggleActive}
+                    onToggleReview={toggleReview}
+                    onEdit={() => {
+                      setEditingPropertyId(property._id);
+                      setIsEditModalOpen(true);
+                    }}
+                    isReviewed={true}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+          {/* Pagination bar for Reviewed */}
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "12px 0" }}>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              style={{
+                marginRight: "10px",
+                padding: "6px 16px",
+                borderRadius: "6px",
+                border: "none",
+                background: currentPage === 1 ? "#E5E7EB" : "#003366",
+                color: currentPage === 1 ? "#A0AEC0" : "#fff",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: "14px"
+              }}
+            >
+              Prev
+            </button>
+            <span style={{ fontSize: "14px", color: "#4A6A8A" }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                marginLeft: "10px",
+                padding: "6px 16px",
+                borderRadius: "6px",
+                border: "none",
+                background: currentPage === totalPages ? "#E5E7EB" : "#003366",
+                color: currentPage === totalPages ? "#A0AEC0" : "#fff",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: "14px"
+              }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Property Modal */}
+      {isEditModalOpen && (
+        <EditPropertyModal
+          isOpen={isEditModalOpen}
+          propertyId={editingPropertyId}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => {
+            fetchAllProperties();
+            setIsEditModalOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+
+
+const CompactPropertyCard = ({ property, onToggleActive, onToggleReview, onEdit, isReviewed }) => {
+  const [hoveredButton, setHoveredButton] = useState(null);
+
+  // Tooltip definitions
+  const getTooltipText = (button) => {
+    if (button === "active") {
+      return property.isActive ? "Deactivate Property" : "Activate Property";
+    }
+    if (button === "review") {
+      return isReviewed ? "Unmark Review" : "Mark as Reviewed";
+    }
+    if (button === "edit") {
+      return "Edit Property";
+    }
+    return "";
+  };
+
+  // Tooltip style (absolutely positioned above button, fade-in)
+  const tooltipStyle = {
+    position: "absolute",
+    left: "50%",
+    transform: "translateX(-50%)",
+    bottom: "110%",
+    background: "#222C3A",
+    color: "#fff",
+    padding: "6px 14px",
+    borderRadius: "6px",
+    fontSize: "13px",
+    fontWeight: 500,
+    pointerEvents: "none",
+    whiteSpace: "nowrap",
+    opacity: 1,
+    zIndex: 10,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+    transition: "opacity 0.17s",
+    marginBottom: "6px",
+  };
+
+  // For each button, wrap in a relative container for absolute tooltip
+  return (
+    <div style={styles.compactCard}>
+      {/* Left: Image */}
+      <div style={styles.compactImage}>
+        {property.images && property.images.length > 0 ? (
+          <img src={property.images[0]} alt="Property" style={styles.thumbnail} />
+        ) : (
+          <div style={styles.noImage}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#4A6A8A" strokeWidth="2"/>
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* Middle: Info */}
+      <div style={styles.compactInfo}>
+        <div style={styles.compactHeader}>
+          <h4 style={styles.compactTitle}>{property.propertyType}</h4>
+          <div style={styles.badges}>
+            <span style={{
+              ...styles.compactBadge,
+              background: property.defaultpropertytype === "rental" ? "#D1FAE5" : "#FED7AA",
+              color: property.defaultpropertytype === "rental" ? "#065F46" : "#92400E"
+            }}>
+              {property.defaultpropertytype === "rental" ? "Rental" : "Sale"}
+            </span>
+            <span style={{
+              ...styles.compactBadge,
+              background: property.isActive ? "#D1FAE5" : "#FEE2E2",
+              color: property.isActive ? "#065F46" : "#991B1B"
+            }}>
+              {property.isActive ? "Active" : "Inactive"}
+            </span>
+          </div>
+        </div>
+        <div style={styles.compactDetails}>
+          <span style={styles.compactText}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{marginRight: "4px"}}>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="#4A6A8A" strokeWidth="2"/>
+              <circle cx="12" cy="10" r="3" stroke="#4A6A8A" strokeWidth="2"/>
+            </svg>
+            {property.address || "N/A"}
+          </span>
+          <span style={styles.compactText}>• {property.purpose}</span>
+        </div>
+      </div>
+
+      {/* Right: Actions */}
+      <div style={styles.compactActions}>
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <button
+            onClick={() => onToggleActive(property._id)}
+            onMouseEnter={() => setHoveredButton("active")}
+            onMouseLeave={() => setHoveredButton(null)}
+            style={{
+              ...styles.compactButton,
+              background: property.isActive ? "#FEE2E2" : "#D1FAE5",
+              color: property.isActive ? "#DC2626" : "#00A79D"
+            }}
+            title={property.isActive ? "Deactivate" : "Activate"}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              {property.isActive ? (
+                <path d="M15 9l-6 6m0-6l6 6" stroke="currentColor" strokeWidth="2"/>
+              ) : (
+                <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2"/>
+              )}
+            </svg>
+          </button>
+          {hoveredButton === "active" && (
+            <div style={tooltipStyle}>
+              {getTooltipText("active")}
+            </div>
+          )}
+        </div>
+
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <button
+            onClick={() => onToggleReview(property._id)}
+            onMouseEnter={() => setHoveredButton("review")}
+            onMouseLeave={() => setHoveredButton(null)}
+            style={{
+              ...styles.compactButton,
+              background: isReviewed ? "#E0E7FF" : "#DBEAFE",
+              color: isReviewed ? "#4A6A8A" : "#003366"
+            }}
+            title={isReviewed ? "Unmark Review" : "Mark Reviewed"}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </button>
+          {hoveredButton === "review" && (
+            <div style={tooltipStyle}>
+              {getTooltipText("review")}
+            </div>
+          )}
+        </div>
+
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <button
+            onClick={onEdit}
+            onMouseEnter={() => setHoveredButton("edit")}
+            onMouseLeave={() => setHoveredButton(null)}
+            style={{
+              ...styles.compactButton,
+              background: "#FEF3C7",
+              color: "#92400E"
+            }}
+            title="Edit Property"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="2"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </button>
+          {hoveredButton === "edit" && (
+            <div style={tooltipStyle}>
+              {getTooltipText("edit")}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const styles = {
+  container: {
+    minHeight: "100vh",
+    background: "#F4F7F9",
+    padding: "24px",
+  },
+  header: {
+    background: "#FFFFFF",
+    borderRadius: "12px",
+    padding: "24px",
+    marginBottom: "24px",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "20px",
+  },
+  mainTitle: {
+    fontSize: "28px",
+    fontWeight: "700",
+    color: "#003366",
+    margin: "0 0 4px 0",
+  },
+  subtitle: {
+    fontSize: "14px",
+    color: "#4A6A8A",
+    margin: 0,
+  },
+  statsContainer: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+  statCard: {
+    background: "linear-gradient(135deg, #003366 0%, #4A6A8A 100%)",
+    padding: "16px 20px",
+    borderRadius: "10px",
+    minWidth: "100px",
+    textAlign: "center",
+  },
+  statNumber: {
+    fontSize: "24px",
+    fontWeight: "700",
+    color: "#FFFFFF",
+    margin: "0 0 2px 0",
+  },
+  statLabel: {
+    fontSize: "12px",
+    color: "#E0E7EE",
+    margin: 0,
+    fontWeight: "500",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "20px",
+  },
+  column: {
+    display: "flex",
+    flexDirection: "column",
+    height: "calc(100vh - 200px)",
+    minHeight: "600px",
+  },
+  columnHeader: {
+    background: "#FFFFFF",
+    padding: "16px 20px",
+    borderRadius: "10px 10px 0 0",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+    flexShrink: 0,
+  },
+  columnTitleContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  statusDot: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+  },
+  columnTitle: {
+    fontSize: "18px",
+    fontWeight: "600",
+    color: "#003366",
+    margin: 0,
+  },
+  countBadge: {
+    padding: "4px 12px",
+    borderRadius: "16px",
+    fontSize: "13px",
+    fontWeight: "600",
+  },
+  scrollContainer: {
+    flex: 1,
+    overflowY: "auto",
+    background: "#FFFFFF",
+    borderRadius: "0 0 10px 10px",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+  },
+  compactCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px",
+    borderBottom: "1px solid #F4F7F9",
+    transition: "background 0.2s",
+    cursor: "pointer",
+  },
+  compactImage: {
+    flexShrink: 0,
+  },
+  thumbnail: {
+    width: "80px",
+    height: "60px",
+    objectFit: "cover",
+    borderRadius: "6px",
+  },
+  noImage: {
+    width: "80px",
+    height: "60px",
+    background: "#F4F7F9",
+    borderRadius: "6px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  compactInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  compactHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "8px",
+    marginBottom: "4px",
+  },
+  compactTitle: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#003366",
+    margin: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  badges: {
+    display: "flex",
+    gap: "4px",
+    flexShrink: 0,
+  },
+  compactBadge: {
+    padding: "2px 8px",
+    borderRadius: "4px",
+    fontSize: "11px",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+  },
+  compactDetails: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "12px",
+    color: "#4A6A8A",
+  },
+  compactText: {
+    display: "flex",
+    alignItems: "center",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  compactActions: {
+    display: "flex",
+    gap: "6px",
+    flexShrink: 0,
+  },
+  compactButton: {
+    border: "none",
+    padding: "8px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyState: {
+    padding: "60px 20px",
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: "14px",
+    color: "#4A6A8A",
+    margin: 0,
+  },
+  loadMoreIndicator: {
+    padding: "16px",
+    textAlign: "center",
+    color: "#4A6A8A",
+    fontSize: "13px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+  },
+  miniSpinner: {
+    width: "16px",
+    height: "16px",
+    border: "2px solid #E5E7EB",
+    borderTop: "2px solid #003366",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  },
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100vh",
+    background: "#F4F7F9",
+  },
+  spinner: {
+    width: "48px",
+    height: "48px",
+    border: "4px solid #E5E7EB",
+    borderTop: "4px solid #003366",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  },
+  loadingText: {
+    marginTop: "20px",
+    fontSize: "16px",
+    color: "#4A6A8A",
+    fontWeight: "500",
+  },
+  errorContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100vh",
+    background: "#F4F7F9",
+    padding: "20px",
+  },
+  errorText: {
+    fontSize: "16px",
+    color: "#DC2626",
+    fontWeight: "500",
+  },
+};
+
+// Add keyframes for spinner animation
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .compact-card:hover {
+    background: #F9FAFB;
+  }
+`;
+document.head.appendChild(styleSheet);
+
+export default AdminPropertyManager;

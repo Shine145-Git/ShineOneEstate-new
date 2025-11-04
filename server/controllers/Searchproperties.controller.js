@@ -80,7 +80,6 @@ exports.searchProperties = async (req, res) => {
       }
     }
 
-    // consoluery Received:", normalizedQuery);
 
     // Recalculate matches after full normalization
     const finalSectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
@@ -102,7 +101,6 @@ exports.searchProperties = async (req, res) => {
       "i"
     );
 
-    // console.log("✅ Final Matches →", { bhkNum, sectorNum });
 
     // Only exact sector and bhk-based matches will be fetched; avoids partials like 451 for 45
     // Combine all possible matching conditions intelligently based on detected query type
@@ -110,6 +108,10 @@ exports.searchProperties = async (req, res) => {
     if (bhkRegex) orConditions.push({ "totalArea.configuration": bhkRegex });
     orConditions.push({ address: fullQueryRegex });
     orConditions.push({ description: fullQueryRegex });
+    // Add special handling for Gurgaon/Gurugram equivalence
+    const gurgaonRegex = /(gurgaon|gurugram)/i;
+    orConditions.push({ address: gurgaonRegex });
+    orConditions.push({ description: gurgaonRegex });
 
     let filter = { isActive: true };
 
@@ -132,15 +134,6 @@ exports.searchProperties = async (req, res) => {
 
 
 
-    console.log("", {
-      ...filter,
-      $or: orConditions.map((cond) => {
-        const key = Object.keys(cond)[0];
-        const val = cond[key];
-        return { [key]: val instanceof RegExp ? val.toString() : val };
-      }),
-    });
-
     // ---------- MAIN SEARCH LOGIC ----------
     const rentalMain = await RentalProperty.find(filter).populate("owner", "name email");
     const saleMain = await SaleProperty.find(filter).populate({
@@ -148,11 +141,6 @@ exports.searchProperties = async (req, res) => {
       select: "name email",
       strictPopulate: false,
     });
-    // Debug output for rental and sale results
-    // console.log("📦 Rental Query Executed With Filter:", JSON.stringify(filter, null, 2));
-    // console.log("📊 Rental Properties Found:", rentalMain.length);
-    // console.log("📦 Sale Query Executed With Filter:", JSON.stringify(filter, null, 2));
-    // console.log("📊 Sale Properties Found:", saleMain.length);
 
     let mainResults = [];
     const normalizedType = type?.trim().toLowerCase();

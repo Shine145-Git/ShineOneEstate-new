@@ -1,3 +1,78 @@
+// Toggle ACTIVE / INACTIVE for Rental or Sale property
+const toggleActiveStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Try to find in RentalProperty first, then SaleProperty
+    let property = await RentalProperty.findById(id) || await SaleProperty.findById(id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+    const propertyType = property.defaultpropertytype;
+
+    property.isActive = !property.isActive;
+    await property.save();
+
+    res.status(200).json({
+      message: `Property (${propertyType}) ${property.isActive ? "activated" : "deactivated"} successfully.`,
+      property,
+    });
+  } catch (error) {
+    console.error("Error toggling active status:", error);
+    res.status(500).json({ message: "Error toggling property active status", error: error.message });
+  }
+};
+
+// Toggle REVIEWED / NOT REVIEWED for Rental or Sale property (using PropertyReviewStatus model)
+const PropertyReviewStatus = require('../models/propertyReviewStatus.model');
+const toggleReviewStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Detect property type automatically
+    const rentalProp = await RentalProperty.findById(id);
+    const saleProp = rentalProp ? null : await SaleProperty.findById(id);
+    const property = rentalProp || saleProp;
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+    const propertyType = property.defaultpropertytype;
+
+    // Check if a review record exists for this property
+    let reviewRecord = await PropertyReviewStatus.findOne({ propertyId: id });
+
+    if (!reviewRecord) {
+      // Create new review record if not exists
+      reviewRecord = new PropertyReviewStatus({
+        propertyId: id,
+        propertyType: propertyType,
+        isReviewed: true,
+        reviewedAt: new Date(),
+        reviewedBy: req.user?.email || "admin"
+      });
+      await reviewRecord.save();
+
+      return res.status(201).json({
+        message: `Property (${propertyType}) marked as reviewed.`,
+        reviewRecord
+      });
+    }
+
+    // Toggle review state
+    reviewRecord.isReviewed = !reviewRecord.isReviewed;
+    reviewRecord.reviewedAt = reviewRecord.isReviewed ? new Date() : null;
+    reviewRecord.reviewedBy = req.user?.email || "admin";
+    await reviewRecord.save();
+
+    res.status(200).json({
+      message: `Property (${propertyType}) marked as ${reviewRecord.isReviewed ? "reviewed" : "not reviewed"}.`,
+      reviewRecord
+    });
+  } catch (error) {
+    console.error("Error toggling review status:", error);
+    res.status(500).json({ message: "Error toggling property review status", error: error.message });
+  }
+};
 const Payment = require('../models/Payment.model');
 const mongoose = require('mongoose');
 const RentalProperty = mongoose.models.RentalProperty || require('../models/RentalProperty.model');
@@ -715,5 +790,7 @@ module.exports = {
   getAdminOverview,
   getAllUsersDetailed,
   getCallbackRequests,
-  getUserRewardsStatus
+  getUserRewardsStatus,
+  toggleActiveStatus,
+  toggleReviewStatus
 };

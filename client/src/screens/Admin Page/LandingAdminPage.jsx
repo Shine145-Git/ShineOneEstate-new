@@ -65,6 +65,15 @@ const AdminLandingPage = () => {
       color: '#ef4444',
       gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
     },
+    {
+      id: 'propertyManager',
+      title: 'Property Manager',
+      description: 'Activate, deactivate, and review properties',
+      icon: Settings,
+      route: '/admin/propertymanager',
+      color: '#6366f1',
+      gradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+    },
   ];
 
   const styles = {

@@ -25,7 +25,7 @@ totalArea: {
   location: {
     type: String
   },
-  Sector: { type: String },
+  Sector: { type: String , required: true},
   images: [String],
   defaultpropertytype: { type: String, default: "sale", immutable: true },
   isActive: { type: Boolean, default: true },

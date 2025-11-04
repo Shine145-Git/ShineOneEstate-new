@@ -4,6 +4,8 @@ const GROUPS_RENTAL = [
   {
     name: "Property Basics",
     fields: [
+      { key: "title", label: "Title", type: "text" },
+      { key: "description", label: "Description", type: "textarea" },
       { key: "address", label: "Address", type: "text" },
       { key: "Sector", label: "Sector", type: "text" },
       { key: "propertyType", label: "Property Type", type: "select", options: ["house", "apartment", "condo", "townhouse", "villa"] },

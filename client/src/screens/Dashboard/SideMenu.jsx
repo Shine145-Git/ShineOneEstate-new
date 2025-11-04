@@ -14,7 +14,27 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
-  }}]}, {title: 'Explore our Services', items: [{icon: Search, label: 'For Buyers'}, {icon: Key, label: 'For Tenants'}, {icon: Building, label: 'For Owners'}, {icon: Users, label: 'For Dealers / Builders'}]}, {title: 'Tools & Resources', items: [{icon: Calculator, label: 'EMI Calculator', badge: 'Coming Soon'}, {icon: DollarSign, label: 'Home Loans', badge: 'Coming Soon'}, {icon: Lightbulb, label: 'Insights', badge: 'NEW'}, {icon: FileText, label: 'Articles & News', onClick: () => {
+  }}]}, {title: 'Explore our Services', items: [
+    {
+      icon: Search,
+      label: 'For Buyers',
+      onClick: () => { window.location.href = '/'; }
+    },
+    {
+      icon: Key,
+      label: 'For Tenants',
+      onClick: () => { window.location.href = '/'; }
+    },
+    {
+      icon: Building,
+      label: 'For Owners',
+      onClick: () => { window.location.href = '/add-property'; }
+    },
+    {
+      icon: Users,
+      label: 'For Dealers / Builders'
+    }
+  ]}, {title: 'Tools & Resources', items: [{icon: Calculator, label: 'EMI Calculator', badge: 'Coming Soon'}, {icon: DollarSign, label: 'Home Loans', badge: 'Coming Soon'}, {icon: Lightbulb, label: 'Insights', badge: 'NEW'}, {icon: FileText, label: 'Articles & News', onClick: () => {
     const el = document.getElementById('news');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -84,7 +104,14 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
 </div>
 
         {/* Menu Items */}
-        <div style={{overflowY: 'auto', height: 'calc(100vh - 460px)', padding: '0 12px'}}>
+       <div
+  style={{
+    flex: 1,
+    overflowY: "auto",
+    padding: "0 12px",
+    minHeight: 0,
+  }}
+>
           {menuSections.map((section, secIdx) => (<div key={secIdx} style={{marginBottom: '24px'}}>
               {section.title && <h4 style={{fontSize: '13px', fontWeight: '600', color: '#4A6A8A', padding: '12px 12px 8px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>{section.title}</h4>}
               {section.items.map((item, itemIdx) => {
@@ -99,7 +126,7 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
                 };
                 return (<div key={key} onMouseEnter={() => setHoveredItem(key)} onMouseLeave={() => setHoveredItem(null)} onClick={handleClick} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 12px', margin: '4px 0', borderRadius: '10px', cursor: item.onClick || item.link ? 'pointer' : 'default', transition: 'all 0.3s ease', backgroundColor: hoveredItem === key ? '#F4F7F9' : 'transparent', transform: hoveredItem === key ? 'translateX(4px)' : 'translateX(0)', borderLeft: hoveredItem === key ? '3px solid #00A79D' : '3px solid transparent'}}>
                     <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                      <div style={{width: '36px', height: '36px', borderRadius: '8px', backgroundColor: item.special ? '#0066FF15' : item.color ? `${item.color}15` : '#4A6A8A15', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', transform: hoveredItem === key ? 'rotate(5deg) scale(1.1)' : 'rotate(0) scale(1)'}}><Icon size={20} color={item.special ? '#0066FF' : item.color || '#4A6A8A'} /></div>
+                      <div style={{width: '36px', height: '6px', borderRadius: '8px', backgroundColor: item.special ? '#0066FF15' : item.color ? `${item.color}15` : '#4A6A8A15', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', transform: hoveredItem === key ? 'rotate(5deg) scale(1.1)' : 'rotate(0) scale(1)'}}><Icon size={20} color={item.special ? '#0066FF' : item.color || '#4A6A8A'} /></div>
                       <span style={{fontSize: '15px', fontWeight: item.special ? '700' : '500', color: item.special ? '#0066FF' : '#333333'}}>{item.label}</span>
                       {item.badge && <span style={{padding: '3px 8px', backgroundColor: item.badge === 'NEW' ? '#22D3EE' : '#00A79D', color: '#FFFFFF', borderRadius: '6px', fontSize: '10px', fontWeight: '700'}}>{item.badge}</span>}
                     </div>

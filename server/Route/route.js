@@ -19,7 +19,7 @@ const {
   
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
-const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus } = require("../controllers/admin.controller");
+const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus } = require("../controllers/admin.controller");
 const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
 const { createPayment, getPaymentsForUser } = require("../controllers/payment.controller");
@@ -83,6 +83,10 @@ router.get('/admin/usermanagement', verifyToken, checkAdminEmail, getAllUsersDet
 router.get("/api/get-callback-requests", verifyToken, checkAdminEmail, getCallbackRequests);
 // New admin route for fetching reward status per user
 router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRewardsStatus);
+
+// ================== PROPERTY STATUS ROUTES (ADMIN) ==================
+router.patch("/api/admin/property/:id/toggle-active", verifyToken, checkAdminEmail, toggleActiveStatus);
+router.patch("/api/admin/property/:id/toggle-review", verifyToken, checkAdminEmail, toggleReviewStatus);
 
 // ================== AI ROUTES ==================
 router.post("/api/predict-price", verifyToken, predictPrice);

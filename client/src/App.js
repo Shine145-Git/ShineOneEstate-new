@@ -30,6 +30,7 @@ import UserManagementSystem from "./screens/Admin Page/admin.usermanagement";
 import AdminLandingPage from "./screens/Admin Page/LandingAdminPage";
 import EnquiryPage from "./screens/Visit Schedule/enquiry";
 import AboutPage from "./screens/Customer Support/About";
+import AdminPropertyManager from "./screens/Admin Page/admin.propertyManager";
 
 function App() {
   const navigate = useNavigate();
@@ -68,6 +69,7 @@ function App() {
       <Route path="/admin/enquiries" element={<PaymentsRewardsDashboard />} />
       <Route path="/admin/callback" element={<CallbackRequestsDashboard />} />
       <Route path="/admin/rewardsproperties" element={<AdminProperties />} />
+      <Route path="/admin/propertymanager" element={<AdminPropertyManager />} />
 
       <Route path="/support" element={<CustomerSupportPage />} />
       <Route path="/chatbot" element={<Chatbot />} />

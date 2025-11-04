@@ -9,6 +9,7 @@
 
 const Property = require("../models/Rentalproperty.model.js");
 const SaleProperty = require("../models/SaleProperty.model.js");
+const PropertyReviewStatus = require("../models/propertyReviewStatus.model.js");
 
 
 // ==============================
@@ -102,16 +103,40 @@ const getPropertyById = async (req, res) => {
 
 const getAllProperties = async (req, res) => {
   try {
+    // Fetch all properties
     const rentalProperties = await Property.find().populate("owner", "name email");
     const saleProperties = await SaleProperty.find().populate("ownerId", "name email");
 
+    // Fetch review statuses
+    const reviewStatuses = await PropertyReviewStatus.find();
+
+    // Merge review statuses into property data
     const allProperties = [
-      ...rentalProperties.map(prop => ({ ...prop.toObject(), propertyCategory: "rental" })),
-      ...saleProperties.map(prop => ({ ...prop.toObject(), propertyCategory: "sale" })),
+      ...rentalProperties.map((prop) => {
+        const review = reviewStatuses.find(
+          (r) => r.propertyId.toString() === prop._id.toString()
+        );
+        return {
+          ...prop.toObject(),
+          defaultpropertytype: "rental",
+          isReviewed: review ? review.isReviewed : false,
+        };
+      }),
+      ...saleProperties.map((prop) => {
+        const review = reviewStatuses.find(
+          (r) => r.propertyId.toString() === prop._id.toString()
+        );
+        return {
+          ...prop.toObject(),
+          defaultpropertytype: "sale",
+          isReviewed: review ? review.isReviewed : false,
+        };
+      }),
     ];
 
     res.status(200).json(allProperties);
   } catch (error) {
+    console.error("Error fetching all properties:", error);
     res.status(500).json({
       message: "Server error while fetching all properties",
       error: error.message,

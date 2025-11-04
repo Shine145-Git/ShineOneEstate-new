@@ -4,8 +4,15 @@ const mongoose = require("mongoose");
 const RentalpropertySchema = new mongoose.Schema(
   {
     // Section 1: Property Basics & Specifications
+      title: {
+    type: String,
+    required: true
+    },
+     description: {
+    type: String
+  },
     address: { type: String },
-    Sector: { type: String },
+    Sector: { type: String , required: true},
     propertyType: {
       type: String,
       enum: ["house", "apartment", "condo", "townhouse", "villa"],
@@ -25,7 +32,7 @@ const RentalpropertySchema = new mongoose.Schema(
     outdoorSpace: { type: String },
 
     // Section 2: Financial & Lease Terms
-    monthlyRent: { type: Number },
+    monthlyRent: { type: Number , required: true},
     leaseTerm: { type: String },
     securityDeposit: { type: String },
     otherFees: { type: String },

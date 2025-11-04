@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 export default function AdminProperties() {
   const [activeTab, setActiveTab] = useState("approvals");
   const [approvals, setApprovals] = useState([]);
-  const [properties, setProperties] = useState([]);
   const [rewards, setRewards] = useState([]);
   const [bulkFile, setBulkFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -15,13 +14,6 @@ export default function AdminProperties() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch all properties when Properties tab is active
-  useEffect(() => {
-    if (activeTab === "properties") {
-      fetchAllProperties();
-    }
-    // eslint-disable-next-line
-  }, [activeTab]);
 
   // Fetch approved payments for rewards tab
   useEffect(() => {
@@ -36,19 +28,6 @@ export default function AdminProperties() {
     }
   }, [activeTab]);
 
-  // Fetch all properties (both rental and sale) with their isActive field
-const fetchAllProperties = async () => {
-  const rentalRes = await axios.get(
-    `${process.env.REACT_APP_ADMIN_GET_PROPERTIES_API}?category=rent`,
-    { withCredentials: true }
-  );
-  
-
-  const rentals = (rentalRes.data || []).map(p => ({ ...p, propertyCategory: 'rent' }));
-  
-
-  setProperties([...rentals]);
-};
 
   const fetchApprovedPayments = async () => {
     try {
@@ -129,36 +108,6 @@ const fetchAllProperties = async () => {
     }
   };
 
-  const handleBulkUpload = async () => {
-    if (!bulkFile) {
-      alert("Please select a file first");
-      return;
-    }
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", bulkFile);
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_ADMIN_BULK_UPLOAD_PROPERTIES_API}`,
-        formData,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
-      alert(response.data.message);
-      // Optionally, refresh the properties tab
-      if (activeTab === "properties") fetchAllProperties();
-    } catch (error) {
-      console.error("Bulk upload error:", error);
-      alert(error.response?.data?.message || "Error uploading file");
-    } finally {
-      setUploading(false);
-      setBulkFile(null);
-    }
-  };
 
   const handleLogout = async () => {
     await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
@@ -460,73 +409,10 @@ const fetchAllProperties = async () => {
     <div style={styles.container}>
       <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
 
-      {/* Excel Upload Section */}
-      <div style={{
-        background: "#fff",
-        padding: "20px 40px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderBottom: "1px solid #E5E7EB"
-      }}>
-        <h3 style={{ color: "#003366", fontWeight: 600, fontSize: "18px" }}>
-          Upload Property Data (Excel/CSV)
-        </h3>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => setBulkFile(e.target.files[0])}
-            style={{ border: "1px solid #D1D5DB", borderRadius: "6px", padding: "6px" }}
-          />
-          <button
-            onClick={async () => {
-              if (!bulkFile) {
-                alert("Please select a file first");
-                return;
-              }
-              setUploading(true);
-              try {
-                const formData = new FormData();
-                formData.append("file", bulkFile);
-                const response = await axios.post(
-                  `${process.env.REACT_APP_Base_API}/api/properties/bulk-upload`,
-                  formData,
-                  {
-                    withCredentials: true,
-                    headers: { "Content-Type": "multipart/form-data" },
-                  }
-                );
-                alert(response.data.message || "Upload successful!");
-              } catch (error) {
-                console.error("Excel upload error:", error);
-                alert(error.response?.data?.message || "Error uploading Excel file");
-              } finally {
-                setUploading(false);
-                setBulkFile(null);
-              }
-            }}
-            disabled={uploading}
-            style={{
-              backgroundColor: uploading ? "#E5E7EB" : "#00A79D",
-              color: "#fff",
-              border: "none",
-              padding: "10px 16px",
-              borderRadius: "8px",
-              cursor: uploading ? "not-allowed" : "pointer",
-              fontWeight: "600"
-            }}
-          >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </div>
-      </div>
-
       {/* Navigation Tabs */}
       <div style={styles.navTabs}>
         {[
           { id: "approvals", label: "Approvals", icon: Bell },
-          { id: "properties", label: "Properties", icon: Home },
           { id: "rewards", label: "Rewards", icon: Gift },
         ].map((tab) => (
           <button
@@ -538,8 +424,6 @@ const fetchAllProperties = async () => {
             {tab.label}
           </button>
         ))}
-       
-        
       </div>
 
       {/* Main Content */}
@@ -635,109 +519,6 @@ const fetchAllProperties = async () => {
                   <p>No pending payments</p>
                 </div>
               )}
-            </div>
-          </>
-        )}
-
-        {/* Properties Tab */}
-        {activeTab === "properties" && (
-          <>
-            <div style={styles.uploadSection}>
-              <h3 style={{ color: "#003366", fontWeight: 600, marginBottom: "16px" }}>
-                Bulk Upload Properties
-              </h3>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={(e) => setBulkFile(e.target.files[0])}
-                  style={{ flex: 1 }}
-                />
-                <button
-                  onClick={handleBulkUpload}
-                  disabled={uploading}
-                  style={{
-                    background: uploading ? "#E5E7EB" : "#00A79D",
-                    color: "#FFFFFF",
-                    border: "none",
-                    padding: "10px 20px",
-                    borderRadius: "8px",
-                    cursor: uploading ? "not-allowed" : "pointer",
-                    fontWeight: 600,
-                    fontSize: "14px"
-                  }}
-                >
-                  {uploading ? "Uploading..." : "Upload Excel"}
-                </button>
-              </div>
-            </div>
-
-            <div style={styles.statsContainer}>
-              <div style={styles.statCard}>
-                <div style={styles.statIcon('#00A79D')}>
-                  <Home size={28} />
-                </div>
-                <div style={styles.statContent}>
-                  <div style={styles.statLabel}>Total Properties</div>
-                  <div style={styles.statValue}>{properties.length}</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.propertiesGrid}>
-              {properties.map((property) => (
-                <div key={property._id || property.id} style={styles.propertyCard}>
-                  {property.images?.[0] && (
-                    <img
-                      src={property.images[0]}
-                      alt={property.name}
-                      style={styles.propertyImage}
-                    />
-                  )}
-                  {/* Tags row: Active/Inactive and Sale/Rent */}
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{
-                      background: property.isActive ? '#00A79D' : '#EF4444',
-                      color: '#FFFFFF',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
-                      {property.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                    <span style={{
-                      background: property.propertyCategory === 'sale' ? '#3B82F6' : '#F59E0B',
-                      color: '#FFFFFF',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
-                      {property.propertyCategory === 'sale' ? 'Sale Property' : 'Rental Property'}
-                    </span>
-                  </div>
-                  {/* Home icon row (optional, keep for design consistency) */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
-                    <Home size={24} color="#00A79D" />
-                  </div>
-                  <h3 style={{ color: "#333333", fontSize: "18px", margin: "10px 0", fontWeight: "600" }}>
-                    {property.name}
-                  </h3>
-                  <p style={{ color: "#4A6A8A", fontSize: "14px", margin: "8px 0" }}>
-                    Owner: {property.owner?.name || "N/A"} <br />
-                    Email: {property.owner?.email || "N/A"}
-                  </p>
-                  <p style={{ color: "#4A6A8A", fontSize: "14px", margin: "8px 0" }}>
-                    Location: {property.location}
-                  </p>
-                  <p style={{ color: "#003366", fontSize: "20px", fontWeight: "700", margin: "12px 0 0 0" }}>
-                    {typeof property.monthlyRent === "number"
-                      ? `₹${property.monthlyRent.toLocaleString()}`
-                      : `₹${property.monthlyRent || "N/A"}`}
-                  </p>
-                </div>
-              ))}
             </div>
           </>
         )}

@@ -36,6 +36,7 @@ export default function PropertyListingForm() {
 },
     images: [],
     // Rental-specific fields
+    title: "",
     layoutFeatures: "",
     appliances: [],
     conditionAge: "",
@@ -617,6 +618,33 @@ export default function PropertyListingForm() {
               <p style={formSubtitleStyle}>
                 Tell us about your rental property's basic information
               </p>
+              <div style={fieldStyle}>
+                <label style={inputLabelStyle}>Property Title *</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="e.g., Spacious 2BHK Apartment in Sector 46"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = '#00A79D')}
+                  onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
+                />
+              </div>
+
+              <div style={fieldStyle}>
+                <label style={inputLabelStyle}>Property Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Provide a short description highlighting key features, condition, and location..."
+                  style={textareaStyle}
+                  onFocus={(e) => (e.target.style.borderColor = '#00A79D')}
+                  onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
+                />
+              </div>
+
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Property Address *</label>
                 <input
