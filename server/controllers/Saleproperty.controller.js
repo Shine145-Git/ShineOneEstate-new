@@ -4,6 +4,7 @@
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
+const { uploadoncloudinary } = require("../config/FileHandling");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -40,23 +41,6 @@ const createSaleProperty = async (req, res) => {
       return res.status(400).json({ message: "Title and Price are required." });
     }
 
-    // Step 2: Handle image uploads or accept image URLs
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        try {
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: "sale-properties",
-          });
-          images.push(result.secure_url);
-        } catch (uploadError) {
-          console.error("❌ Cloudinary upload error:", uploadError);
-        }
-      }
-    } else if (req.body.images && Array.isArray(req.body.images)) {
-      images = req.body.images;
-    }
-
     // Step 3: Normalize sector input and ensure sector exists in DB
     let normalizedSector = null;
     if (sectorRaw && typeof sectorRaw === "string") {
@@ -84,6 +68,21 @@ const createSaleProperty = async (req, res) => {
       if (!existingSector) {
         await Sector.create({ name: normalizedSector });
       }
+    }
+
+    // Step 2: Handle image uploads or accept image URLs (after sector normalization)
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const result = await uploadoncloudinary(file.path, normalizedSector || "sale-properties");
+          images.push(result.secure_url);
+        } catch (uploadError) {
+          console.error("❌ Cloudinary upload error:", uploadError);
+        }
+      }
+    } else if (req.body.images && Array.isArray(req.body.images)) {
+      images = req.body.images;
     }
 
     // Step 4: Normalize totalArea configuration (e.g., "2 BHK", "3 BHK")

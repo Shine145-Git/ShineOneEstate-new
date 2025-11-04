@@ -14,6 +14,7 @@ const Sector = require("../models/Sector.model.js");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const xlsx = require("xlsx");
+const { uploadoncloudinary } = require("../config/FileHandling");
 
 // Multer setup for Excel file uploads (if needed)
 const excelStorage = multer.memoryStorage();
@@ -42,26 +43,9 @@ const createRentalProperty = async (req, res) => {
     }
 
     // ------------------------------
-    // Initialize images array for uploaded files
-    // ------------------------------
-    let images = [];
-
-    // ------------------------------
-    // Upload images to Cloudinary if files exist
-    // ------------------------------
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "properties",
-        });
-        images.push(result.secure_url);
-      }
-    }
-
-    // ------------------------------
     // Prepare property data with owner and images
     // ------------------------------
-    const propertyData = { ...req.body, owner: ownerId, images };
+    const propertyData = { ...req.body, owner: ownerId, images: [] };
 
     // ------------------------------
     // Normalize totalArea object with sqft and configuration
@@ -154,6 +138,28 @@ const createRentalProperty = async (req, res) => {
 
       propertyData.Sector = cleanSector; // ensure normalized value is saved
     }
+
+    // ------------------------------
+    // Initialize images array for uploaded files
+    // ------------------------------
+    let images = [];
+
+    // ------------------------------
+    // Upload images to Cloudinary if files exist
+    // ------------------------------
+    if (req.files && req.files.length > 0) {
+      // Determine sector folder name (default if missing)
+      const sectorFolder = propertyData.Sector
+        ? propertyData.Sector.replace(/[^a-zA-Z0-9-_]/g, "_")
+        : "Uncategorized";
+
+      for (const file of req.files) {
+        const result = await uploadoncloudinary(file.path, propertyData.Sector);
+        images.push(result.secure_url);
+      }
+    }
+
+    propertyData.images = images;
 
     // ------------------------------
     // Create new RentalProperty document and save

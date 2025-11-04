@@ -20,7 +20,7 @@ const VoiceAssistantRent = () => {
   const [user, setUser] = useState(null);
   // Conversation questions for rental preferences
   const questions = [
-    "Hello! I'm Aria, your AI rental assistant. Let's find your ideal rental property. First, which location are you interested in?",
+    "Hello! I'm Aria, your AI rental assistant. Let's find your ideal rental property. First, which sector are you interested in?",
     "What is your budget range for the rent?",
     "How many bedrooms or what property size do you prefer?",
     "Are there any specific amenities or features you want?",
@@ -152,11 +152,44 @@ const VoiceAssistantRent = () => {
           // Move to next question
           const nextIdx = currentQuestionIdx + 1;
           setCurrentQuestionIdx(nextIdx);
-          if (nextIdx < questions.length) {
+          // Insert early redirect after last main question (before thank-you)
+          if (nextIdx === questions.length - 1) {
+            // user just answered the last main question (before thank-you)
+            const orderedPrefs = {
+              location: collectedPrefsRef.current[0] || "",
+              budget: collectedPrefsRef.current[1] || "",
+              size: collectedPrefsRef.current[2] || "",
+              amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
+              furnishing: "",
+              propertyType: ""
+            };
+            const searchQuery = encodeURIComponent(
+              `${orderedPrefs.size || ""} in ${orderedPrefs.location}`
+                .trim()
+            );
+            try {
+              const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  email: user?.email || null,
+                  assistantType: "rental",
+                  preferences: orderedPrefs,
+                }),
+                credentials: "include",
+              });
+              if (resp.ok) {
+                navigate(`/search/${searchQuery}`);
+                console.log("✅ Redirecting early to search after last preference.");
+              }
+            } catch (err) {
+              console.error("❌ Error saving user preferences:", err);
+            }
+          } else if (nextIdx < questions.length) {
             setMessages(prev => [...prev, { type: "bot", text: questions[nextIdx] }]);
             speak(questions[nextIdx]);
           } else {
-            // All questions done, preferences to backend
+            // All questions done, preferences to backend (fallback, rarely triggered)
             const orderedPrefs = {
               location: collectedPrefsRef.current[0] || "",
               budget: collectedPrefsRef.current[1] || "",
@@ -173,9 +206,11 @@ const VoiceAssistantRent = () => {
             };
             setMessages(prev => [...prev, { type: "bot", text: questions[questions.length - 1] }]);
             speak(questions[questions.length - 1]);
-            setTimeout(() => {
-              navigate("/");
-            }, 100);
+            // Build query string from preferences
+            const searchQuery = encodeURIComponent(
+              `${orderedPrefs.size || ""} in ${orderedPrefs.location}`
+                .trim()
+            );
             // Save to backend
             try {
               const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
@@ -185,10 +220,10 @@ const VoiceAssistantRent = () => {
                 credentials: "include",
               });
               if (resp.ok) {
-                navigate("/");
+                // Only navigate to the search page with the encoded query
+                navigate(`/search/${searchQuery}`);
                 console.log("✅ User preferences saved successfully.");
                 console.log("✅ Backend acknowledged preference save.");
-                
               } else {
                 const errText = await resp.text();
                 console.error("❌ Failed to save preferences:", errText);

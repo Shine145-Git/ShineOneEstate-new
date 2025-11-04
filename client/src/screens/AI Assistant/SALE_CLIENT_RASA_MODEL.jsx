@@ -29,7 +29,7 @@ const VoiceAssistantSale = () => {
   const waveIntervalRef = useRef(null);
   // Sale property assistant flow questions and intro
   const saleQuestions = [
-    "Which location or city are you looking to buy a property in?",
+    "Which sector are you looking to buy a property in?",
     "What is your budget range for the property purchase?",
     "What type of property are you interested in? (e.g., apartment, villa, plot, commercial space)",
     "What size or configuration are you looking for? (e.g., 2BHK, 3BHK, 2000 sq ft, etc.)",
@@ -321,9 +321,13 @@ const VoiceAssistantSale = () => {
             console.error("🚨 Error sending preferences:", err);
           }
 
-          console.log("🏁 Conversation complete — navigating to homepage.");
+          console.log("🏁 Conversation complete — navigating to search page.");
           if (recognitionRef.current) recognitionRef.current.stop();
-          navigate("/");
+          const searchQuery = encodeURIComponent(
+            `${orderedPrefs.location || ""} ${orderedPrefs.budget || ""} ${orderedPrefs.propertyType || ""} ${orderedPrefs.size || ""} ${orderedPrefs.amenities || ""}`
+              .trim()
+          );
+          navigate(`/search/${searchQuery}`);
           return;
         }
         if (recognitionRef.current) {

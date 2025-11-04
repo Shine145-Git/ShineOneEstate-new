@@ -45,6 +45,18 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  // --- Close user menu when clicking outside ---
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    const userMenu = document.querySelector(".user-menu-container");
+    if (userMenu && !userMenu.contains(event.target)) {
+      setShowMenu(false);
+    }
+  };
+
+  document.addEventListener("click", handleClickOutside);
+  return () => document.removeEventListener("click", handleClickOutside);
+}, []);
 
  
 
@@ -57,623 +69,647 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
 
 return (
   <>
-  <nav
-    style={{
-      backgroundColor: "#003366",
-      padding: "1rem 4%",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-      position: "relative",
-      zIndex: 1000,
-    }}
-  >
-    {/* Left Section - Menu & Logo */}
-    <div style={{ 
-      display: "flex", 
-      alignItems: "center", 
-      gap: isSmallScreen ? "0.75rem" : "1rem",
-      minWidth: 0,
-      flex: "0 1 auto"
-    }}>
-      <div style={{ position: "relative", flexShrink: 0 }}>
-        <Menu
-          size={24}
-          color="#FFFFFF"
-          style={{ cursor: "pointer", display: "block" }}
-          onClick={() => setIsSideMenuOpen(!isSideMenuOpen)}
-        />
-        {isSideMenuOpen && <SideMenuBar
-          currentUser={user}
-          onLoginClick={() => { navigate('/login'); }}
-        />}
-      </div>
-
-      <div
-        style={{
-          fontSize: isSmallScreen ? "1.25rem" : isMediumScreen ? "1.25rem" : "1.5rem",
-          fontWeight: "700",
-          color: "#FFFFFF",
-          letterSpacing: "0.3px",
-          cursor: "pointer",
-          userSelect: "none",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-        onClick={() => navigate("/")}
-      >
-        {isSmallScreen ? "ggnRentalDeals" : "ggnRentalDeals"}
-      </div>
-    </div>
-
-    {/* Center Section - Nav Items (responsive visibility) */}
-    <div 
-      style={{ 
-        display: isMediumScreen ? "none" : "flex",
-        gap: window.innerWidth > 1200 ? "2rem" : "1.5rem",
+    <nav
+      style={{
+        backgroundColor: "#003366",
+        padding: "0.6rem 1%",
+        display: "flex",
+        justifyContent: "space-between",
         alignItems: "center",
-        flex: "1 1 auto",
-        justifyContent: "center",
-        minWidth: 0,
-        overflow: "hidden",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+        position: "relative",
+        zIndex: 1000,
       }}
     >
-      {navItems.map((item, idx) => {
-        // Responsive item visibility based on screen width
-        const showItem = window.innerWidth > 1400 || 
-                        (window.innerWidth > 1200 && idx < 4) ||
-                        (window.innerWidth > 1024 && idx < 3);
-        
-        if (!showItem) return null;
-        
-        return (
-          <a
-            key={idx}
-            href="#"
-            style={{
-              color: "#FFFFFF",
-              textDecoration: "none",
-              fontSize: window.innerWidth > 1200 ? "0.9rem" : "0.85rem",
-              fontWeight: "500",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-              position: "relative",
-              paddingBottom: "4px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#22D3EE";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#FFFFFF";
-            }}
-          >
-            {item}
-          </a>
-        );
-      })}
-    </div>
+      {/* Left Section - Menu & Logo */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: isSmallScreen ? "0.75rem" : "1rem",
+        minWidth: 0,
+        flex: "0 1 auto"
+      }}>
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <Menu
+            size={24}
+            color="#FFFFFF"
+            style={{ cursor: "pointer", display: "block" }}
+            onClick={() => setIsSideMenuOpen(!isSideMenuOpen)}
+          />
+          {isSideMenuOpen && <SideMenuBar
+            currentUser={user}
+            onLoginClick={() => { navigate('/login'); }}
+          />}
+        </div>
 
-    {/* Right Section - Action Buttons & Icons (responsive) */}
-    <div style={{ 
-      display: "flex", 
-      alignItems: "center", 
-      gap: isSmallScreen ? "0.5rem" : isMediumScreen ? "0.75rem" : "1rem",
-      flex: "0 1 auto",
-      minWidth: 0,
-    }}>
-      {/* AI Search Button - Responsive text */}
-      <button
+        <div
+          style={{
+            fontSize: isSmallScreen ? "1.25rem" : isMediumScreen ? "1.25rem" : "1.5rem",
+            fontWeight: "1000",
+            color: "#FFFFFF",
+            letterSpacing: "0.1px",
+            cursor: "pointer",
+            userSelect: "none",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          onClick={() => navigate("/")}
+        >
+          {isSmallScreen ? "ggnRentalDeals" : "ggnRentalDeals"}
+        </div>
+      </div>
+
+      {/* Center Section - Nav Items (responsive visibility) */}
+      <div
         style={{
-          padding: "0.625rem 1rem",
+          display: isMediumScreen ? "none" : "flex",
+          gap: window.innerWidth > 1100 ? "2rem" : "1rem",
+          alignItems: "center",
+          flex: "1 1 auto",
+          justifyContent: "center",
+          minWidth: 0,
+          overflow: "hidden",
+        }}
+      >
+        {navItems.map((item, idx) => {
+          // Responsive item visibility based on screen width
+          const showItem = window.innerWidth > 1400 ||
+            (window.innerWidth > 1200 && idx < 4) ||
+            (window.innerWidth > 1100 && idx < 3) ||
+            (window.innerWidth > 1024 && idx < 3) ||
+            (window.innerWidth > 900 && idx < 2) ||
+            (window.innerWidth <= 900 && idx < 1);
+
+          if (!showItem) return null;
+
+          return (
+            <a
+              key={idx}
+              href="#"
+              style={{
+                color: "#FFFFFF",
+                textDecoration: "none",
+                fontSize: window.innerWidth > 1200 ? "0.9rem" : "0.85rem",
+                fontWeight: "500",
+                transition: "all 0.2s ease",
+                whiteSpace: "nowrap",
+                position: "relative",
+                paddingBottom: "4px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#22D3EE";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#FFFFFF";
+              }}
+            >
+              {item}
+            </a>
+          );
+        })}
+      </div>
+
+      {/* Right Section - Action Buttons & Icons (responsive) */}
+      {(() => {
+        // Define common styles once for use below
+        const commonButtonStyle = {
+          height: "40px",
+          minWidth: "120px",
+          padding: "0 14px",
           backgroundColor: "#00A79D",
           color: "#FFFFFF",
           border: "none",
           borderRadius: "8px",
-          fontSize:  "0.875rem",
+          fontSize: "0.875rem",
           fontWeight: "600",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           gap: "0.4rem",
           transition: "all 0.2s ease",
           whiteSpace: "nowrap",
           outline: "none",
           flexShrink: 0,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#22D3EE";
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#00A79D";
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-        onClick={() => {
-          if (user) navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
-          else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
-        }}
-      >
-        <span>{isSmallScreen ? "AI Search" : "AI Search"}</span>
-        {!isSmallScreen && (
-          <span
-            style={{
-              backgroundColor: "#FFFFFF",
-              color: "#00A79D",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontSize: "0.65rem",
-              fontWeight: "700",
-            }}
-          >
-            FREE
-          </span>
-        )}
-      </button>
-
-      {/* Post Property Button - Show based on screen size */}
-      { (
-        <button
-          style={{
-            padding: window.innerWidth > 500 ? "0.625rem 1rem" : "0.625rem 0.75rem",
-            backgroundColor: "#00A79D",
-            color: "#FFFFFF",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: window.innerWidth > 900 ? "0.875rem" : "0.8rem",
-            fontWeight: "600",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            transition: "all 0.2s ease",
-            whiteSpace: "nowrap",
-            outline: "none",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#22D3EE";
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#00A79D";
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
-          onClick={() => {
-            if (user) navigate(`${process.env.REACT_APP_ADD_PROPERTY_PAGE}`);
-            else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
-          }}
-        >
-          <span>{ "Post property"}</span>
-          {window.innerWidth > 900 && (
-            <span
-              style={{
-                backgroundColor: "#FFFFFF",
-                color: "#00A79D",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                fontSize: "0.65rem",
-                fontWeight: "700",
-              }}
-            >
-              FREE
-            </span>
-          )}
-        </button>
-      )}
-
-      {/* Location Icon - Show only on larger screens */}
-      {window.innerWidth > 640 && (
-        <div
-          style={{
-            backgroundColor: "#4A6A8A",
-            borderRadius: "8px",
-            padding: "0.5rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#00A79D";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#4A6A8A";
-          }}
-        >
-          <Location size={20} color="#FFFFFF" />
-        </div>
-      )}
-
-      {/* User Menu */}
-      <div style={{ position: "relative", flexShrink: 0 }}>
-        <div
-          style={{
-            backgroundColor: "#4A6A8A",
-            borderRadius: "8px",
-            padding: "0.5rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-          }}
-          onClick={() => setShowMenu(!showMenu)}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#00A79D";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#4A6A8A";
-          }}
-        >
-          <User size={20} color="#FFFFFF" />
-        </div>
-
-        {showMenu && (
+        };
+        const iconButtonStyle = {
+          height: "40px",
+          width: "40px",
+          backgroundColor: "#4A6A8A",
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          flexShrink: 0,
+        };
+        return (
           <div
             style={{
-              position: "absolute",
-              top: "calc(100% + 12px)",
-              right: 0,
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              boxShadow: "0 8px 24px rgba(0,51,102,0.15)",
-              minWidth: isSmallScreen ? "200px" : "220px",
-              overflow: "hidden",
-              border: "1px solid #F4F7F9",
-              zIndex: 1001,
+              display: "flex",
+              alignItems: "center",
+              gap: isSmallScreen ? "0.5rem" : isMediumScreen ? "0.75rem" : "1rem",
+              flex: "0 1 auto",
+              minWidth: 0,
             }}
           >
-            {user ? (
-              <>
-                <div
+            {/* AI Search Button */}
+            <button
+              style={commonButtonStyle}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = "#22D3EE";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = "#00A79D";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              onClick={() => {
+                if (user) navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
+                else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
+              }}
+            >
+              <span>{isSmallScreen ? "AI Search" : "AI Search"}</span>
+              {!isSmallScreen && (
+                <span
                   style={{
-                    padding: isSmallScreen ? "0.875rem 1rem" : "1rem 1.25rem",
-                    borderBottom: "1px solid #F4F7F9",
-                    backgroundColor: "#F4F7F9",
+                    backgroundColor: "#FFFFFF",
+                    color: "#00A79D",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    fontSize: "0.65rem",
+                    fontWeight: "700",
                   }}
                 >
-                  <div
-                    style={{
-                      fontWeight: "700",
-                      color: "#003366",
-                      fontSize: isSmallScreen ? "0.875rem" : "0.95rem",
-                      marginBottom: "0.25rem",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {user.name || user.email}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "#4A6A8A",
-                    }}
-                  >
-                    Welcome back!
-                  </div>
-                </div>
+                  FREE
+                </span>
+              )}
+            </button>
 
-                <div style={{ padding: "0.5rem 0" }}>
-                  <button
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                      width: "100%",
-                      padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
-                      backgroundColor: "transparent",
-                      color: "#333333",
-                      border: "none",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                      fontWeight: "500",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onClick={() => navigate("/rewards")}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#F4F7F9")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
-                  >
-                    <Bot size={18} color="#4A6A8A" />
-                    <span>Rewards</span>
-                  </button>
-
-                  <button
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                      width: "100%",
-                      padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
-                      backgroundColor: "transparent",
-                      color: "#333333",
-                      border: "none",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                      fontWeight: "500",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onClick={() => navigate("/my-properties")}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#F4F7F9")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
-                  >
-                    <Square size={18} color="#4A6A8A" />
-                    <span>Properties</span>
-                  </button>
-
-                  <button
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                      width: "100%",
-                      padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
-                      backgroundColor: "transparent",
-                      color: "#333333",
-                      border: "none",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                      fontWeight: "500",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onClick={() => navigate("/support")}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#F4F7F9")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
-                  >
-                    <Bot size={18} color="#4A6A8A" />
-                    <span>Customer Support</span>
-                  </button>
-
-                  <div
-                    style={{
-                      height: "1px",
-                      backgroundColor: "#F4F7F9",
-                      margin: "0.5rem 0",
-                    }}
-                  />
-
-                  <button
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                      width: "100%",
-                      padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
-                      backgroundColor: "transparent",
-                      color: "#00A79D",
-                      border: "none",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onClick={handleLogout}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#F4F7F9";
-                      e.currentTarget.style.color = "#22D3EE";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "#00A79D";
-                    }}
-                  >
-                    <LogOut size={18} color="currentColor" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div style={{ padding: isSmallScreen ? "0.875rem" : "1rem" }}>
-                <button
+            {/* Post Property Button */}
+            <button
+              style={commonButtonStyle}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = "#22D3EE";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 211, 238, 0.3)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = "#00A79D";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              onClick={() => {
+                if (user) navigate(`${process.env.REACT_APP_ADD_PROPERTY_PAGE}`);
+                else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
+              }}
+            >
+              <span>{"Post property"}</span>
+              {window.innerWidth > 800 && (
+                <span
                   style={{
-                    width: "100%",
-                    padding: isSmallScreen ? "0.625rem" : "0.75rem",
-                    fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                    fontWeight: "600",
-                    backgroundColor: "#003366",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s ease",
+                    backgroundColor: "#FFFFFF",
+                    color: "#00A79D",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    fontSize: "0.65rem",
+                    fontWeight: "700",
                   }}
-                  onClick={() => navigate("/login")}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#00A79D")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#003366")
-                  }
                 >
-                  Login
-                </button>
+                  FREE
+                </span>
+              )}
+            </button>
+
+            {/* Location Icon */}
+            {window.innerWidth > 840 && (
+              <div
+                style={iconButtonStyle}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = "#00A79D";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = "#4A6A8A";
+                }}
+              >
+                <Location size={20} color="#FFFFFF" />
               </div>
             )}
-          </div>
-        )}
-      </div>
-    </div>
-  </nav>
 
-  {/* --- Preference Popup Modal --- */}
-  {showPreferencePopup && (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "rgba(0,51,102,0.6)",
-        zIndex: 2000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "background 0.3s",
-        animation: "fadeInBackdrop 0.36s cubic-bezier(.4,0,.2,1)",
-        padding: "1rem",
-      }}
-    >
+            {/* User Menu */}
+            <div
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: "500",
+                color: "#FFFFFF",
+                marginLeft: "0.2rem",
+                marginRight: "0.2rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "120px",
+              }}
+            >
+              {window.innerWidth < 800 ? "" : user ? user.email : "Guest"}
+            </div>
+            <div className="user-menu-container" style={{ position: "relative", flexShrink: 0 }}>
+              <div
+                style={iconButtonStyle}
+                onClick={() => setShowMenu(!showMenu)}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = "#00A79D";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = "#4A6A8A";
+                }}
+              >
+                <User size={20} color="#FFFFFF" />
+              </div>
+
+             {showMenu && (
+  <>
+    {user ? (
       <div
         style={{
-          background: "#FFFFFF",
-          borderRadius: "16px",
-          boxShadow: "0 20px 60px rgba(0,51,102,0.25)",
-          width: "100%",
-          maxWidth: isSmallScreen ? "340px" : "500px",
-          padding: isSmallScreen ? "1.5rem" : "2.5rem",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          animation: "scaleFadeInPopup 0.36s cubic-bezier(.4,0,.2,1)",
+          position: "absolute",
+          top: "calc(100% + 12px)",
+          right: 0,
+          backgroundColor: "#FFFFFF",
+          borderRadius: "12px",
+          boxShadow: "0 8px 24px rgba(0,51,102,0.15)",
+          minWidth: isSmallScreen ? "200px" : "220px",
+          overflow: "hidden",
+          border: "1px solid #F4F7F9",
+          zIndex: 1001,
         }}
       >
         <div
           style={{
-            width: isSmallScreen ? "56px" : "64px",
-            height: isSmallScreen ? "56px" : "64px",
-            borderRadius: "50%",
+            padding: isSmallScreen ? "0.875rem 1rem" : "1rem 1.25rem",
+            borderBottom: "1px solid #F4F7F9",
             backgroundColor: "#F4F7F9",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: isSmallScreen ? "1.25rem" : "1.5rem",
           }}
         >
-          <span style={{ fontSize: isSmallScreen ? "1.75rem" : "2rem" }}>✨</span>
-        </div>
-
-        <div
-          style={{
-            fontSize: isSmallScreen ? "1.125rem" : "1.5rem",
-            fontWeight: "700",
-            marginBottom: "0.75rem",
-            color: "#003366",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Personalize Your Experience
-        </div>
-
-        <div
-          style={{
-            fontSize: isSmallScreen ? "0.875rem" : "1rem",
-            fontWeight: "400",
-            color: "#4A6A8A",
-            marginBottom: isSmallScreen ? "1.5rem" : "2rem",
-            lineHeight: 1.6,
-          }}
-        >
-          Tell us your preferences to get smarter property matches tailored just for you.
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: isSmallScreen ? "column" : "row",
-            gap: isSmallScreen ? "0.75rem" : "1rem",
-            width: "100%",
-          }}
-        >
-          <button
-            onClick={() => {
-              setShowPreferencePopup(false);
-              navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
-            }}
+          <div
             style={{
-              flex: 1,
-              padding: isSmallScreen ? "0.75rem 1.25rem" : "0.875rem 1.5rem",
-              background: "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "10px",
-              fontWeight: "600",
-              fontSize: isSmallScreen ? "0.875rem" : "1rem",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
-              transition: "all 0.2s ease",
-              outline: "none",
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 6px 16px rgba(34, 211, 238, 0.4)";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
+              fontWeight: "700",
+              color: "#003366",
+              fontSize: isSmallScreen ? "0.875rem" : "0.95rem",
+              marginBottom: "0.25rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            Set Preferences
+            {user.name || user.email}
+          </div>
+          <div
+            style={{
+              fontSize: "0.75rem",
+              color: "#4A6A8A",
+            }}
+          >
+            Welcome back!
+          </div>
+        </div>
+
+        <div style={{ padding: "0.5rem 0" }}>
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              width: "100%",
+              padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
+              backgroundColor: "transparent",
+              color: "#333333",
+              border: "none",
+              textAlign: "left",
+              cursor: "pointer",
+              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+              fontWeight: "500",
+              transition: "background-color 0.2s ease",
+            }}
+            onClick={() => navigate("/rewards")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#F4F7F9")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <Bot size={18} color="#4A6A8A" />
+            <span>Rewards</span>
           </button>
 
           <button
-            onClick={() => setShowPreferencePopup(false)}
             style={{
-              flex: 1,
-              padding: isSmallScreen ? "0.75rem 1.25rem" : "0.875rem 1.5rem",
-              background: "#F4F7F9",
-              color: "#4A6A8A",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              width: "100%",
+              padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
+              backgroundColor: "transparent",
+              color: "#333333",
               border: "none",
-              borderRadius: "10px",
-              fontWeight: "600",
-              fontSize: isSmallScreen ? "0.875rem" : "1rem",
+              textAlign: "left",
               cursor: "pointer",
-              transition: "all 0.2s ease",
-              outline: "none",
+              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+              fontWeight: "500",
+              transition: "background-color 0.2s ease",
             }}
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "#4A6A8A";
-              e.currentTarget.style.color = "#FFFFFF";
+            onClick={() => navigate("/my-properties")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#F4F7F9")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <Square size={18} color="#4A6A8A" />
+            <span>Properties</span>
+          </button>
+
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              width: "100%",
+              padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
+              backgroundColor: "transparent",
+              color: "#333333",
+              border: "none",
+              textAlign: "left",
+              cursor: "pointer",
+              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+              fontWeight: "500",
+              transition: "background-color 0.2s ease",
             }}
-            onMouseLeave={e => {
+            onClick={() => navigate("/support")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#F4F7F9")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <Bot size={18} color="#4A6A8A" />
+            <span>Customer Support</span>
+          </button>
+
+          <div
+            style={{
+              height: "1px",
+              backgroundColor: "#F4F7F9",
+              margin: "0.5rem 0",
+            }}
+          />
+
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              width: "100%",
+              padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
+              backgroundColor: "transparent",
+              color: "#00A79D",
+              border: "none",
+              textAlign: "left",
+              cursor: "pointer",
+              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+              fontWeight: "600",
+              transition: "background-color 0.2s ease",
+            }}
+            onClick={handleLogout}
+            onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "#F4F7F9";
-              e.currentTarget.style.color = "#4A6A8A";
+              e.currentTarget.style.color = "#22D3EE";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#00A79D";
             }}
           >
-            Maybe Later
+            <LogOut size={18} color="currentColor" />
+            <span>Log Out</span>
           </button>
         </div>
       </div>
+    ) : (
+      <div
+        style={{
+          position: "absolute",
+          top: "calc(100% + 12px)",
+          right: 0,
+          backgroundColor: "#FFFFFF",
+          borderRadius: "10px",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
+          minWidth: "200px",
+          padding: "1rem",
+          zIndex: 1001,
+        }}
+      >
+        <div
+          style={{
+            color: "#003366",
+            marginBottom: "0.75rem",
+            fontWeight: "500",
+            textAlign: "center",
+          }}
+        >
+          You are not logged in.
+        </div>
+        <button
+          onClick={() => navigate("/login")}
+          style={{
+            backgroundColor: "#00A79D",
+            color: "#FFFFFF",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "600",
+            width: "100%",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "#22D3EE")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "#00A79D")
+          }
+        >
+          Login Now
+        </button>
+      </div>
+    )}
+  </>
+)}
+            </div>
+          </div>
+        );
+      })()}
+    </nav>
 
-      {/* Animations */}
-      <style>{`
-        @keyframes fadeInBackdrop {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleFadeInPopup {
-          from { opacity: 0; transform: scale(0.95);}
-          to { opacity: 1; transform: scale(1);}
-        }
-      `}</style>
-    </div>
-  )}
+    {/* --- Preference Popup Modal --- */}
+    {showPreferencePopup && (
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0,51,102,0.6)",
+          zIndex: 2000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "background 0.3s",
+          animation: "fadeInBackdrop 0.36s cubic-bezier(.4,0,.2,1)",
+          padding: "1rem",
+        }}
+      >
+        <div
+          style={{
+            background: "#FFFFFF",
+            borderRadius: "16px",
+            boxShadow: "0 20px 60px rgba(0,51,102,0.25)",
+            width: "100%",
+            maxWidth: isSmallScreen ? "340px" : "500px",
+            padding: isSmallScreen ? "1.5rem" : "2.5rem",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            animation: "scaleFadeInPopup 0.36s cubic-bezier(.4,0,.2,1)",
+          }}
+        >
+          <div
+            style={{
+              width: isSmallScreen ? "56px" : "64px",
+              height: isSmallScreen ? "56px" : "64px",
+              borderRadius: "50%",
+              backgroundColor: "#F4F7F9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: isSmallScreen ? "1.25rem" : "1.5rem",
+            }}
+          >
+            <span style={{ fontSize: isSmallScreen ? "1.75rem" : "2rem" }}>✨</span>
+          </div>
+
+          <div
+            style={{
+              fontSize: isSmallScreen ? "1.125rem" : "1.5rem",
+              fontWeight: "700",
+              marginBottom: "0.75rem",
+              color: "#003366",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Personalize Your Experience
+          </div>
+
+          <div
+            style={{
+              fontSize: isSmallScreen ? "0.875rem" : "1rem",
+              fontWeight: "400",
+              color: "#4A6A8A",
+              marginBottom: isSmallScreen ? "1.5rem" : "2rem",
+              lineHeight: 1.6,
+            }}
+          >
+            Tell us your preferences to get smarter property matches tailored just for you.
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: isSmallScreen ? "column" : "row",
+              gap: isSmallScreen ? "0.75rem" : "1rem",
+              width: "100%",
+            }}
+          >
+            <button
+              onClick={() => {
+                setShowPreferencePopup(false);
+                navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
+              }}
+              style={{
+                flex: 1,
+                padding: isSmallScreen ? "0.75rem 1.25rem" : "0.875rem 1.5rem",
+                background: "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "10px",
+                fontWeight: "600",
+                fontSize: isSmallScreen ? "0.875rem" : "1rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
+                transition: "all 0.2s ease",
+                outline: "none",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(34, 211, 238, 0.4)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
+              }}
+            >
+              Set Preferences
+            </button>
+
+            <button
+              onClick={() => setShowPreferencePopup(false)}
+              style={{
+                flex: 1,
+                padding: isSmallScreen ? "0.75rem 1.25rem" : "0.875rem 1.5rem",
+                background: "#F4F7F9",
+                color: "#4A6A8A",
+                border: "none",
+                borderRadius: "10px",
+                fontWeight: "600",
+                fontSize: isSmallScreen ? "0.875rem" : "1rem",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                outline: "none",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = "#4A6A8A";
+                e.currentTarget.style.color = "#FFFFFF";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = "#F4F7F9";
+                e.currentTarget.style.color = "#4A6A8A";
+              }}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+
+        {/* Animations */}
+        <style>{`
+          @keyframes fadeInBackdrop {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes scaleFadeInPopup {
+            from { opacity: 0; transform: scale(0.95);}
+            to { opacity: 1; transform: scale(1);}
+          }
+        `}</style>
+      </div>
+    )}
   </>
 );
 };
