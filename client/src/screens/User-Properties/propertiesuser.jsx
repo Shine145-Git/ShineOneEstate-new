@@ -1149,7 +1149,7 @@ export default function PropertyCards() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  { defaultPropertyType === "rental" ? navigate(`/Rentaldetails/${p._id}`) : navigate(`/Saledetails/${p._id}`) }
+                                  { p.defaultpropertytype === "rental" ? navigate(`/Rentaldetails/${p._id}`) : navigate(`/Saledetails/${p._id}`) }
                                 }}
                                 style={{
                                   backgroundColor: "#F1F5F9",
