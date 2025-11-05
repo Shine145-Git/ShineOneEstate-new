@@ -104,7 +104,7 @@ return (
 
         <div
           style={{
-            fontSize: isSmallScreen ? "1.25rem" : isMediumScreen ? "1.25rem" : "1.5rem",
+            fontSize: isSmallScreen ? "1.1rem" : isMediumScreen ? "1.25rem" : "1.5rem",
             fontWeight: "1000",
             color: "#FFFFFF",
             letterSpacing: "0.1px",
@@ -210,7 +210,7 @@ return (
             style={{
               display: "flex",
               alignItems: "center",
-              gap: isSmallScreen ? "0.5rem" : isMediumScreen ? "0.75rem" : "1rem",
+              gap: isSmallScreen ? "0.17rem" : isMediumScreen ? "0.75rem" : "1rem",
               flex: "0 1 auto",
               minWidth: 0,
             }}
@@ -306,8 +306,8 @@ return (
                 fontSize: "0.875rem",
                 fontWeight: "500",
                 color: "#FFFFFF",
-                marginLeft: "0.2rem",
-                marginRight: "0.2rem",
+                marginLeft: "0.1rem",
+                marginRight: "0.1rem",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
