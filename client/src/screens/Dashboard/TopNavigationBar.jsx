@@ -134,42 +134,26 @@ return (
           overflow: "hidden",
         }}
       >
-        {navItems.map((item, idx) => {
-          // Responsive item visibility based on screen width
-          const showItem = window.innerWidth > 1400 ||
-            (window.innerWidth > 1200 && idx < 4) ||
-            (window.innerWidth > 1100 && idx < 3) ||
-            (window.innerWidth > 1024 && idx < 3) ||
-            (window.innerWidth > 900 && idx < 2) ||
-            (window.innerWidth <= 900 && idx < 1);
-
-          if (!showItem) return null;
-
-          return (
-            <a
-              key={idx}
-              href="#"
-              style={{
-                color: "#FFFFFF",
-                textDecoration: "none",
-                fontSize: window.innerWidth > 1200 ? "0.9rem" : "0.85rem",
-                fontWeight: "500",
-                transition: "all 0.2s ease",
-                whiteSpace: "nowrap",
-                position: "relative",
-                paddingBottom: "4px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#22D3EE";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#FFFFFF";
-              }}
-            >
-              {item}
-            </a>
-          );
-        })}
+        {navItems.slice(0, 3).map((item, idx) => (
+          <a
+            key={idx}
+            href="#"
+            style={{
+              color: "#FFFFFF",
+              textDecoration: "none",
+              fontSize: window.innerWidth > 1200 ? "0.9rem" : "0.85rem",
+              fontWeight: "500",
+              transition: "all 0.2s ease",
+              whiteSpace: "nowrap",
+              position: "relative",
+              paddingBottom: "4px",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#22D3EE"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#FFFFFF"; }}
+          >
+            {item}
+          </a>
+        ))}
       </div>
 
       {/* Right Section - Action Buttons & Icons (responsive) */}

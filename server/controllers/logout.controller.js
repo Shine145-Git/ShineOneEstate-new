@@ -15,8 +15,8 @@ const logoutUser = async (req, res) => {
     const { user } = req;
 
     // Step 1: Clear authentication cookies from client
-    res.clearCookie("accessToken", { path: "/" });
-    res.clearCookie("refreshToken", { path: "/" });
+res.clearCookie("accessToken", { path: "/", httpOnly: true, secure: true, sameSite: "none" });
+res.clearCookie("refreshToken", { path: "/", httpOnly: true, secure: true, sameSite: "none" });
 
     // Step 2: If user is authenticated, clear OTP and refresh token stored in database
     if (user) {

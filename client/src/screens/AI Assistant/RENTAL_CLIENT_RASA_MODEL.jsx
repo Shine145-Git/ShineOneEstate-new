@@ -49,7 +49,7 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
