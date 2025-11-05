@@ -225,7 +225,23 @@ const PricePredictor = () => {
       background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
       }}>
-          <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
+          {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
       <style>
         {`
           @keyframes fadeIn {

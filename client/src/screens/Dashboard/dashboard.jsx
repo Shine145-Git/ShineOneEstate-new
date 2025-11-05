@@ -320,6 +320,7 @@ export default function RealEstateDashboard() {
         backgroundColor: "#F4F7F9",
         minHeight: "100vh",
         position: "relative",
+        paddingTop: "80px" // adjust based on navbar height
       }}
     >
       {isLoading && (
@@ -616,11 +617,22 @@ export default function RealEstateDashboard() {
         </div>
       )}
       {/* Top Navigation Bar */}
-      <TopNavigationBar
-        user={user}
-        handleLogout={handleLogout}
-        navItems={navItems}
-      />
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
 
       {/* Hero Banner with Search */}
       <div
@@ -1323,106 +1335,7 @@ export default function RealEstateDashboard() {
         <Location setUserLocation={setUserLocation} />
       </div>
 
-      {/* Bottom Section */}
-      <div
-        className="footer-section"
-        style={{
-          backgroundColor: "#4A6A8A",
-          padding: isMobile ? "28px 2%" : "48px 4%",
-          marginTop: isMobile ? "16px" : "40px",
-        }}
-      >
-        <div
-          style={{ maxWidth: "1400px", margin: "0 auto", textAlign: "center" }}
-        >
-          <h2
-            style={{
-              fontSize: isMobile ? "22px" : "32px",
-              fontWeight: "700",
-              color: "#FFFFFF",
-              marginBottom: isMobile ? "10px" : "16px",
-            }}
-          >
-            How can we help you?
-          </h2>
-          <p
-            style={{
-              fontSize: isMobile ? "13px" : "16px",
-              color: "#FFFFFF",
-              opacity: "0.9",
-              marginBottom: isMobile ? "18px" : "32px",
-            }}
-          >
-            Explore our services and find the perfect solution for your real
-            estate needs
-          </p>
-          <div
-            className="dashboard-footer-btns"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: isMobile ? "10px" : "16px",
-              flexWrap: "wrap",
-              flexDirection: isMobile ? "column" : "row",
-              alignItems: "center",
-              marginBottom: isMobile ? "12px" : "0",
-            }}
-          >
-            <button
-              style={{
-                padding: isMobile ? "16px 0" : "14px 32px",
-                backgroundColor: "#00A79D",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: isMobile ? "16px" : "15px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                width: isMobile ? "100%" : "auto",
-                minWidth: isMobile ? "160px" : "auto",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#22D3EE";
-                e.target.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#00A79D";
-                e.target.style.transform = "translateY(0)";
-              }}
-              onClick={() => navigate("/about")}
-            >
-              About
-            </button>
-            <button
-              style={{
-                padding: isMobile ? "16px 0" : "14px 32px",
-                backgroundColor: "transparent",
-                color: "#FFFFFF",
-                border: "2px solid #FFFFFF",
-                borderRadius: "8px",
-                fontSize: isMobile ? "16px" : "15px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                width: isMobile ? "100%" : "auto",
-                minWidth: isMobile ? "160px" : "auto",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#FFFFFF";
-                e.target.style.color = "#4A6A8A";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "transparent";
-                e.target.style.color = "#FFFFFF";
-              }}
-              onClick={() => navigate("/support")}
-            >
-              Contact Us
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       {/* Footer */}
       <footer
@@ -1442,7 +1355,7 @@ export default function RealEstateDashboard() {
               marginBottom: isMobile ? "0.2rem" : "0.5rem",
             }}
           >
-            ggnRentalDeals – Find Your Dream Home
+            ggnHomes – Find Your Dream Home
           </h3>
           <p
             style={{
@@ -1480,7 +1393,7 @@ export default function RealEstateDashboard() {
               color: "#B0C4DE",
             }}
           >
-            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
+            © {new Date().getFullYear()} ggnHomes. All rights reserved.
           </div>
         </div>
       </footer>

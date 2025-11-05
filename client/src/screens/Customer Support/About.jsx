@@ -1,5 +1,9 @@
 import React from 'react';
 import { Home, Target, Rocket, Brain, MapPin, Shield, Gift, Users, Award, Lock } from 'lucide-react';
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import { useEffect } from 'react';  
+import { useNavigate } from 'react-router-dom';
+
 
 export default function AboutPage() {
   const styles = {
@@ -193,18 +197,51 @@ export default function AboutPage() {
       to: { width: '50%' },
     },
   };
+  const [user, setUser] = React.useState(null);
+  const navigate = useNavigate();
+
+const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   const [hoveredCard, setHoveredCard] = React.useState(null);
 
   return (
-    <div style={styles.container}>
+    <>
+      <div style={{ position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, backgroundColor: "#FFFFFF" }}>
+        <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} />
+      </div>
+      <div style={{ ...styles.container, paddingTop: "80px" }}>
       {/* Hero Section */}
       <div style={styles.hero}>
         <div style={styles.heroOverlay}></div>
         <div style={styles.heroContent}>
           <div style={{ fontSize: '60px', marginBottom: '20px' }}>🏙️</div>
           <h1 style={styles.heroTitle}>
-            About GGN Rental Deals
+            About ggnHomes
             <span style={styles.animatedUnderline}></span>
           </h1>
           <p style={styles.heroSubtitle}>
@@ -240,7 +277,7 @@ export default function AboutPage() {
             </div>
             <h3 style={styles.cardTitle}>🚀 Our Mission</h3>
             <p style={styles.cardText}>
-              To provide the most accurate and personalized property search experience using next-generation AI, ensure 100% verified listings, offer legal and documentation support, and create a rewarding journey through our exclusive <span style={styles.highlight}>GGN Goodies & Rewards</span> program.
+              To provide the most accurate and personalized property search experience using next-generation AI, ensure 100% verified listings, offer legal and documentation support, and create a rewarding journey through our exclusive <span style={styles.highlight}>ggnHomes Goodies & Rewards</span> program.
             </p>
           </div>
         </div>
@@ -273,7 +310,7 @@ export default function AboutPage() {
         </h2>
         <div style={styles.card}>
           <p style={{...styles.cardText, fontSize: '18px', textAlign: 'center'}}>
-            Unlike national platforms that scatter their attention across hundreds of cities, GGN Rental Deals is <span style={styles.highlight}>proudly Gurgaon-first</span>. Because we believe local expertise matters. Our team lives and works here. We know every sector, every block, every new project launch, and every rental trend in the city.
+            Unlike national platforms that scatter their attention across hundreds of cities, ggnHomes is <span style={styles.highlight}>proudly Gurgaon-first</span>. Because we believe local expertise matters. Our team lives and works here. We know every sector, every block, every new project launch, and every rental trend in the city.
           </p>
         </div>
       </div>
@@ -317,7 +354,7 @@ export default function AboutPage() {
               🌟 For Tenants & Buyers
             </h3>
             <p style={styles.cardText}>
-              When you close a deal through GGN Rental Deals, we send you a curated <span style={styles.highlight}>GGN Goodie Box 🎁</span> filled with useful home-start essentials and personalized surprises to mark your milestone.
+              When you close a deal through ggnHomes, we send you a curated <span style={styles.highlight}>ggnHomes Goodie Box 🎁</span> filled with useful home-start essentials and personalized surprises to mark your milestone.
             </p>
           </div>
 
@@ -326,7 +363,7 @@ export default function AboutPage() {
               🏠 For Property Owners & Agents
             </h3>
             <ul style={{...styles.cardText, paddingLeft: '20px'}}>
-              <li>✅ Exclusive GGN Certified Seller Badge</li>
+              <li>✅ Exclusive ggnHomes Certified Seller Badge</li>
               <li>✅ Priority listing visibility</li>
               <li>✅ Special Goodies & Digital Rewards</li>
               <li>✅ Access to verified partner network</li>
@@ -397,23 +434,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div style={styles.ctaSection}>
-        <h2 style={styles.ctaTitle}>Ready to Find Your Next Home?</h2>
-        <p style={styles.ctaText}>
-          Join thousands of Gurgaon residents who trust GGN Rental Deals for their property needs. Verified listings. Legal peace of mind. AI that understands you.
-        </p>
-        <div>
-          <button style={styles.button} onMouseEnter={(e) => e.target.style.backgroundColor = '#004080'} onMouseLeave={(e) => e.target.style.backgroundColor = '#003366'}>
-            Get Started Today
-          </button>
-        </div>
-        <div style={{marginTop: '40px', fontSize: '16px'}}>
-          <p>📍 Head Office: Gurgaon, Haryana, India</p>
-          <p>📧 Email: support@ggnrentaldeals.com</p>
-          <p>📞 Contact: +91 93109 94032</p>
-        </div>
-      </div>
+    
       <style>
         {`
           @keyframes fadeIn {
@@ -426,6 +447,37 @@ export default function AboutPage() {
           }
         `}
       </style>
-    </div>
+      <footer style={{
+        background: "linear-gradient(135deg, #003366 0%, #004b6b 100%)",
+        color: "#FFFFFF",
+        padding: "3rem 1.5rem",
+        textAlign: "center",
+        marginTop: "3rem"
+      }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
+            ggnHomes – Find Your Dream Home
+          </h3>
+          <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
+            Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: "2rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+            <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Home</a>
+            <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>About</a>
+            <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Contact</a>
+            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem" }}>Post Property</a>
+          </div>
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.15)",
+            paddingTop: "1rem",
+            fontSize: "0.8rem",
+            color: "#B0C4DE"
+          }}>
+            © {new Date().getFullYear()} ggnHomes. All rights reserved.
+          </div>
+        </div>
+      </footer>
+      </div>
+    </>
   );
 }

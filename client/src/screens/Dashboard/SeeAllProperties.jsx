@@ -26,7 +26,7 @@ const SeeAllProperties = ({ properties = [] }) => {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -372,7 +372,7 @@ const SeeAllProperties = ({ properties = [] }) => {
       }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
-            ggnRentalDeals – Find Your Dream Home
+            ggnHomes – Find Your Dream Home
           </h3>
           <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
             Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
@@ -389,7 +389,7 @@ const SeeAllProperties = ({ properties = [] }) => {
             fontSize: "0.8rem",
             color: "#B0C4DE"
           }}>
-            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
+            © {new Date().getFullYear()} ggnHomes. All rights reserved.
           </div>
         </div>
       </footer>

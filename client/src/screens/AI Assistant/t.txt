@@ -2,15 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
 
-const VoiceAssistantSale = () => {
-  // Ready sound for mic
-const readySound = useRef(new Audio("/MicSound.mp3"));  
-  const playReadySound = () => {
-    if (readySound.current) {
-      readySound.current.currentTime = 0;
-      readySound.current.play().catch(err => console.warn("Sound play failed:", err));
-    }
-  };
+const VoiceAssistantRent = () => {
   const [sessionId, setSessionId] = useState(null);
   const [listening, setListening] = useState(false);
   const [botResponse, setBotResponse] = useState("");
@@ -28,13 +20,10 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
   const [user, setUser] = useState(null);
   // Conversation questions for rental preferences
   const questions = [
-    "Hello! I'm Aria, your AI Sale assistant. Let's find your ideal Sale property. First, which sector are you looking to buy property in?",
-    "What is your budget range for the property purchase?",
-    "What type of property are you interested in? (e.g., apartment, villa, plot, commercial space)",
-    "What size or configuration are you looking for? (e.g., 2BHK, 3BHK, 2000 sq ft, etc.)",
-    "Are you buying for personal use or as an investment?",
-    "Do you have any special preferences or amenities in mind? (e.g., parking, garden, gated community, swimming pool)",
-    "When are you planning to make the property purchase? (e.g., immediately, within 3 months, later this year)",
+    "Hello! I'm Aria, your AI rental assistant. Let's find your ideal rental property. First, which sector are you interested in?",
+    "What is your budget range for the rent?",
+    "How many bedrooms or what property size do you prefer?",
+    "Are there any specific amenities or features you want?",
     "Thank you for sharing all the details. I'll save your preferences now."
   ];
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -90,17 +79,7 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
     return () => { if (waveIntervalRef.current) clearInterval(waveIntervalRef.current); };
   }, [listening]);
 
-  const safeStartRecognition = () => {
-    if (!recognitionRef.current || isRecognizingRef.current) return;
-    try {
-      // Play ready sound before starting mic
-      if (readySound.current) {
-        readySound.current.currentTime = 0;
-        readySound.current.play().catch(err => console.warn("Sound play failed:", err));
-      }
-      recognitionRef.current.start();
-    } catch (err) { console.warn("Recognition start error:", err.message); }
-  };
+  const safeStartRecognition = () => { if (!recognitionRef.current || isRecognizingRef.current) return; try { recognitionRef.current.start(); } catch (err) { console.warn("Recognition start error:", err.message); } };
 
   useEffect(() => { return () => { if (recognitionRef.current) { try { recognitionRef.current.onstart = null; recognitionRef.current.onend = null; recognitionRef.current.onresult = null; recognitionRef.current.onerror = null; recognitionRef.current.stop(); } catch {} } if (restartTimeoutRef.current) { clearTimeout(restartTimeoutRef.current); } window.speechSynthesis.cancel(); }; }, []);
 
@@ -118,9 +97,8 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
         try {
           isRecognizingRef.current = false;
           setListening(false);
-          if (!speakingRef.current && !isBotSpeakingRef.current) {
-            // Start immediately if not speaking
-            safeStartRecognition();
+          if (!speakingRef.current) {
+            restartTimeoutRef.current = setTimeout(() => { safeStartRecognition(); }, 700);
           }
         } catch {}
       };
@@ -132,15 +110,14 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
             isRecognizingRef.current = false;
           } else {
             if (recognitionRef.current && !isRecognizingRef.current) {
-              safeStartRecognition();
+              restartTimeoutRef.current = setTimeout(() => { safeStartRecognition(); }, 1000);
             }
           }
         } catch {}
       };
       recognition.onresult = async (event) => {
-        // Guard to prevent mic from hearing bot
-        if (speakingRef.current || isBotSpeakingRef.current) return; // ignore bot voice
         try {
+          if (speakingRef.current || isBotSpeakingRef.current) { console.log("Ignoring speech — bot is talking"); return; }
           const userSpeech = event.results[0][0].transcript.trim();
           // LOG: Recognized speech
           console.log("🎤 Recognized speech:", userSpeech);
@@ -191,7 +168,7 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
                 .trim()
             );
             try {
-              const resp = await fetch(process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA, {
+              const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -236,7 +213,7 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
             );
             // Save to backend
             try {
-              const resp = await fetch(process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA, {
+              const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -286,26 +263,30 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
         utterance.voice = preferredVoice;
         console.log("🗣️ Using voice:", preferredVoice.name);
       }
-      utterance.onend = () => {
+      utterance.onend = async () => {
         console.log("🗣️ Bot finished speaking...");
         isBotSpeakingRef.current = false;
         speakingRef.current = false;
-
-        // Play ready sound
-        if (readySound.current) {
-          readySound.current.currentTime = 0;
-          readySound.current.play().catch(err => console.warn("Sound play failed:", err));
+        // Only auto-restart recognition if not at end
+        if (currentQuestionIdx < questions.length) {
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+              setTimeout(() => {
+                safeStartRecognition();
+              }, 1200);
+            } catch (err) {
+              console.warn("Restart error:", err);
+            }
+          }
         }
-
-        // Start recognition immediately
-        safeStartRecognition();
       };
       utterance.onerror = (err) => {
         console.error("Speech synthesis error:", err);
         isBotSpeakingRef.current = false;
         speakingRef.current = false;
         if (recognitionRef.current) {
-          safeStartRecognition();
+          setTimeout(() => safeStartRecognition(), 800);
         }
       };
       window.speechSynthesis.speak(utterance);
@@ -446,4 +427,4 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
   );
 };
 
-export default VoiceAssistantSale;
+export default VoiceAssistantRent;

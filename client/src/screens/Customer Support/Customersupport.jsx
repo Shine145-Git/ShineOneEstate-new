@@ -23,7 +23,7 @@ export default function CustomerSupportPage() {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -72,7 +72,23 @@ export default function CustomerSupportPage() {
   };
 
   return (
-    <> <TopNavigationBar user={user} handleLogout={handleLogout} navItems={navItems} />
+    <> {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)' }}>
 
       {/* Header */}
@@ -527,7 +543,7 @@ export default function CustomerSupportPage() {
       }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <h3 style={{ fontWeight: "800", fontSize: "1.6rem", marginBottom: "0.5rem" }}>
-            ggnRentalDeals – Find Your Dream Home
+            ggnHomes – Find Your Dream Home
           </h3>
           <p style={{ fontSize: "0.9rem", color: "#D1E7FF", marginBottom: "1.5rem", maxWidth: "700px", margin: "0 auto" }}>
             Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
@@ -544,7 +560,7 @@ export default function CustomerSupportPage() {
             fontSize: "0.8rem",
             color: "#B0C4DE"
           }}>
-            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
+            © {new Date().getFullYear()} ggnHomes. All rights reserved.
           </div>
         </div>
       </footer>

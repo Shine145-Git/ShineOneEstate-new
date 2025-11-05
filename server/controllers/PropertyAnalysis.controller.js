@@ -186,94 +186,67 @@ const getMetrics = async (req, res) => {
   }
 };
 
-
 /* ================================
-   Controller: Get Saved Properties for Authenticated User
+   Controller: Get Saved Properties by User (with property details)
    ================================ */
 const getSavedProperties = async (req, res) => {
   try {
-    // Extract userId from authenticated user or cookies
-    const userId = req.user?._id || req.cookies?.userId;
+    const userId = req.params.userId || req.user?._id;
 
-    // Validate user authentication
     if (!userId) {
-      console.log("❌ Authentication failed. No userId found.");
-      return res.status(400).json({ error: "User not authenticated" });
+      return res.status(400).json({ error: "User ID is required" });
     }
 
-    console.log(`Fetching saved properties for user: ${userId}`);
+    // console.log(`Fetching saved properties for user: ${userId}`);
 
-    // Find PropertyAnalysis documents where the user has saved the property
+    // Find PropertyAnalysis documents where user has saved the property
     const savedDocs = await PropertyAnalysis.find({ "saves.user": userId })
-      .populate("saves.user", "name email")
       .lean();
 
-    // If no saved documents found, respond with 404
     if (!savedDocs || savedDocs.length === 0) {
-      console.log("No saved property analysis docs found for this user.");
       return res.status(404).json({ message: "No saved properties found" });
     }
 
-    // For each saved document, fetch the actual property from Rental or Sale collections
+    // For each saved property, find its full details from RentalProperty or SaleProperty
     const populatedProperties = await Promise.all(
-      savedDocs.map(async (item) => {
-        // Validate property reference is present and valid ObjectId
-        if (!item.property || !mongoose.Types.ObjectId.isValid(item.property)) {
-          console.warn(`Skipping invalid property reference: ${item.property}`);
-          return null; // Skip invalid property references
-        }
-
-        // Attempt to find property in RentalProperty collection
-        let property = null;
-        try {
-          property = await RentalProperty.findById(item.property).lean();
-
-          // If not found in RentalProperty, try SaleProperty collection
-          if (!property) {
-            property = await SaleProperty.findById(item.property).lean();
-          }
-        } catch (error) {
-          // Log error and skip this property
-          console.warn(`Error fetching property with ID ${item.property}:`, error.message);
+      savedDocs.map(async (doc) => {
+        if (!doc.property || !mongoose.Types.ObjectId.isValid(doc.property)) {
           return null;
         }
 
-        // Return property only if it exists and is active
+        let property = await RentalProperty.findById(doc.property).lean();
+
+        if (!property) {
+          property = await SaleProperty.findById(doc.property).lean();
+        }
+
         if (property && property.isActive) {
           return {
-            ...item,
-            property,
+            ...property,
             propertyType: property.price ? "sale" : "rental",
+            savedAt: doc.saves.find((s) => s.user.toString() === userId.toString())?.savedAt,
           };
         }
 
-        console.log(`Property ${item.property} not found or is not active.`);
-        return null; // Skip inactive or invalid properties
+        return null;
       })
     );
 
-    // Filter out null entries from the populated properties
-    const validSaved = populatedProperties.filter(Boolean);
+    const validProperties = populatedProperties.filter(Boolean);
 
-    // If no active saved properties found, respond with 404
-    if (validSaved.length === 0) {
-      console.log("User has saved properties, but none are active or valid.");
+    if (validProperties.length === 0) {
       return res.status(404).json({ message: "No active saved properties found" });
     }
 
-    // Respond with count and list of valid saved properties
-    console.log(`Successfully found ${validSaved.length} saved properties.`);
     res.status(200).json({
-      total: validSaved.length,
-      properties: validSaved,
+      total: validProperties.length,
+      properties: validProperties,
     });
-  } catch (err) {
-    // Log error and respond with status 500
-    console.error("❌ Error in getSavedProperties controller:", err);
-    res.status(500).json({ error: "Server error while fetching saved properties" });
+  } catch (error) {
+    console.error("❌ Error in getSavedPropertiesByUser:", error);
+    res.status(500).json({ error: "Server error fetching saved properties" });
   }
 };
-
 
 /* ================================
    Controller: Get User's Property Metrics Summary

@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 import axios from 'axios';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { TrendingUp, Eye, MousePointer, MessageSquare, DollarSign, Star, Clock, Award } from 'lucide-react';
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import { useNavigate } from 'react-router-dom';
 
 export default function PropertyAnalytics() {
   const [timeframe, setTimeframe] = useState('weekly');
@@ -12,6 +14,8 @@ export default function PropertyAnalytics() {
 
   const [metrics, setMetrics] = useState({});
   const [conversion, setConversion] = useState({});
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,9 +100,53 @@ export default function PropertyAnalytics() {
     engagementLabel: { fontSize: '13px', color: '#4A6A8A', marginBottom: '6px' },
     engagementValue: { fontSize: '22px', fontWeight: '700', color: '#003366' }
   };
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
+
 
   return (
     <div style={styles.container}>
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
       <div style={styles.header}>
         <h1 style={styles.title}>Property Analytics Dashboard</h1>
         <p style={styles.subtitle}>Comprehensive insights into your property performance and user engagement</p>

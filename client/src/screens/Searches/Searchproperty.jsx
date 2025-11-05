@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
 import axios from "axios";
 import { Search, MapPin, Home, Sparkles, SlidersHorizontal, Heart, MoreVertical, Phone, MessageCircle, Bed, Bath, Car, Maximize, TrendingUp, Award, Shield, ChevronDown, Filter, Grid, List, X, Check, Building2, Calendar, IndianRupee } from "lucide-react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
@@ -78,6 +80,18 @@ const Searchproperty = () => {
   const [viewMode, setViewMode] = useState("list");
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
+  // Additional filters
+  const [bedroomsFilter, setBedroomsFilter] = useState("");
+  const [bathroomsFilter, setBathroomsFilter] = useState("");
+  const [minPriceFilter, setMinPriceFilter] = useState("");
+  const [maxPriceFilter, setMaxPriceFilter] = useState("");
+  const [minAreaFilter, setMinAreaFilter] = useState("");
+  const [maxAreaFilter, setMaxAreaFilter] = useState("");
+  const [moveInDateFilter, setMoveInDateFilter] = useState("");
+  const [parkingFilter, setParkingFilter] = useState("");
+  const [petPolicyFilter, setPetPolicyFilter] = useState("");
+  const [smokingPolicyFilter, setSmokingPolicyFilter] = useState("");
+  const [amenitiesFilter, setAmenitiesFilter] = useState([]);
 
   useEffect(() => {
     if (location.state?.type === "sale") setPropertyTypeFilter("sale");
@@ -89,6 +103,7 @@ const Searchproperty = () => {
   const [savedProperties, setSavedProperties] = useState(new Set());
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   const [user, setUser] = useState(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,7 +118,7 @@ const Searchproperty = () => {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -130,7 +145,6 @@ const Searchproperty = () => {
 
     setLoading(true);
     const startTime = Date.now();
-
     try {
       const params = new URLSearchParams();
       params.append("query", searchVal.trim());
@@ -142,11 +156,13 @@ const Searchproperty = () => {
         type: p.defaultpropertytype || "rental"
       }));
 
+      // Property type
       if (propertyTypeFilter) {
         const normalizedFilter = propertyTypeFilter.toLowerCase() === "rent" ? "rental" : propertyTypeFilter.toLowerCase();
         filteredData = filteredData.filter((p) => p.defaultpropertytype?.toLowerCase() === normalizedFilter);
       }
 
+      // Dashboard type
       const dashboardType = location.state?.type;
       if (dashboardType === "new") {
         filteredData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -162,6 +178,74 @@ const Searchproperty = () => {
         filteredData = filteredData
           .filter((p) => (p.images?.length || 0) > 2)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      // Filter by bedrooms
+      if (bedroomsFilter !== "") {
+        filteredData = filteredData.filter(p => Number(p.bedrooms) === Number(bedroomsFilter));
+      }
+      // Filter by bathrooms
+      if (bathroomsFilter !== "") {
+        filteredData = filteredData.filter(p => Number(p.bathrooms) === Number(bathroomsFilter));
+      }
+      // Filter by price (rent or sale)
+      if (minPriceFilter !== "") {
+        filteredData = filteredData.filter(p => {
+          const price = p.monthlyRent || p.price || 0;
+          return price >= Number(minPriceFilter);
+        });
+      }
+      if (maxPriceFilter !== "") {
+        filteredData = filteredData.filter(p => {
+          const price = p.monthlyRent || p.price || 0;
+          return price <= Number(maxPriceFilter);
+        });
+      }
+      // Filter by area
+      if (minAreaFilter !== "") {
+        filteredData = filteredData.filter(p => {
+          const area = p.area || p.totalArea?.sqft || 0;
+          return area >= Number(minAreaFilter);
+        });
+      }
+      if (maxAreaFilter !== "") {
+        filteredData = filteredData.filter(p => {
+          const area = p.area || p.totalArea?.sqft || 0;
+          return area <= Number(maxAreaFilter);
+        });
+      }
+      // Move-in date (rentals only)
+      if (moveInDateFilter && propertyTypeFilter === "rent") {
+        filteredData = filteredData.filter(p => {
+          if (!p.availableFrom) return true;
+          // Compare as YYYY-MM-DD
+          return new Date(p.availableFrom) <= new Date(moveInDateFilter);
+        });
+      }
+      // Parking
+      if (parkingFilter !== "") {
+        filteredData = filteredData.filter(p =>
+          (p.parking || "").toLowerCase() === parkingFilter.toLowerCase()
+        );
+      }
+      // Pet policy
+      if (petPolicyFilter !== "") {
+        filteredData = filteredData.filter(p =>
+          (p.petPolicy || "").toLowerCase() === petPolicyFilter.toLowerCase()
+        );
+      }
+      // Smoking policy
+      if (smokingPolicyFilter !== "") {
+        filteredData = filteredData.filter(p =>
+          (p.smokingPolicy || "").toLowerCase() === smokingPolicyFilter.toLowerCase()
+        );
+      }
+      // Amenities (all selected must be present)
+      if (amenitiesFilter.length > 0) {
+        filteredData = filteredData.filter(p => {
+          const amenities = Array.isArray(p.amenities) ? p.amenities.map(a => a.toLowerCase()) : [];
+          return amenitiesFilter.every(sel => amenities.includes(sel.toLowerCase()));
+        });
       }
 
       filteredData = filteredData.filter(p => p.isActive !== false);
@@ -608,7 +692,18 @@ const Searchproperty = () => {
       )}
 
       <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
-        <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} />
+        {/* Fixed Top Navigation Bar */}
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            zIndex: 999,
+          }}
+        >
+          <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} />
+        </div>
 
         {/* Hero Search Section */}
         <div style={{
@@ -617,7 +712,8 @@ const Searchproperty = () => {
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           padding: isMobile ? "2.5rem 1rem" : "3rem 2rem",
-          boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+          marginTop: "64px", // Reserve space for fixed navbar
         }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
             <div style={{
@@ -767,11 +863,11 @@ const Searchproperty = () => {
 
         {/* Filters Bar */}
         <div style={{
-          backgroundColor: "#fff",
-          borderBottom: "1px solid #e5e7eb",
+          backgroundColor: "#F4F7F9",
+          borderBottom: "1px solid #00A79D",
           padding: "1rem 0",
           position: "sticky",
-          top: "0",
+          top: "64px", // Stick below the fixed navbar
           zIndex: "10",
           boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
         }}>
@@ -785,6 +881,7 @@ const Searchproperty = () => {
             flexWrap: "wrap",
             gap: "1rem"
           }}>
+            {/* Left: property type, sort, filter button, count */}
             <div style={{
               display: "flex",
               alignItems: "center",
@@ -792,58 +889,90 @@ const Searchproperty = () => {
               flexWrap: "wrap",
               flex: 1
             }}>
+              {/* Property Type */}
               <select
                 value={propertyTypeFilter}
                 onChange={(e) => setPropertyTypeFilter(e.target.value)}
                 style={{
                   padding: "0.625rem 1rem",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#fff",
-                  color: "#1f2937",
+                  border: "1px solid #00A79D",
+                  backgroundColor: "#FFFFFF",
+                  color: "#333333",
                   fontSize: "0.875rem",
                   cursor: "pointer",
-                  fontWeight: "500"
+                  fontWeight: "500",
+                  outline: "none",
+                  transition: "background 0.2s"
                 }}
+                onFocus={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
+                onBlur={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
+                onMouseOver={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
+                onMouseOut={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
               >
                 <option value="">All Types</option>
                 <option value="rent">For Rent</option>
                 <option value="sale">For Sale</option>
               </select>
-
+              {/* Sort By */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 style={{
                   padding: "0.625rem 1rem",
                   borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#fff",
-                  color: "#1f2937",
+                  border: "1px solid #00A79D",
+                  backgroundColor: "#FFFFFF",
+                  color: "#333333",
                   fontSize: "0.875rem",
                   cursor: "pointer",
-                  fontWeight: "500"
+                  fontWeight: "500",
+                  outline: "none",
+                  transition: "background 0.2s"
                 }}
+                onFocus={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
+                onBlur={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
+                onMouseOver={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
+                onMouseOut={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
               >
                 <option value="relevance">Most Relevant</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="newest">Newest First</option>
               </select>
-
+              {/* Filter Button */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                style={{
+                  padding: "0.625rem 1rem",
+                  borderRadius: "8px",
+                  border: "1px solid #00A79D",
+                  backgroundColor: "#00A79D",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}
+              >
+                <SlidersHorizontal size={18} />
+                Filter
+              </button>
               <div style={{
-                color: "#6b7280",
+                color: "#4A6A8A",
                 fontSize: "0.875rem",
                 fontWeight: "600"
               }}>
                 {sortedProperties.length} Properties
               </div>
             </div>
-
+            {/* View Mode Buttons */}
             <div style={{
               display: "flex",
               gap: "0.5rem",
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "#22D3EE",
               padding: "4px",
               borderRadius: "8px"
             }}>
@@ -852,7 +981,7 @@ const Searchproperty = () => {
                 style={{
                   padding: "0.5rem 0.75rem",
                   backgroundColor: viewMode === "list" ? "#fff" : "transparent",
-                  color: viewMode === "list" ? "#10b981" : "#6b7280",
+                  color: viewMode === "list" ? "#00A79D" : "#003366",
                   border: "none",
                   borderRadius: "6px",
                   cursor: "pointer",
@@ -869,7 +998,7 @@ const Searchproperty = () => {
                 style={{
                   padding: "0.5rem 0.75rem",
                   backgroundColor: viewMode === "grid" ? "#fff" : "transparent",
-                  color: viewMode === "grid" ? "#10b981" : "#6b7280",
+                  color: viewMode === "grid" ? "#00A79D" : "#003366",
                   border: "none",
                   borderRadius: "6px",
                   cursor: "pointer",
@@ -889,15 +1018,182 @@ const Searchproperty = () => {
         <div style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "2rem 1.5rem"
+          padding: "2rem 1.5rem",
+          paddingTop: "24px", // Add extra space for fixed navbar and sticky filter bar
         }}>
           <div style={{
             display: "flex",
             flexDirection: isMobile ? "column" : "row",
             gap: "2rem"
           }}>
+            {/* Unified Filters Modal for all screen sizes */}
+            {showFilters && (
+              <Modal open={showFilters} onClose={() => setShowFilters(false)}>
+                <Box sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "90%",
+                  maxWidth: "400px",
+                  maxHeight: "80vh",
+                  overflowY: "auto",
+                  bgcolor: "#F4F7F9",
+                  borderRadius: 2,
+                  p: 3,
+                  boxShadow: 24,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                    <h4 style={{ color: "#003366", margin: 0 }}>Filters</h4>
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      style={{ background: "none", border: "none", color: "#003366", cursor: "pointer", fontSize: "1.25rem", marginLeft: "0.5rem" }}
+                      aria-label="Close"
+                    >
+                      <X size={22} />
+                    </button>
+                    {/* Clear Filters Button */}
+                    <button
+                      onClick={() => {
+                        setBedroomsFilter("");
+                        setBathroomsFilter("");
+                        setMinPriceFilter("");
+                        setMaxPriceFilter("");
+                        setMinAreaFilter("");
+                        setMaxAreaFilter("");
+                        setMoveInDateFilter("");
+                        setParkingFilter("");
+                        setPetPolicyFilter("");
+                        setSmokingPolicyFilter("");
+                        setAmenitiesFilter([]);
+                      }}
+                      style={{
+                        backgroundColor: "#f87171",
+                        color: "#fff",
+                        border: "none",
+                        padding: "0.5rem 1rem",
+                        borderRadius: "6px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        marginLeft: "auto"
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+
+                  {/* Bedrooms */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Bedrooms</label>
+                  <select value={bedroomsFilter} onChange={e => setBedroomsFilter(e.target.value)} style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", borderRadius: "6px", border: "1px solid #00A79D" }}>
+                    <option value="">Any</option>
+                    {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}+</option>)}
+                  </select>
+
+                  {/* Bathrooms */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Bathrooms</label>
+                  <select value={bathroomsFilter} onChange={e => setBathroomsFilter(e.target.value)} style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", borderRadius: "6px", border: "1px solid #00A79D" }}>
+                    <option value="">Any</option>
+                    {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}+</option>)}
+                  </select>
+
+                  {/* Price Range */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Price Range</label>
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+                    <input type="number" min={0} placeholder="Min" value={minPriceFilter} onChange={e => setMinPriceFilter(e.target.value)} style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", border: "1px solid #00A79D" }} />
+                    <input type="number" min={0} placeholder="Max" value={maxPriceFilter} onChange={e => setMaxPriceFilter(e.target.value)} style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", border: "1px solid #00A79D" }} />
+                  </div>
+
+                  {/* Area Range */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Area Range (sqft)</label>
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+                    <input type="number" min={0} placeholder="Min" value={minAreaFilter} onChange={e => setMinAreaFilter(e.target.value)} style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", border: "1px solid #00A79D" }} />
+                    <input type="number" min={0} placeholder="Max" value={maxAreaFilter} onChange={e => setMaxAreaFilter(e.target.value)} style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", border: "1px solid #00A79D" }} />
+                  </div>
+
+                  {/* Move-In Date (rentals only) */}
+                  {propertyTypeFilter === "rent" && (
+                    <>
+                      <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Move-In Date</label>
+                      <input type="date" value={moveInDateFilter} onChange={e => setMoveInDateFilter(e.target.value)} style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid #00A79D", marginBottom: "1rem" }} />
+                    </>
+                  )}
+
+                  {/* Parking */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Parking</label>
+                  <select value={parkingFilter} onChange={e => setParkingFilter(e.target.value)} style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", borderRadius: "6px", border: "1px solid #00A79D" }}>
+                    <option value="">Any</option>
+                    <option value="none">None</option>
+                    <option value="open">Open</option>
+                    <option value="covered">Covered</option>
+                    <option value="garage">Garage</option>
+                    <option value="reserved">Reserved</option>
+                    <option value="street">Street</option>
+                  </select>
+
+                  {/* Pet Policy */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Pet Policy</label>
+                  <select value={petPolicyFilter} onChange={e => setPetPolicyFilter(e.target.value)} style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", borderRadius: "6px", border: "1px solid #00A79D" }}>
+                    <option value="">Any</option>
+                    <option value="allowed">Allowed</option>
+                    <option value="not allowed">Not Allowed</option>
+                    <option value="negotiable">Negotiable</option>
+                  </select>
+
+                  {/* Smoking Policy */}
+                  <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A" }}>Smoking Policy</label>
+                  <select value={smokingPolicyFilter} onChange={e => setSmokingPolicyFilter(e.target.value)} style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", borderRadius: "6px", border: "1px solid #00A79D" }}>
+                    <option value="">Any</option>
+                    <option value="allowed">Allowed</option>
+                    <option value="not allowed">Not Allowed</option>
+                    <option value="negotiable">Negotiable</option>
+                  </select>
+
+                  {/* Amenities as checkboxes */}
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "#4A6A8A", display: "block", marginBottom: "0.5rem" }}>Amenities</label>
+                    {["gym","pool","clubhouse","garden","security","lift","power backup","children play area","sports","shopping","wifi"].map((amenity) => (
+                      <div key={amenity} style={{ display: "flex", alignItems: "center", marginBottom: "0.25rem" }}>
+                        <input
+                          type="checkbox"
+                          checked={amenitiesFilter.includes(amenity)}
+                          onChange={(e) => {
+                            if (e.target.checked) setAmenitiesFilter(prev => [...prev, amenity]);
+                            else setAmenitiesFilter(prev => prev.filter(a => a !== amenity));
+                          }}
+                          id={`amenity-${amenity}`}
+                          style={{ marginRight: "0.5rem" }}
+                        />
+                        <label htmlFor={`amenity-${amenity}`} style={{ fontSize: "0.875rem", color: "#374151" }}>{amenity.charAt(0).toUpperCase() + amenity.slice(1)}</label>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Apply Filters Button */}
+                  <button
+                    style={{
+                      backgroundColor: "#10b981",
+                      color: "#fff",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "8px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      width: "100%",
+                      fontSize: "0.95rem",
+                      marginTop: "0.5rem"
+                    }}
+                    onClick={() => {
+                      setShowFilters(false);
+                      fetchSearchResults(searchQuery);
+                    }}
+                  >
+                    Apply Filters
+                  </button>
+                </Box>
+              </Modal>
+            )}
             {/* Properties List */}
-            <div style={{ flex: isMobile ? "1 1 100%" : "1 1 65%" }}>
+            <div style={{ flex: isMobile ? "1 1 100%" : "1 1 100%" }}>
               {loading ? (
                 <div style={{
                   textAlign: "center",
@@ -1184,82 +1480,8 @@ const Searchproperty = () => {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer style={{
-        background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-        color: "#fff",
-        padding: "3rem 1.5rem",
-        textAlign: "center",
-        marginTop: "3rem"
-      }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <h3 style={{
-            fontWeight: "800",
-            fontSize: "1.5rem",
-            marginBottom: "0.5rem"
-          }}>
-            ggnRentalDeals – Find Your Dream Home
-          </h3>
-          <p style={{
-            fontSize: "0.875rem",
-            color: "#bfdbfe",
-            marginBottom: "1.5rem",
-            maxWidth: "700px",
-            margin: "0 auto 1.5rem"
-          }}>
-            Explore thousands of verified listings, connect directly with owners, and make your next move with confidence.
-          </p>
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "2rem",
-            flexWrap: "wrap",
-            marginBottom: "2rem"
-          }}>
-            <a href="/" style={{
-              color: "#fff",
-              textDecoration: "none",
-              fontWeight: "600",
-              fontSize: "0.875rem"
-            }}>Home</a>
-            <a href="/about" style={{
-              color: "#fff",
-              textDecoration: "none",
-              fontWeight: "600",
-              fontSize: "0.875rem"
-            }}>About</a>
-            <span
-              onClick={() => navigate("/support")}
-              style={{
-                color: "#fff",
-                textDecoration: "none",
-                fontWeight: "600",
-                fontSize: "0.875rem",
-                cursor: "pointer"
-              }}
-            >
-              Contact
-            </span>
-            <a href="/add-property" style={{
-              color: "#fff",
-              textDecoration: "none",
-              fontWeight: "600",
-              fontSize: "0.875rem"
-            }}>Post Property</a>
-          </div>
-          <div style={{
-            borderTop: "1px solid rgba(255,255,255,0.2)",
-            paddingTop: "1rem",
-            fontSize: "0.75rem",
-            color: "#bfdbfe"
-          }}>
-            © {new Date().getFullYear()} ggnRentalDeals. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
-
+      
 export default Searchproperty;

@@ -123,14 +123,14 @@ router.post("/api/property-analysis/addEngagementTime", verifyToken, addEngageme
 router.post("/api/property-analysis/addRating", verifyToken, addRating);
 router.get("/api/property-analysis/:id", verifyToken, getMetrics);
 router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
-router.get("/api/property-analysis/saved-properties", verifyToken, getSavedProperties);
+router.get("/api/propertyAanalysis/savedProperties", verifyToken, getSavedProperties);
 router.get("/api/property-analytics/user-metrics", verifyToken, getUserPropertyMetrics);
 
 // ================== USER PREFERENCES (ARIA ASSISTANT) ==================
 router.post("/api/user/preferences-RENT-aria", verifyToken, (req, res) => {
   req.body.assistantType = "rental";
   saveUserPreferencesARIA(req, res);
-});
+})
 
 router.post("/api/user/preferences-SALE-aria", verifyToken, (req, res) => {
   req.body.assistantType = "sale";

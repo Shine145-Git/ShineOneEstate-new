@@ -104,10 +104,12 @@ return (
 
         <div
           style={{
-            fontSize: isSmallScreen ? "1.1rem" : isMediumScreen ? "1.25rem" : "1.5rem",
+            fontSize: isSmallScreen ? "1.3rem" : isMediumScreen ? "1.25rem" : "1.5rem",
             fontWeight: "1000",
+            fontFamily: "Poppins, sans-serif",
+            
             color: "#FFFFFF",
-            letterSpacing: "0.1px",
+            letterSpacing: "0.5px",
             cursor: "pointer",
             userSelect: "none",
             whiteSpace: "nowrap",
@@ -116,7 +118,7 @@ return (
           }}
           onClick={() => navigate("/")}
         >
-          {isSmallScreen ? "ggnRentalDeals" : "ggnRentalDeals"}
+          {isSmallScreen ? "ggnHomes": "GgnHomes"}
         </div>
       </div>
 
@@ -404,7 +406,34 @@ return (
           >
             <Bot size={18} color="#4A6A8A" />
             <span>Rewards</span>
-          </button>
+            </button>
+            <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              width: "100%",
+              padding: isSmallScreen ? "0.625rem 1rem" : "0.75rem 1.25rem",
+              backgroundColor: "transparent",
+              color: "#333333",
+              border: "none",
+              textAlign: "left",
+              cursor: "pointer",
+              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+              fontWeight: "500",
+              transition: "background-color 0.2s ease",
+            }}
+            onClick={() => navigate("/savedproperties")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#F4F7F9")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <Bot size={18} color="#4A6A8A" />
+            <span>Saved</span>
+          </button>            
 
           <button
             style={{
@@ -431,7 +460,7 @@ return (
             }
           >
             <Square size={18} color="#4A6A8A" />
-            <span>Properties</span>
+            <span>Manage Listings</span>
           </button>
 
           <button

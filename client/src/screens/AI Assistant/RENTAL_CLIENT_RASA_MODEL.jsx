@@ -3,6 +3,14 @@ import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
 
 const VoiceAssistantRent = () => {
+  // Ready sound for mic
+const readySound = useRef(new Audio("/MicSound.mp3"));  
+  const playReadySound = () => {
+    if (readySound.current) {
+      readySound.current.currentTime = 0;
+      readySound.current.play().catch(err => console.warn("Sound play failed:", err));
+    }
+  };
   const [sessionId, setSessionId] = useState(null);
   const [listening, setListening] = useState(false);
   const [botResponse, setBotResponse] = useState("");
@@ -79,7 +87,17 @@ const VoiceAssistantRent = () => {
     return () => { if (waveIntervalRef.current) clearInterval(waveIntervalRef.current); };
   }, [listening]);
 
-  const safeStartRecognition = () => { if (!recognitionRef.current || isRecognizingRef.current) return; try { recognitionRef.current.start(); } catch (err) { console.warn("Recognition start error:", err.message); } };
+  const safeStartRecognition = () => {
+    if (!recognitionRef.current || isRecognizingRef.current) return;
+    try {
+      // Play ready sound before starting mic
+      if (readySound.current) {
+        readySound.current.currentTime = 0;
+        readySound.current.play().catch(err => console.warn("Sound play failed:", err));
+      }
+      recognitionRef.current.start();
+    } catch (err) { console.warn("Recognition start error:", err.message); }
+  };
 
   useEffect(() => { return () => { if (recognitionRef.current) { try { recognitionRef.current.onstart = null; recognitionRef.current.onend = null; recognitionRef.current.onresult = null; recognitionRef.current.onerror = null; recognitionRef.current.stop(); } catch {} } if (restartTimeoutRef.current) { clearTimeout(restartTimeoutRef.current); } window.speechSynthesis.cancel(); }; }, []);
 
@@ -97,8 +115,9 @@ const VoiceAssistantRent = () => {
         try {
           isRecognizingRef.current = false;
           setListening(false);
-          if (!speakingRef.current) {
-            restartTimeoutRef.current = setTimeout(() => { safeStartRecognition(); }, 700);
+          if (!speakingRef.current && !isBotSpeakingRef.current) {
+            // Start immediately if not speaking
+            safeStartRecognition();
           }
         } catch {}
       };
@@ -110,14 +129,15 @@ const VoiceAssistantRent = () => {
             isRecognizingRef.current = false;
           } else {
             if (recognitionRef.current && !isRecognizingRef.current) {
-              restartTimeoutRef.current = setTimeout(() => { safeStartRecognition(); }, 1000);
+              safeStartRecognition();
             }
           }
         } catch {}
       };
       recognition.onresult = async (event) => {
+        // Guard to prevent mic from hearing bot
+        if (speakingRef.current || isBotSpeakingRef.current) return; // ignore bot voice
         try {
-          if (speakingRef.current || isBotSpeakingRef.current) { console.log("Ignoring speech — bot is talking"); return; }
           const userSpeech = event.results[0][0].transcript.trim();
           // LOG: Recognized speech
           console.log("🎤 Recognized speech:", userSpeech);
@@ -263,30 +283,26 @@ const VoiceAssistantRent = () => {
         utterance.voice = preferredVoice;
         console.log("🗣️ Using voice:", preferredVoice.name);
       }
-      utterance.onend = async () => {
+      utterance.onend = () => {
         console.log("🗣️ Bot finished speaking...");
         isBotSpeakingRef.current = false;
         speakingRef.current = false;
-        // Only auto-restart recognition if not at end
-        if (currentQuestionIdx < questions.length) {
-          if (recognitionRef.current) {
-            try {
-              recognitionRef.current.stop();
-              setTimeout(() => {
-                safeStartRecognition();
-              }, 1200);
-            } catch (err) {
-              console.warn("Restart error:", err);
-            }
-          }
+
+        // Play ready sound
+        if (readySound.current) {
+          readySound.current.currentTime = 0;
+          readySound.current.play().catch(err => console.warn("Sound play failed:", err));
         }
+
+        // Start recognition immediately
+        safeStartRecognition();
       };
       utterance.onerror = (err) => {
         console.error("Speech synthesis error:", err);
         isBotSpeakingRef.current = false;
         speakingRef.current = false;
         if (recognitionRef.current) {
-          setTimeout(() => safeStartRecognition(), 800);
+          safeStartRecognition();
         }
       };
       window.speechSynthesis.speak(utterance);
@@ -310,11 +326,23 @@ const VoiceAssistantRent = () => {
 
     return (
       <>
-       <TopNavigationBar
-        user={user}
-        handleLogout={handleLogout}
-        navItems={navItems}
-      />
+       {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
         <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #000814 0%, #001d3d 25%, #003566 50%, #001d3d 75%, #000814 100%)", backgroundSize: "400% 400%", animation: "gradientShift 15s ease infinite", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "10px" : "20px", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden" }}>
           
       <style>{`@keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } } @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 33% { transform: translateY(-20px) rotate(5deg); } 66% { transform: translateY(-10px) rotate(-5deg); } } @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.7; } } @keyframes ripple { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } } @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.5), 0 0 40px rgba(0, 167, 157, 0.3), 0 0 60px rgba(34, 211, 238, 0.2); } 50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.8), 0 0 80px rgba(0, 167, 157, 0.6), 0 0 120px rgba(34, 211, 238, 0.4); } } @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } } @keyframes particle { 0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-100vh) translateX(50px) scale(0); opacity: 0; } }`}</style>

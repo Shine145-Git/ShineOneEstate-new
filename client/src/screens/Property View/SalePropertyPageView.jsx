@@ -68,7 +68,7 @@ export default function SalePropertyPage() {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -144,7 +144,23 @@ export default function SalePropertyPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
-        <TopNavigationBar navItems={navItems} user={user} onLogout={handleLogout} />
+       {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '24px 8px' : '40px 20px', textAlign: 'center' }}>
           <div style={{ fontSize: isMobile ? '16px' : '18px', color: '#4A6A8A' }}>Loading property details...</div>
         </div>
@@ -957,7 +973,7 @@ export default function SalePropertyPage() {
               {sidebarSections}
               {propertyIDSection}
               <h3 style={{ marginTop: "20px", color: "#003366" }}>Map View</h3>
-              <div className="floating-map-btn-container">
+              {/* <div className="floating-map-btn-container">
                 <Button
                   variant="contained"
                   className="floating-map-btn"
@@ -966,7 +982,7 @@ export default function SalePropertyPage() {
                 >
                   View Map
                 </Button>
-              </div>
+              </div> */}
 
               <MapIntegration
                 open={openMapModal}

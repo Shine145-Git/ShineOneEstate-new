@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Modal from "@mui/material/Modal";
-import Box from "@mui/material/Box";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -48,16 +46,18 @@ const icons = {
   }),
 };
 
-const MapsIntegration = ({ open, onClose, sector, type }) => {
+const MapsIntegration = ({ sector, type }) => {
   const [apiKey, setApiKey] = useState(null);
   const [map, setMap] = useState(null);
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
 
+  const mapContainerId = "mapContainer-" + sector;
+
   useEffect(() => {
-    if (open && sector) {
+    if (sector) {
       fetchApiKey();
     }
-  }, [open, sector]);
+  }, [sector]);
 
   const fetchApiKey = async () => {
     try {
@@ -73,21 +73,27 @@ const MapsIntegration = ({ open, onClose, sector, type }) => {
   };
 
   useEffect(() => {
-    if (apiKey && open) {
+    if (apiKey && sector) {
       initMap();
     }
-  }, [apiKey, open]);
+    return () => {
+      if (map) {
+        map.remove();
+        setMap(null);
+      }
+    };
+  }, [apiKey, sector]);
 
   useEffect(() => {
-    if (map && open) {
+    if (map) {
       setTimeout(() => map.invalidateSize(), 300);
     }
-  }, [open]);
+  }, [map]);
 
   const initMap = async () => {
     if (map) return; // Prevent reinitialization
 
-    const mapInstance = L.map("mapContainer", {
+    const mapInstance = L.map(mapContainerId, {
       center: [28.4595, 77.0266], // Center at Gurgaon, Haryana
       zoom: 14,
       zoomControl: false,
@@ -103,7 +109,7 @@ const MapsIntegration = ({ open, onClose, sector, type }) => {
       }
     ).addTo(mapInstance);
 
-    // Force Leaflet to recalculate size after modal opens
+    // Force Leaflet to recalculate size after map renders
     setTimeout(() => {
       mapInstance.invalidateSize();
     }, 300);
@@ -191,116 +197,79 @@ const MapsIntegration = ({ open, onClose, sector, type }) => {
     setMap(mapInstance);
   };
 
-  const handleClose = () => {
-    if (map) {
-      map.remove();
-      setMap(null);
-    }
-    onClose();
-  };
-
   return (
-    <Modal open={open} onClose={handleClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: { xs: 350, sm: 400, md: 450 },
-          height: { xs: 480, sm: 520, md: 550 },
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          borderRadius: "10px",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: "10px",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        id={mapContainerId}
+        style={{
+          width: "100%",
+          height: "70%",
+        }}
+      />
+
+      <div
+        style={{
+          height: "30%",
+          overflowY: "auto",
+          padding: "10px",
+          backgroundColor: "#f9f9f9",
         }}
       >
-        {/* Close Button */}
-        <button
-          onClick={handleClose}
-          style={{
-            position: "absolute",
-            top: "8px",
-            right: "8px",
-            background: "#ff4d4d",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            padding: "4px 8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-          }}
-        >
-          ✕
-        </button>
-        {/* Map Section */}
-        <div
-          id="mapContainer"
-          style={{
-            width: "100%",
-            height: "70%",
-            borderRadius: "10px 10px 0 0",
-          }}
-        />
-
-        {/* List Section */}
-        <div
-          style={{
-            height: "30%",
-            overflowY: "auto",
-            padding: "10px",
-            backgroundColor: "#f9f9f9",
-          }}
-        >
-          <h4 style={{ margin: "0 0 8px 0", color: "#003366" }}>Nearby Places</h4>
-          {nearbyPlaces.length > 0 ? (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {nearbyPlaces.map((place, index) => (
-                <li
-                  key={index}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    marginBottom: "6px",
-                    fontSize: "14px",
-                  }}
-                >
-                  <img
-                    src={
-                      place.type?.includes("metro")
-                        ? icons.metro.options.iconUrl
-                        : place.type?.includes("park")
-                        ? icons.park.options.iconUrl
-                        : place.type?.includes("market") || place.type?.includes("store")
-                        ? icons.market.options.iconUrl
-                        : place.type?.includes("hospital")
-                        ? icons.hospital.options.iconUrl
-                        : place.type?.includes("school") || place.type?.includes("university")
-                        ? icons.school.options.iconUrl
-                        : place.type?.includes("mall")
-                        ? icons.mall.options.iconUrl
-                        : place.type?.includes("bank") || place.type?.includes("atm")
-                        ? icons.bank.options.iconUrl
-                        : "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png"
-                    }
-                    alt="icon"
-                    style={{ width: 18, height: 18, marginRight: 8 }}
-                  />
-                  <b>{place.name || "Unnamed Place"}</b>&nbsp;
-                  <span style={{ color: "gray" }}>
-                    ({place.type?.replace("_", " ") || "unknown"})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p style={{ color: "gray", fontSize: "13px" }}>No nearby places found.</p>
-          )}
-        </div>
-      </Box>
-    </Modal>
+        <h4 style={{ margin: "0 0 8px 0", color: "#003366" }}>Nearby Places</h4>
+        {nearbyPlaces.length > 0 ? (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {nearbyPlaces.map((place, index) => (
+              <li
+                key={index}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "6px",
+                  fontSize: "14px",
+                }}
+              >
+                <img
+                  src={
+                    place.type?.includes("metro")
+                      ? icons.metro.options.iconUrl
+                      : place.type?.includes("park")
+                      ? icons.park.options.iconUrl
+                      : place.type?.includes("market") || place.type?.includes("store")
+                      ? icons.market.options.iconUrl
+                      : place.type?.includes("hospital")
+                      ? icons.hospital.options.iconUrl
+                      : place.type?.includes("school") || place.type?.includes("university")
+                      ? icons.school.options.iconUrl
+                      : place.type?.includes("mall")
+                      ? icons.mall.options.iconUrl
+                      : place.type?.includes("bank") || place.type?.includes("atm")
+                      ? icons.bank.options.iconUrl
+                      : "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png"
+                  }
+                  alt="icon"
+                  style={{ width: 18, height: 18, marginRight: 8 }}
+                />
+                <b>{place.name || "Unnamed Place"}</b>&nbsp;
+                <span style={{ color: "gray" }}>
+                  ({place.type?.replace("_", " ") || "unknown"})
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ color: "gray", fontSize: "13px" }}>No nearby places found.</p>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -29,7 +29,7 @@ const handleLogout = async () => {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -177,11 +177,23 @@ const handleLogout = async () => {
       position: 'relative',
       overflow: 'hidden',
     }}>
-       <TopNavigationBar
-        user={user}
-        handleLogout={handleLogout}
-        navItems={navItems}
-      />
+       {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
       {/* Animated Background Elements */}
       <div style={{
         position: 'absolute',

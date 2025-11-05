@@ -16,7 +16,7 @@ const handleLogout = async () => {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -62,15 +62,27 @@ const handleLogout = async () => {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-   <TopNavigationBar
-        user={user}
-        handleLogout={handleLogout}
-        navItems={navItems}
-      />
+  {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative' }}>
         <div style={{ textAlign: 'center', marginBottom: '4rem', maxWidth: '800px' }}>
-          <h1 style={{ fontSize: '3.5rem', fontWeight: '700', color: '#FFFFFF', marginBottom: '1.5rem', letterSpacing: '-0.5px' }}>ggnRentalDeals Property Search</h1>
+          <h1 style={{ fontSize: '3.5rem', fontWeight: '700', color: '#FFFFFF', marginBottom: '1.5rem', letterSpacing: '-0.5px' }}>ggnHomes Property Search</h1>
           <p style={{ fontSize: '1.25rem', color: '#F4F7F9', lineHeight: '1.8', opacity: 0.9 }}>We will help you find the perfect property for rent or sale, and guide you through every step of your property search journey.</p>
         </div>
 

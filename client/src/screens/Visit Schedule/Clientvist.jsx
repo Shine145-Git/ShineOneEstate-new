@@ -78,7 +78,7 @@ export default function PropertyCheckout() {
       credentials: "include",
     });
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   // Fetch user information on mount
@@ -327,7 +327,7 @@ export default function PropertyCheckout() {
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       {/* Top navigation bar with user info and logout */}
-      <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
+      <div><TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} /></div>
 
       <div style={{ padding: '24px 16px', maxWidth: '800px', margin: '0 auto' }}>
         {/* Breadcrumb navigation */}
