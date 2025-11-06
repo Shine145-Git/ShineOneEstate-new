@@ -105,7 +105,7 @@ export default function PropertyCards() {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.REACT_APP_USER_PROPERTIES_API}`,
+        `${process.env.REACT_APP_Base_API}/api/properties/my`,
         { credentials: "include" }
       );
       const data = await response.json();

@@ -118,7 +118,7 @@ return (
           }}
           onClick={() => navigate("/")}
         >
-          {isSmallScreen ? "ggnHomes": "ggnHomes"}
+          {isSmallScreen ? "ggnHome": "ggnHome"}
         </div>
       </div>
 

@@ -1355,7 +1355,7 @@ export default function RealEstateDashboard() {
               marginBottom: isMobile ? "0.2rem" : "0.5rem",
             }}
           >
-            ggnHomes – Find Your Dream Home
+            ggnHome – Find Your Dream Home
           </h3>
           <p
             style={{
@@ -1393,7 +1393,7 @@ export default function RealEstateDashboard() {
               color: "#B0C4DE",
             }}
           >
-            © {new Date().getFullYear()} ggnHomes. All rights reserved.
+            © {new Date().getFullYear()} ggnHome. All rights reserved.
           </div>
         </div>
       </footer>

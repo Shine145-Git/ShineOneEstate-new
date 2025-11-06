@@ -277,7 +277,7 @@ export default function LandingPage() {
             <span style={styles.highlight}>
               Site Visits & Evaluate Projects
             </span>{" "}
-            with <span style={styles.brandName}>ggnHomes</span>
+            with <span style={styles.brandName}>ggnHome</span>
           </h1>
           <p style={styles.bannerSubtext}>
             Get <strong>Free Cab</strong> for every site visit!{" "}
@@ -326,7 +326,7 @@ export default function LandingPage() {
                     : undefined,
                 }}
               >
-                ggnHomes
+                ggnHome
               </p>
               <img
                 src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800"
