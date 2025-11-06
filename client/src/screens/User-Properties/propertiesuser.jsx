@@ -168,9 +168,32 @@ export default function PropertyCards() {
         { method: "DELETE", credentials: "include" }
       );
       if (response.ok) {
-        setProperties(properties.filter((p) => p._id !== propertyId));
-        setDeleteModal({ show: false, propertyId: null });
+        // Try to get updated property data from backend
+        const updatedProperty = await response.json();
+        if (updatedProperty && typeof updatedProperty === "object" && updatedProperty._id) {
+          setProperties((prev) =>
+            prev.map((p) =>
+              p._id === propertyId ? { ...p, ...updatedProperty } : p
+            )
+          );
+        } else {
+          // If no updated property, fallback to toggling isActive
+          setProperties((prev) =>
+            prev.map((p) =>
+              p._id === propertyId ? { ...p, isActive: !p.isActive } : p
+            )
+          );
+        }
+      } else {
+        // If not ok, fallback to toggling isActive
+        setProperties((prev) =>
+          prev.map((p) =>
+            p._id === propertyId ? { ...p, isActive: !p.isActive } : p
+          )
+        );
+        console.error("Failed to update property status");
       }
+      setDeleteModal({ show: false, propertyId: null });
     } catch (error) {
       console.error("Error:", error);
     }
