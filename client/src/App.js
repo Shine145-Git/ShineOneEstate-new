@@ -32,6 +32,7 @@ import EnquiryPage from "./screens/Visit Schedule/enquiry";
 import AboutPage from "./screens/Customer Support/About";
 import AdminPropertyManager from "./screens/Admin Page/admin.propertyManager";
 import AdminProtectedRoute from "./screens/Admin Page/AdminProtectedRoutes";
+import AdminPropertyListingForm from "./screens/Admin Page/admin.addproperty";
 
 function App() {
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ function App() {
       <Route path="/admin/callback" element={<AdminProtectedRoute element={<CallbackRequestsDashboard />} />} />
       <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<AdminProperties />} />} />
       <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />
+      <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
 
       <Route path="/support" element={<CustomerSupportPage />} />
       <Route path="/chatbot" element={<Chatbot />} />

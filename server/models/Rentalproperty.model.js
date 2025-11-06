@@ -61,6 +61,7 @@ const RentalpropertySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    ownernumber: { type: String },
 
     isActive: { type: Boolean, default: true }
   },

@@ -28,6 +28,7 @@ totalArea: {
   Sector: { type: String , required: true},
   images: [String],
   defaultpropertytype: { type: String, default: "sale", immutable: true },
+  ownernumber: { type: String },
   isActive: { type: Boolean, default: true },
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,

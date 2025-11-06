@@ -13,13 +13,13 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import axios from "axios";
+import TopNavigationBar from "../Dashboard/TopNavigationBar";
 
 
-export default function PropertyListingForm() {
+export default function AdminPropertyListingForm() {
   // --- Hooks at the top ---
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -31,9 +31,9 @@ export default function PropertyListingForm() {
     bedrooms: "",
     bathrooms: "",
     totalArea: {
-  sqft: "",
-  configuration: "",
-},
+      sqft: "",
+      configuration: "",
+    },
     images: [],
     // Rental-specific fields
     title: "",
@@ -65,6 +65,7 @@ export default function PropertyListingForm() {
     location: "",
     Sector: "",
     area: "",
+    ownerNumber: "",
   });
   const [images, setImages] = useState([]);
   const imageInputRef = useRef();
@@ -72,32 +73,6 @@ export default function PropertyListingForm() {
   const navigate = useNavigate();
 
 
-  const handleLogout = async () => {
-    await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
-      method: "POST",
-      credentials: "include",
-    });
-    setUser(null);
-    navigate("/");
-  };
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (res.ok) setUser(data);
-      } catch (err) {
-        console.error("Error fetching user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   // --- Step definitions ---
   const getRentalSteps = () => [
@@ -182,7 +157,34 @@ export default function PropertyListingForm() {
   } else {
     setFormData({ ...formData, [name]: value });
   }
-};
+  };
+    
+const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/add-property");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
      // Check if total images exceed 8
@@ -538,6 +540,19 @@ export default function PropertyListingForm() {
             </div>
           </div>
         )}
+        <div style={fieldStyle}>
+          <label style={inputLabelStyle}>Owner Number *</label>
+          <input
+            type="text"
+            name="ownerNumber"
+            value={formData.ownerNumber}
+            onChange={handleChange}
+            placeholder="Enter owner's contact number"
+            style={inputStyle}
+            onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+          />
+        </div>
       </div>
     );
   }
@@ -1432,24 +1447,25 @@ export default function PropertyListingForm() {
               }`}
           </style>
         </div>
-      )}
-      {/* Top Navigation Bar */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          zIndex: 999,
-          backgroundColor: "#FFFFFF" // or match your navbar background
-        }}
-      >
-        <TopNavigationBar
-          user={user}
-          handleLogout={handleLogout}
-          navItems={navItems}
-        />
-      </div>
+          )}
+                {/* Top Navigation Bar */}
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    zIndex: 999,
+                    backgroundColor: "#FFFFFF" // or match your navbar background
+                  }}
+                >
+                  <TopNavigationBar
+                    user={user}
+                    handleLogout={handleLogout}
+                    navItems={navItems}
+                  />
+                </div>
+      
       <div style={mainContentStyle}>
         {/* Sidebar with steps */}
         {formData.purpose && (

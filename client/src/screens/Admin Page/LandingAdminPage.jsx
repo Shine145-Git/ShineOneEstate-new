@@ -121,7 +121,16 @@ const AdminLandingPage = () => {
       color: '#6366f1',
       gradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
     },
-  ];
+    {
+    id: 'addProperty',
+    title: 'Add Property',
+    description: 'Add new property listings to the system',
+    icon: Home,
+    route: '/admin/add-property',
+    color: '#f97316', // orange color similar to other cards
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+  },
+];
 
   const styles = {
     container: {
