@@ -127,12 +127,7 @@ export default function AdminProperties() {
         });
         const data = await res.json();
         if (res.ok) {
-          // Check user role
-          if (data.role !== "admin") {
-            alert("You are not authorized to access this page");
-            navigate("/login"); // redirect non-admin users
-            return;
-          }
+        
           setUser(data);
         } else {
           navigate("/login"); // redirect if not logged in
