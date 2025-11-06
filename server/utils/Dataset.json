@@ -1,13 +1,13 @@
 [
   {
     "id": 1,
-    "question": "Hello, how can I use ggnRentalDeals chatbot?",
+    "question": "Hello, how can I use ggnHome chatbot?",
     "response": "Hi! You can ask me any questions related to renting properties, legal advice, property types, prices, and more. Just type your query and I'll assist you.",
     "followUps": [
       {
         "id": 2,
         "question": "What kind of questions can I ask?",
-        "response": "You can ask about property listings, rental prices, legal documentation, amenities, local laws, and the advantages of using ggnRentalDeals.",
+        "response": "You can ask about property listings, rental prices, legal documentation, amenities, local laws, and the advantages of using ggnHome.",
         "followUps": [
           {
             "id": 3,
@@ -27,7 +27,7 @@
                   {
                     "id": 6,
                     "question": "Are there any legal protections for tenants?",
-                    "response": "Yes, ggnRentalDeals ensures legal protection by verifying property documents and offering assistance with agreements to protect tenants' rights."
+                "response": "Yes, ggnHome ensures legal protection by verifying property documents and offering assistance with agreements to protect tenants' rights."
                   }
                 ]
               },
@@ -60,7 +60,7 @@
       {
         "id": 11,
         "question": "How do I start searching for properties?",
-        "response": "You can specify your preferences like location, budget, property type, and I will help you find suitable listings on ggnRentalDeals.",
+        "response": "You can specify your preferences like location, budget, property type, and I will help you find suitable listings on ggnHome.",
         "followUps": [
           {
             "id": 12,
@@ -90,8 +90,8 @@
   },
   {
     "id": 16,
-    "question": "What are the advantages of using ggnRentalDeals?",
-    "response": "ggnRentalDeals offers verified listings, legal document checks, PPR verification, and customer support to ensure a secure and hassle-free rental experience.",
+    "question": "What are the advantages of using ggnHome?",
+    "response": "ggnHome offers verified listings, legal document checks, PPR verification, and customer support to ensure a secure and hassle-free rental experience.",
     "followUps": [
       {
         "id": 17,
@@ -103,11 +103,11 @@
             "question": "Why is PPR verification important?",
             "response": "It protects you from fraudulent listings and ensures the property is legally owned and available for rent or sale.",
             "followUps": [
-              {
-                "id": 19,
-                "question": "How does ggnRentalDeals perform PPR checks?",
-                "response": "We collaborate with local authorities to verify property records and cross-check ownership documents before listing."
-              },
+          {
+            "id": 19,
+            "question": "How does ggnHome perform PPR checks?",
+            "response": "We collaborate with local authorities to verify property records and cross-check ownership documents before listing."
+          },
               {
                 "id": 20,
                 "question": "Can I get a copy of the PPR report?",
@@ -119,7 +119,7 @@
       },
       {
         "id": 21,
-        "question": "Does ggnRentalDeals offer legal protection?",
+        "question": "Does ggnHome offer legal protection?",
         "response": "Yes, we assist with drafting and reviewing rental agreements to ensure compliance with local laws and protect your rights.",
         "followUps": [
           {
@@ -129,14 +129,14 @@
           },
           {
             "id": 23,
-            "question": "Can ggnRentalDeals help resolve disputes?",
+            "question": "Can ggnHome help resolve disputes?",
             "response": "We provide guidance and support for dispute resolution between tenants and landlords when required."
           }
         ]
       },
       {
         "id": 24,
-        "question": "What other goodies does ggnRentalDeals offer?",
+        "question": "What other goodies does ggnHome offer?",
         "response": "We offer customer support, easy search filters, verified agents, and timely updates on new listings.",
         "followUps": [
           {
@@ -184,7 +184,7 @@
   },
   {
     "id": 32,
-    "question": "What types of properties are available on ggnRentalDeals?",
+    "question": "What types of properties are available on ggnHome?",
     "response": "We list apartments, villas, independent floors, studio apartments, and commercial properties.",
     "followUps": [
       {
@@ -243,7 +243,7 @@
           {
             "id": 42,
             "question": "Does ggnRentalDeals verify RERA registration?",
-            "response": "Yes, we verify RERA registration for listed properties to ensure legitimacy."
+        "response": "Yes, we verify RERA registration for listed properties to ensure legitimacy."
           }
         ]
       },
@@ -319,7 +319,7 @@
     "followUps": [
       {
         "id": 55,
-        "question": "Can ggnRentalDeals help with loan documentation?",
+        "question": "Can ggnHome help with loan documentation?",
         "response": "We can guide you through the required documents and connect you with financial partners."
       },
       {
@@ -336,14 +336,14 @@
     "followUps": [
       {
         "id": 58,
-        "question": "Can ggnRentalDeals verify ownership for me?",
+        "question": "Can ggnHome verify ownership for me?",
         "response": "Yes, we perform ownership verification as part of our listing process."
       }
     ]
   },
   {
     "id": 59,
-    "question": "Are brokerage fees applicable on ggnRentalDeals?",
+    "question": "Are brokerage fees applicable on ggnHome?",
     "response": "Brokerage fees vary; some listings are direct from owners with no brokerage, while others involve agent fees.",
     "followUps": [
       {
@@ -355,7 +355,7 @@
   },
   {
     "id": 61,
-    "question": "How can I list my property on ggnRentalDeals?",
+    "question": "How can I list my property on ggnHome?",
     "response": "You can register as a property owner or agent and submit your property details through our platform.",
     "followUps": [
       {
@@ -401,7 +401,7 @@
     "followUps": [
       {
         "id": 69,
-        "question": "Can ggnRentalDeals filter pet-friendly properties?",
+        "question": "Can ggnHome filter pet-friendly properties?",
         "response": "Yes, you can specify pet-friendly as a filter in your property search."
       }
     ]
@@ -421,11 +421,11 @@
   {
     "id": 72,
     "question": "How do I report a problem with my rental property?",
-    "response": "You can contact the landlord or ggnRentalDeals customer support for assistance.",
+    "response": "You can contact the landlord or ggnHome customer support for assistance.",
     "followUps": [
       {
         "id": 73,
-        "question": "Does ggnRentalDeals offer maintenance services?",
+        "question": "Does ggnHome offer maintenance services?",
         "response": "We can connect you with trusted service providers for repairs and maintenance."
       }
     ]
@@ -433,7 +433,7 @@
   {
     "id": 74,
     "question": "What safety measures are in place for tenants?",
-    "response": "Properties listed with ggnRentalDeals undergo verification, and many have security features like CCTV and guards.",
+    "response": "Properties listed with ggnHome undergo verification, and many have security features like CCTV and guards.",
     "followUps": [
       {
         "id": 75,
@@ -461,7 +461,7 @@
     "followUps": [
       {
         "id": 79,
-        "question": "Are agents on ggnRentalDeals verified?",
+        "question": "Are agents on ggnHome verified?",
         "response": "Yes, all agents are verified to ensure trustworthy service."
       }
     ]
@@ -497,7 +497,7 @@
     "followUps": [
       {
         "id": 85,
-        "question": "Does ggnRentalDeals offer legal support?",
+        "question": "Does ggnHome offer legal support?",
         "response": "We provide guidance and connect you with legal experts when needed."
       }
     ]
@@ -509,7 +509,7 @@
     "followUps": [
       {
         "id": 87,
-        "question": "How does ggnRentalDeals prevent scams?",
+        "question": "How does ggnHome prevent scams?",
         "response": "We verify all listings and documents before publishing and monitor agent activities."
       }
     ]
@@ -533,7 +533,7 @@
     "followUps": [
       {
         "id": 91,
-        "question": "Can ggnRentalDeals help draft rent agreements?",
+        "question": "Can ggnHome help draft rent agreements?",
         "response": "Yes, we provide templates and legal review services."
       }
     ]
@@ -588,7 +588,7 @@
   },
   {
     "id": 100,
-    "question": "How do I update my profile on ggnRentalDeals?",
+    "question": "How do I update my profile on ggnHome?",
     "response": "You can update your profile details by logging into your account and editing your information.",
     "followUps": [
       {
@@ -598,4 +598,175 @@
       }
     ]
   }
+,
+{
+  "id": 102,
+  "question": "Can ggnHome predict property prices using AI?",
+  "response": "Yes! ggnHome uses AI models to predict property prices by analyzing market data, demand, amenities, and location trends.",
+  "followUps": [
+    {
+      "id": 103,
+      "question": "How accurate are ggnHome’s predictions?",
+      "response": "Our AI predictions are based on extensive datasets and are typically within 5-10% accuracy of market value."
+    },
+    {
+      "id": 104,
+      "question": "Can I use the price predictor for my own property?",
+      "response": "Absolutely! You can input your property details in the Price Predictor section to get an estimated value instantly."
+    }
+  ]
+},
+{
+  "id": 105,
+  "question": "Does ggnHome help with home loan assistance?",
+  "response": "Yes, ggnHome connects you with verified banking partners to simplify home loan applications and approvals.",
+  "followUps": [
+    {
+      "id": 106,
+      "question": "What documents are needed for a home loan?",
+      "response": "You’ll need ID proof, income proof, property documents, and recent bank statements."
+    },
+    {
+      "id": 107,
+      "question": "Can I check my loan eligibility on ggnHome?",
+      "response": "Yes, use our eligibility checker tool to get pre-approved insights instantly."
+    }
+  ]
+},
+{
+  "id": 108,
+  "question": "Does ggnHome support eco-friendly housing?",
+  "response": "Yes! We promote eco-conscious listings that include solar panels, rainwater harvesting, and energy-efficient designs.",
+  "followUps": [
+    {
+      "id": 109,
+      "question": "Can I filter properties by sustainability features?",
+      "response": "Yes, you can filter listings by eco-friendly features under Advanced Filters."
+    },
+    {
+      "id": 110,
+      "question": "Are there government incentives for green housing?",
+      "response": "Yes, several Indian states offer tax rebates and interest subsidies for eco-friendly homes."
+    }
+  ]
+},
+{
+  "id": 111,
+  "question": "How can I invest in real estate using ggnHome?",
+  "response": "ggnHome provides verified investment properties and detailed ROI insights to help you make smarter decisions.",
+  "followUps": [
+    {
+      "id": 112,
+      "question": "Does ggnHome show projected returns?",
+      "response": "Yes, our investment listings display projected ROI and growth potential based on market analysis."
+    },
+    {
+      "id": 113,
+      "question": "Can I compare investment properties?",
+      "response": "Absolutely! You can compare properties based on price, location, and yield to make informed choices."
+    }
+  ]
+},
+{
+  "id": 114,
+  "question": "Does ggnHome provide property management services?",
+  "response": "Yes, we offer end-to-end property management for owners, including tenant management, maintenance, and rent collection.",
+  "followUps": [
+    {
+      "id": 115,
+      "question": "Can I track my property’s performance online?",
+      "response": "Yes, the owner dashboard provides real-time data on occupancy, income, and maintenance requests."
+    },
+    {
+      "id": 116,
+      "question": "Does ggnHome handle maintenance issues?",
+      "response": "Yes, our partner service team manages cleaning, plumbing, and electrical maintenance."
+    }
+  ]
+},
+{
+  "id": 117,
+  "question": "How does ggnHome help with interior design?",
+  "response": "We collaborate with professional interior designers to offer personalized space planning and furnishing services.",
+  "followUps": [
+    {
+      "id": 118,
+      "question": "Can I book a design consultation through ggnHome?",
+      "response": "Yes, you can schedule a consultation directly through the Interiors section on our website."
+    },
+    {
+      "id": 119,
+      "question": "Are design services available for rentals too?",
+      "response": "Yes, we also offer budget-friendly design packages for rented homes."
+    }
+  ]
+},
+{
+  "id": 120,
+  "question": "Does ggnHome provide real estate market insights?",
+  "response": "Yes, we regularly publish market trends, price indexes, and sector reports for informed decision-making.",
+  "followUps": [
+    {
+      "id": 121,
+      "question": "Can I subscribe to market updates?",
+      "response": "Yes, you can subscribe to our newsletter for weekly updates on property trends and investments."
+    },
+    {
+      "id": 122,
+      "question": "Do you provide city-wise comparisons?",
+      "response": "Yes, we provide comparative data for major cities like Gurgaon, Delhi, Noida, and Mumbai."
+    }
+  ]
+},
+{
+  "id": 123,
+  "question": "Can ggnHome help me understand property taxes?",
+  "response": "Yes, ggnHome provides tools and articles that explain property tax calculations, payments, and exemptions.",
+  "followUps": [
+    {
+      "id": 124,
+      "question": "Are there online tools for tax calculation?",
+      "response": "Yes, our tax calculator lets you estimate property tax for your area."
+    },
+    {
+      "id": 125,
+      "question": "Does ggnHome offer reminders for tax deadlines?",
+      "response": "Yes, you can set up alerts in your profile for upcoming tax and rent due dates."
+    }
+  ]
+},
+{
+  "id": 126,
+  "question": "What government housing schemes does ggnHome cover?",
+  "response": "We provide detailed information and eligibility guidance for schemes like PMAY and Haryana Affordable Housing.",
+  "followUps": [
+    {
+      "id": 127,
+      "question": "Can ggnHome help me apply for PMAY?",
+      "response": "Yes, we guide you through the application and documentation process for PMAY benefits."
+    },
+    {
+      "id": 128,
+      "question": "Are there income limits for these schemes?",
+      "response": "Yes, eligibility depends on your income bracket, family size, and property value."
+    }
+  ]
+},
+{
+  "id": 129,
+  "question": "Does ggnHome support smart home listings?",
+  "response": "Yes, we feature smart homes equipped with IoT-enabled security, lighting, and energy control systems.",
+  "followUps": [
+    {
+      "id": 130,
+      "question": "Can I install smart systems in my existing home?",
+      "response": "Yes, we can connect you with certified installers for smart devices like cameras, sensors, and thermostats."
+    },
+    {
+      "id": 131,
+      "question": "Are smart homes costlier than regular ones?",
+      "response": "They may have slightly higher upfront costs but offer long-term savings in energy and maintenance."
+    }
+  ]
+}
 ]
