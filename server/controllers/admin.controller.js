@@ -1,3 +1,16 @@
+const Payment = require('../models/Payment.model');
+const mongoose = require('mongoose');
+const RentalProperty = mongoose.models.RentalProperty || require('../models/RentalProperty.model');
+const SaleProperty = mongoose.models.SaleProperty || require('../models/SaleProperty.model');
+const User = require('../models/user.model');
+const UserPreferencesARIA = require('../models/UserPreferencesARIA.model');
+const SearchHistory = require('../models/SearchHistory.model');
+const PropertyAnalysis = require('../models/PropertyAnalysis.model');
+const Reward = require('../models/Rewards.model');
+const CustomerSupport = require('../models/CustomerSupport.model');
+
+
+
 // Toggle ACTIVE / INACTIVE for Rental or Sale property
 const toggleActiveStatus = async (req, res) => {
   try {
@@ -73,16 +86,7 @@ const toggleReviewStatus = async (req, res) => {
     res.status(500).json({ message: "Error toggling property review status", error: error.message });
   }
 };
-const Payment = require('../models/Payment.model');
-const mongoose = require('mongoose');
-const RentalProperty = mongoose.models.RentalProperty || require('../models/RentalProperty.model');
-const SaleProperty = mongoose.models.SaleProperty || require('../models/SaleProperty.model');
-const User = require('../models/user.model');
-const UserPreferencesARIA = require('../models/UserPreferencesARIA.model');
-const SearchHistory = require('../models/SearchHistory.model');
-const PropertyAnalysis = require('../models/PropertyAnalysis.model');
-const Reward = require('../models/Rewards.model');
-const CustomerSupport = require('../models/CustomerSupport.model');
+
 
 
 const getCallbackRequests = async (req, res) => {
@@ -783,6 +787,42 @@ const getUserRewardsStatus = async (req, res) => {
   }
 };
 
+// Update a user's role (only admins can perform this)
+const updateUserRole = async (req, res) => {
+  try {
+    const { email, role } = req.body;
+
+    if (!email || !role) {
+      return res.status(400).json({ message: "Email and role are required" });
+    }
+
+    // Verify the requester is admin
+    const requestingUser = await User.findById(req.user.id);
+    if (!requestingUser || requestingUser.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized: Only admins can update roles" });
+    }
+
+    // Update target user's role
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
+      { role },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: `User role updated successfully to ${role}`,
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    res.status(500).json({ message: "Error updating user role", error: error.message });
+  }
+};
+
 module.exports = {
   getPendingPayments,
   updatePaymentStatus,
@@ -792,5 +832,6 @@ module.exports = {
   getCallbackRequests,
   getUserRewardsStatus,
   toggleActiveStatus,
-  toggleReviewStatus
+  toggleReviewStatus,
+  updateUserRole
 };

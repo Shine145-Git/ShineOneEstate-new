@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const User = require("../models/user.model.js");
 
 const multer = require("multer");
 const excelUpload = multer({ storage: multer.memoryStorage() });
@@ -19,7 +20,7 @@ const {
   
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
-const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus } = require("../controllers/admin.controller");
+const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole } = require("../controllers/admin.controller");
 const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
 const { createPayment, getPaymentsForUser } = require("../controllers/payment.controller");
@@ -34,13 +35,40 @@ const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
 
 
 // Helper middleware to restrict access to admins only
-const checkAdminEmail = (req, res, next) => {
-  const adminEmails = ["tanushchawla16@gmail.com", "bharatchawla2002@yahoo.com"];
-  if (!req.user || !adminEmails.includes(req.user.email)) {
-    return res.status(403).json({ message: "Access denied: Admins only" });
+const checkAdminEmail = async (req, res, next) => {
+  try {
+    // Ensure the user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: No user data found" });
+    }
+
+    // Fetch the user from the database
+    const user = await User.findById(req.user.id);
+
+    // Check if user exists and has admin role
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
+
+    // Attach user to request for further usage
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Error in checkAdminEmail middleware:", error);
+    res.status(500).json({ message: "Server error verifying admin access" });
   }
-  next();
 };
+router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
+  try {
+    const { role } = req.query;
+    const filter = role ? { role } : {};
+    const users = await User.find(filter).select("email role");
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Server error fetching users" });
+  }
+});
 
 // ================== AUTH ROUTES ==================
 router.post("/login/request-otp", requestOtp);
@@ -84,9 +112,12 @@ router.get("/api/get-callback-requests", verifyToken, checkAdminEmail, getCallba
 // New admin route for fetching reward status per user
 router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRewardsStatus);
 
+router.patch("/api/admin/update-role", verifyToken, checkAdminEmail, updateUserRole);
+
 // ================== PROPERTY STATUS ROUTES (ADMIN) ==================
 router.patch("/api/admin/property/:id/toggle-active", verifyToken, checkAdminEmail, toggleActiveStatus);
 router.patch("/api/admin/property/:id/toggle-review", verifyToken, checkAdminEmail, toggleReviewStatus);
+
 
 // ================== AI ROUTES ==================
 router.post("/api/predict-price", verifyToken, predictPrice);

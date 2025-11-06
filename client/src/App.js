@@ -31,6 +31,7 @@ import AdminLandingPage from "./screens/Admin Page/LandingAdminPage";
 import EnquiryPage from "./screens/Visit Schedule/enquiry";
 import AboutPage from "./screens/Customer Support/About";
 import AdminPropertyManager from "./screens/Admin Page/admin.propertyManager";
+import AdminProtectedRoute from "./screens/Admin Page/AdminProtectedRoutes";
 
 function App() {
   const navigate = useNavigate();
@@ -63,13 +64,13 @@ function App() {
       <Route path="/price-predictor" element={<PricePredictor />} />
 
       
-      <Route path="/admin/Landingpage" element={<AdminLandingPage />} />
-      <Route path="/admin/Dashboard" element={<AdminDashboard />} />
-      <Route path="/admin/UserManagement" element={<UserManagementSystem />} />
-      <Route path="/admin/enquiries" element={<PaymentsRewardsDashboard />} />
-      <Route path="/admin/callback" element={<CallbackRequestsDashboard />} />
-      <Route path="/admin/rewardsproperties" element={<AdminProperties />} />
-      <Route path="/admin/propertymanager" element={<AdminPropertyManager />} />
+      <Route path="/admin/Landingpage" element={<AdminProtectedRoute element={<AdminLandingPage />} />} />
+      <Route path="/admin/Dashboard" element={<AdminProtectedRoute element={<AdminDashboard />} />} />
+      <Route path="/admin/UserManagement" element={<AdminProtectedRoute element={<UserManagementSystem />} />} />
+      <Route path="/admin/enquiries" element={<AdminProtectedRoute element={<PaymentsRewardsDashboard />} />} />
+      <Route path="/admin/callback" element={<AdminProtectedRoute element={<CallbackRequestsDashboard />} />} />
+      <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<AdminProperties />} />} />
+      <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />
 
       <Route path="/support" element={<CustomerSupportPage />} />
       <Route path="/chatbot" element={<Chatbot />} />

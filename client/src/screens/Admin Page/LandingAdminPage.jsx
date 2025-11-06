@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -14,9 +14,56 @@ import {
 
 const AdminLandingPage = () => {
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [admins, setAdmins] = useState([]);
+  const emailRef = useRef();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleNavigation = (route) => {
     window.location.href = route;
+  };
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_Base_API}/api/users?role=admin`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) setAdmins(data);
+      } catch (error) {
+        console.error("Error fetching admins:", error);
+      }
+    };
+    fetchAdmins();
+  }, []);
+
+  const handleUpdateRole = async () => {
+    const email = emailRef.current.value;
+    if (!email) return alert("Please enter an email");
+    setLoading(true);
+    setMessage("");
+    try {
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/update-role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, role: "admin" }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage("Admin role updated successfully");
+        setAdmins((prev) => [...prev, data.user]);
+        emailRef.current.value = "";
+      } else {
+        setMessage(data.message || "Failed to update role");
+      }
+    } catch (err) {
+      console.error("Error updating role:", err);
+      setMessage("Error updating role");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const adminCards = [
@@ -237,6 +284,44 @@ const AdminLandingPage = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Admin Access Management */}
+        <div style={{ marginTop: "60px", padding: "30px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.05)" }}>
+          <h2 style={{ fontSize: "24px", marginBottom: "20px", color: "#0f172a" }}>Manage Admin Access</h2>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "20px" }}>
+            <input
+              type="email"
+              ref={emailRef}
+              placeholder="Enter user email"
+              style={{ padding: "10px 14px", flex: "1", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+            />
+            <button
+              onClick={handleUpdateRole}
+              disabled={loading}
+              style={{
+                backgroundColor: "#3b82f6",
+                color: "#fff",
+                border: "none",
+                padding: "10px 18px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "600",
+              }}
+            >
+              {loading ? "Updating..." : "Grant Admin"}
+            </button>
+          </div>
+          {message && <p style={{ color: "#10b981", marginBottom: "20px" }}>{message}</p>}
+
+          <h3 style={{ fontSize: "18px", marginBottom: "12px", color: "#334155" }}>Current Admins:</h3>
+          <ul style={{ listStyle: "none", padding: 0, color: "#475569" }}>
+            {admins.length > 0 ? (
+              admins.map((admin, idx) => <li key={idx} style={{ marginBottom: "8px" }}>• {admin.email}</li>)
+            ) : (
+              <li>No admins found</li>
+            )}
+          </ul>
         </div>
       </div>
     </div>
