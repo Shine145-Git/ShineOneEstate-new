@@ -11,7 +11,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
     const sender = {
       email: process.env.SENDER_EMAIL,
-      name: process.env.SENDER_NAME || "ggnRentalDeals"
+      name: process.env.SENDER_NAME || "www.ggnHome.com"
     };
 
     const receivers = [{ email: to }];
