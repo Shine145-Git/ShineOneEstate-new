@@ -37,7 +37,7 @@ exports.requestOtp = async (req, res) => {
     // Production mode: send via Brevo
     const emailParams = {
       to: email,
-      subject: "Your OTP Code for ggnRentalDeals",
+      subject: "Your OTP Code for www.ggnHome.com",
       text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
       html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`
     };
