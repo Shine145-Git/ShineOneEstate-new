@@ -394,27 +394,33 @@ exports.searchPropertiesonLocation = async (req, res) => {
       return res.status(400).json({ message: "Search query is required" });
     }
     // ----- Save user search history -----
-    if (userId) {
-      const lastEntry = await SearchHistory.findOne({ user: userId }).sort({
-        createdAt: -1,
-      });
-      const currentQuery = queryFields.join(", ");
-      if (!lastEntry || lastEntry.query !== currentQuery) {
-        await SearchHistory.create({
-          user: userId,
-          query: currentQuery,
-        });
-      }
-    }
-    // ----- Build OR search conditions -----
-    const orConditions = queryFields.flatMap((field) => {
-      const regex = new RegExp(field, "i");
-      return [
-        { Sector: regex },
-        { localAmenities: regex },
-        { propertyType: regex },
-      ];
+   // ----- Save user search history (no duplicates) -----
+if (userId) {
+  const currentQuery = queryFields.join(", ");
+  const exists = await SearchHistory.findOne({
+    user: userId,
+    query: currentQuery,
+  });
+
+  if (!exists) {
+    await SearchHistory.create({
+      user: userId,
+      query: currentQuery,
+      type: "location", // optional tagging
     });
+  }
+}
+    // ----- Build OR search conditions -----
+   const orConditions = queryFields.flatMap((field) => {
+  const regex = new RegExp(field, "i");
+  return [
+    { Sector: regex },
+    { address: regex },
+    { city: regex },
+    { state: regex },
+    { locality: regex }, // optional if exists
+  ];
+});
     // ----- Query Rental Properties -----
     const results = await RentalProperty.find({
       $and: [{ isActive: true }, { $or: orConditions }],
