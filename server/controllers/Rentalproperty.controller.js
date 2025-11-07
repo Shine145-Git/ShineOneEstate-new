@@ -186,6 +186,7 @@ const createRentalProperty = async (req, res) => {
 
 // ==============================
 // 🔹 getAllProperties
+// Not Used At any where place
 // ==============================
 const getAllRentalProperties = async (req, res) => {
   try {

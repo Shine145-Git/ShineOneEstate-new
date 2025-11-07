@@ -102,7 +102,7 @@ const AdminEnquiryProperties = () => {
     pageWrapper: {
       minHeight: "100vh",
       backgroundColor: "#f8fafc",
-      paddingTop: "80px",
+      paddingTop: "0px",
     },
     container: {
       maxWidth: "1400px",
@@ -428,7 +428,26 @@ const AdminEnquiryProperties = () => {
   return (
     <div style={styles.pageWrapper}>
       <style>{keyframesStyle}</style>
-      {/* <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} /> */}
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          marginBottom: "20px",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
+      {/* Spacer to push content below fixed navbar */}
+      <div style={{ height: 72 }} />
 
       <div style={styles.container}>
         <div style={styles.header}>

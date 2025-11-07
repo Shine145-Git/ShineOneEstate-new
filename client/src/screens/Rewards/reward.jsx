@@ -9,6 +9,9 @@ export default function RewardsPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 968 : false);
+  const [boxOpen, setBoxOpen] = useState(false);
+  const [justArrived, setJustArrived] = useState(false);
   const navigate = useNavigate();
 
   // Mouse parallax effect
@@ -21,6 +24,12 @@ export default function RewardsPage() {
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 968);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
 const handleLogout = async () => {
@@ -51,25 +60,6 @@ const handleLogout = async () => {
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
 
-  // Simulated API calls - replace with your actual API calls
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        // const res = await fetch(process.env.REACT_APP_USER_ME_API, {
-        //   method: "GET",
-        //   credentials: "include",
-        // });
-        // const data = await res.json();
-        // if (res.ok) setUser(data);
-        
-        // Simulated user data
-        setUser({ name: "User" });
-      } catch (err) {
-        console.error("Error fetching user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
 
   useEffect(() => {
     const fetchReward = async () => {
@@ -93,6 +83,12 @@ const handleLogout = async () => {
             isActive: reward.isActive,
             formLink,
           }]);
+          const isNewActive = !!(reward.isActive && !reward.viewed);
+          setJustArrived(isNewActive);
+          setBoxOpen(false);
+          if (isNewActive) {
+            setTimeout(() => setBoxOpen(true), 800);
+          }
         }
         setLoading(false);
       } catch (err) {
@@ -116,6 +112,7 @@ const handleLogout = async () => {
         flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
+        
       }}>
 
   
@@ -173,7 +170,7 @@ const handleLogout = async () => {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)',
       fontFamily: 'system-ui, -apple-system, sans-serif',
-     
+     marginTop: '80px',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -245,15 +242,18 @@ const handleLogout = async () => {
             boxSizing: 'border-box',
           }}>
             {/* Left Side - Visual (60%) */}
-            <div style={{
-              flex: '0 0 60%',
-              background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
+            <div
+              style={{
+                flex: '0 0 60%',
+                background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+              onClick={() => { if (notifications[0]?.isActive) setBoxOpen((v) => !v); }}
+            >
               {/* Animated Background Shapes */}
               <div style={{
                 position: 'absolute',
@@ -307,90 +307,151 @@ const handleLogout = async () => {
                   boxShadow: '0 0 10px #22D3EE',
                 }} />
               ))}
-              
-              {/* Main Gift Illustration */}
-              <div style={{
-                position: 'relative',
-                zIndex: 2,
-                animation: 'bounce 3s ease-in-out infinite',
-                transform: `translate(${mousePosition.x * 0.8}px, ${mousePosition.y * 0.8}px)`,
-                transition: 'transform 0.3s ease-out',
-              }}>
-                <div style={{
-                  background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
-                  width: 220,
-                  height: 220,
-                  borderRadius: 28,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 25px 50px rgba(0,0,0,0.4), 0 0 60px rgba(34,211,238,0.4)',
-                  position: 'relative',
-                  transform: 'rotate(45deg)',
-                  border: '4px solid rgba(255,255,255,0.2)',
-                }}>
-                  <Gift style={{
-                    width: 110,
-                    height: 110,
-                    color: '#FFFFFF',
-                    transform: 'rotate(-45deg)',
-                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
-                  }} />
-                  
-                  {/* Ribbon effect */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: 0,
-                    right: 0,
-                    height: 8,
-                    background: 'rgba(255,255,255,0.3)',
-                    transform: 'translateY(-50%)',
-                  }} />
-                  <div style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: 0,
-                    bottom: 0,
-                    width: 8,
-                    background: 'rgba(255,255,255,0.3)',
-                    transform: 'translateX(-50%)',
-                  }} />
+
+              {/* Animated Gift Box (opens on new reward) */}
+              <div style={{ position: 'relative', zIndex: 2 }}>
+                <div
+                  style={{
+                    position: 'relative',
+                    width: isMobile ? 220 : 280,
+                    height: isMobile ? 220 : 280,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    filter: 'drop-shadow(0 25px 50px rgba(0,0,0,0.35))',
+                  }}
+                >
+                  {/* Box Base */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: isMobile ? 200 : 260,
+                      height: isMobile ? 120 : 140,
+                      borderRadius: 18,
+                      background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+                      border: '4px solid rgba(255,255,255,0.25)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* horizontal ribbon */}
+                    <div style={{ position: 'absolute', top: '46%', left: 0, right: 0, height: 10, background: 'rgba(255,255,255,0.35)' }} />
+                    {/* vertical ribbon */}
+                    <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 10, background: 'rgba(255,255,255,0.35)', transform: 'translateX(-50%)' }} />
+                  </div>
+
+                  {/* Box Lid */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: isMobile ? 120 : 140,
+                      left: '50%',
+                      transformOrigin: 'left bottom',
+                      transform: boxOpen
+                        ? 'translateX(-50%) rotateX(78deg) translateY(-6px)'
+                        : 'translateX(-50%) rotateX(0deg)',
+                      transition: 'transform 900ms cubic-bezier(0.2, 0.75, 0.25, 1)',
+                      width: isMobile ? 210 : 270,
+                      height: isMobile ? 36 : 42,
+                      borderRadius: 12,
+                      background: '#003366',
+                      border: '4px solid rgba(255,255,255,0.25)',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                    }}
+                  />
+
+                  {/* Inner content revealed when open */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: isMobile ? 130 : 150,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: isMobile ? 180 : 220,
+                      padding: isMobile ? 10 : 14,
+                      background: 'rgba(255,255,255,0.95)',
+                      borderRadius: 12,
+                      textAlign: 'center',
+                      boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
+                      opacity: boxOpen ? 1 : 0,
+                      pointerEvents: boxOpen ? 'auto' : 'none',
+                      transition: 'opacity 700ms ease 200ms',
+                    }}
+                  >
+                    <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 700, color: '#003366', marginBottom: 6 }}>
+                      🎉 New Reward Unlocked
+                    </div>
+                    <div style={{ fontSize: isMobile ? 12 : 14, color: '#333333', marginBottom: 10, lineHeight: 1.4, whiteSpace: 'pre-wrap', maxHeight: isMobile ? 90 : 110, overflow: 'auto' }}>
+                      {notifications[0]?.description || 'Goodies worth ₹2,000 await you!'}
+                    </div>
+                    <button
+                      disabled={!notifications[0]?.isActive}
+                      onClick={() => {
+                        if (notifications[0]?.isActive && notifications[0]?.formLink) {
+                          window.open(notifications[0].formLink, '_blank');
+                        }
+                      }}
+                      
+                      style={{
+                        background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        padding: isMobile ? '8px 12px' : '10px 16px',
+                        borderRadius: 10,
+                        fontSize: isMobile ? 12 : 14,
+                        fontWeight: 800,
+                        cursor: notifications[0]?.isActive ? 'pointer' : 'not-allowed',
+                        boxShadow: '0 6px 16px rgba(34,211,238,0.35)',
+                        letterSpacing: 0.3,
+                      }}
+                    >
+                      Claim Now
+                    </button>
+                  </div>
+
+                  {/* Confetti / sparkles when opening */}
+                  {boxOpen && (
+                    <div style={{ position: 'absolute', bottom: isMobile ? 140 : 160, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}>
+                      {[...Array(14)].map((_, i) => (
+                        <div key={i}
+                          style={{
+                            position: 'absolute',
+                            width: 6,
+                            height: 12,
+                            background: i % 3 === 0 ? '#22D3EE' : i % 3 === 1 ? '#00A79D' : '#F4F7F9',
+                            left: `${(Math.random() * 180 - 90).toFixed(0)}px`,
+                            transform: `rotate(${(Math.random() * 360).toFixed(0)}deg)`,
+                            borderRadius: 2,
+                            animation: `confetti-fall ${1.2 + Math.random()}s ease-out forwards`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <style>{`
+                    @keyframes confetti-fall {
+                      0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+                      10% { opacity: 1; }
+                      100% { opacity: 0; transform: translateY(-120px) rotate(360deg); }
+                    }
+                  `}</style>
                 </div>
-                
-                {/* Orbiting Sparkles */}
-                <Sparkles style={{
-                  position: 'absolute',
-                  top: -30,
-                  right: -30,
-                  width: 50,
-                  height: 50,
-                  color: '#22D3EE',
-                  animation: 'sparkleOrbit 3s ease-in-out infinite',
-                  filter: 'drop-shadow(0 0 8px #22D3EE)',
-                }} />
-                <Star style={{
-                  position: 'absolute',
-                  bottom: -25,
-                  left: -25,
-                  width: 40,
-                  height: 40,
-                  color: '#00A79D',
-                  animation: 'sparkleOrbit 3s ease-in-out infinite',
-                  animationDelay: '1.5s',
-                  filter: 'drop-shadow(0 0 8px #00A79D)',
-                }} />
-                <Zap style={{
-                  position: 'absolute',
-                  top: -20,
-                  left: -35,
-                  width: 35,
-                  height: 35,
-                  color: '#F4F7F9',
-                  animation: 'sparkleOrbit 3s ease-in-out infinite',
-                  animationDelay: '0.75s',
-                  filter: 'drop-shadow(0 0 6px #F4F7F9)',
-                }} />
+
+                {/* Subtle hint text */}
+                {justArrived && (
+                  <div style={{
+                    marginTop: 16,
+                    color: '#FFFFFF',
+                    fontSize: isMobile ? 12 : 14,
+                    textAlign: 'center',
+                    opacity: 0.9,
+                  }}>
+                    Tap the box to view your reward
+                  </div>
+                )}
               </div>
 
               {/* Decorative Text with Glow */}
@@ -514,6 +575,7 @@ const handleLogout = async () => {
                   marginBottom: 32,
                   wordBreak: 'break-word',
                   overflowWrap: 'break-word',
+                  whiteSpace: 'pre-wrap',
                 }}>
                   {notifications[0].description}
                 </p>

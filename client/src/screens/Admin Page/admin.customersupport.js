@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Phone, Mail, User, Calendar, TrendingUp, Filter, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import { useNavigate } from 'react-router-dom';
+
 
 const CallbackRequestsDashboard = () => {
   const [requests, setRequests] = useState([]);
@@ -16,6 +19,8 @@ const CallbackRequestsDashboard = () => {
   const [order, setOrder] = useState('desc');
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCallbackRequests();
@@ -69,6 +74,32 @@ const CallbackRequestsDashboard = () => {
   const toggleRequestExpansion = (id) => {
     setExpandedRequest(expandedRequest === id ? null : id);
   };
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -121,6 +152,7 @@ const CallbackRequestsDashboard = () => {
     statsContainer: {
       maxWidth: '1600px',
       margin: '0 auto 30px',
+      marginBottom: '40px',
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
       gap: '20px'
@@ -473,13 +505,25 @@ const CallbackRequestsDashboard = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <h1 style={styles.title}>Callback Requests Dashboard</h1>
-        <p style={styles.subtitle}>
-          Manage and track all customer callback requests
-        </p>
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          marginBottom: "20px",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF" // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
       </div>
+      <div style={{ height: 72 }} />
 
       {/* Statistics */}
       {metadata && (

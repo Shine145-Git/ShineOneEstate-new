@@ -18,7 +18,6 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import axios from "axios";
 
-
 export default function PropertyListingForm() {
   // --- Hooks at the top ---
   const [currentStep, setCurrentStep] = useState(0);
@@ -31,9 +30,9 @@ export default function PropertyListingForm() {
     bedrooms: "",
     bathrooms: "",
     totalArea: {
-  sqft: "",
-  configuration: "",
-},
+      sqft: "",
+      configuration: "",
+    },
     images: [],
     // Rental-specific fields
     title: "",
@@ -69,8 +68,8 @@ export default function PropertyListingForm() {
   const [images, setImages] = useState([]);
   const imageInputRef = useRef();
   const [user, setUser] = useState(null);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-
 
   const handleLogout = async () => {
     await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
@@ -97,7 +96,13 @@ export default function PropertyListingForm() {
     fetchUser();
   }, []);
 
-  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
+  const navItems = [
+    "For Buyers",
+    "For Tenants",
+    "For Owners",
+    "For Dealers / Builders",
+    "Insights",
+  ];
 
   // --- Step definitions ---
   const getRentalSteps = () => [
@@ -116,100 +121,216 @@ export default function PropertyListingForm() {
 
   // --- Handlers ---
   const handleChange = (e) => {
-  const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target;
 
-  // ✅ Handle nested totalArea fields
-  if (name.startsWith("totalArea.")) {
-    const key = name.split(".")[1];
-    setFormData((prev) => ({
-      ...prev,
-      totalArea: {
-        ...prev.totalArea,
-        [key]: value,
-      },
-    }));
-    return;
-  }
+    // ✅ Handle nested totalArea fields
+    if (name.startsWith("totalArea.")) {
+      const key = name.split(".")[1];
+      setFormData((prev) => ({
+        ...prev,
+        totalArea: {
+          ...prev.totalArea,
+          [key]: value,
+        },
+      }));
+      return;
+    }
 
-  // Reset form when purpose changes
-  if (name === "purpose" && value !== formData.purpose) {
-    setFormData({
-      purpose: value,
-      address: "",
-      propertyType: "",
-      bedrooms: "",
-      bathrooms: "",
-      totalArea: { sqft: "", configuration: "" },
-      layoutFeatures: "",
-      appliances: [],
-      conditionAge: "",
-      renovations: "",
-      parking: "",
-      outdoorSpace: "",
-      monthlyRent: "",
-      leaseTerm: "",
-      securityDeposit: "",
-      otherFees: "",
-      utilities: [],
-      tenantRequirements: "",
-      moveInDate: "",
-      neighborhoodVibe: "",
-      transportation: "",
-      localAmenities: "",
-      communityFeatures: [],
-      petPolicy: "",
-      smokingPolicy: "",
-      maintenance: "",
-      insurance: "",
-      title: "",
-      description: "",
-      price: "",
-      location: "",
-      area: "",
-    });
-    setImages([]);
-    setCurrentStep(0);
-    return;
-  }
+    // Reset form when purpose changes
+    if (name === "purpose" && value !== formData.purpose) {
+      setFormData({
+        purpose: value,
+        address: "",
+        propertyType: "",
+        bedrooms: "",
+        bathrooms: "",
+        totalArea: { sqft: "", configuration: "" },
+        layoutFeatures: "",
+        appliances: [],
+        conditionAge: "",
+        renovations: "",
+        parking: "",
+        outdoorSpace: "",
+        monthlyRent: "",
+        leaseTerm: "",
+        securityDeposit: "",
+        otherFees: "",
+        utilities: [],
+        tenantRequirements: "",
+        moveInDate: "",
+        neighborhoodVibe: "",
+        transportation: "",
+        localAmenities: "",
+        communityFeatures: [],
+        petPolicy: "",
+        smokingPolicy: "",
+        maintenance: "",
+        insurance: "",
+        title: "",
+        description: "",
+        price: "",
+        location: "",
+        area: "",
+      });
+      setImages([]);
+      setCurrentStep(0);
+      return;
+    }
 
-  // Handle checkboxes
-  if (type === "checkbox") {
-    const array = formData[name] || [];
-    setFormData({
-      ...formData,
-      [name]: checked ? [...array, value] : array.filter((v) => v !== value),
-    });
-  } else {
-    setFormData({ ...formData, [name]: value });
-  }
-};
+    // Handle checkboxes
+    if (type === "checkbox") {
+      const array = formData[name] || [];
+      setFormData({
+        ...formData,
+        [name]: checked ? [...array, value] : array.filter((v) => v !== value),
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-     // Check if total images exceed 8
-  if (images.length + files.length > 8) {
-    toast.error("❌ You can upload a maximum of 8 images. Please reduce the number of images.");
-    return;
-  }
+    // Check if total images exceed 8
+    if (images.length + files.length > 8) {
+      toast.error(
+        "❌ You can upload a maximum of 8 images. Please reduce the number of images."
+      );
+      return;
+    }
     const newImages = files.map((f) => ({
       file: f,
       url: URL.createObjectURL(f),
     }));
     setImages((prev) => [...prev, ...newImages]);
   };
+  const validateStep = () => {
+    const e = {};
+    const purpose = formData.purpose;
+    // RENT validation
+    if (purpose === "Rent") {
+      if (currentStep === 0) {
+        if (!formData.title?.trim()) e.title = "Property title is required";
+        if (!formData.address?.trim()) e.address = "Property address is required";
+        if (!formData.Sector?.trim()) e.Sector = "Sector is required";
+        if (!String(formData.totalArea?.sqft || "").trim()) e.sqft = "Total area (sqft) is required";
+        if (!formData.totalArea?.configuration?.trim()) e.configuration = "Configuration (e.g., 3 BHK) is required";
+      } else if (currentStep === 1) {
+        if (formData.monthlyRent === "" || formData.monthlyRent === null || isNaN(Number(formData.monthlyRent))) {
+          e.monthlyRent = "Monthly rent is required";
+        }
+      }
+    }
+    // SALE validation
+    if (purpose === "Sale") {
+      if (currentStep === 0) {
+        if (!formData.title?.trim()) e.title = "Property title is required";
+        if (!formData.location?.trim()) e.location = "Location/Address is required";
+        if (!formData.Sector?.trim()) e.Sector = "Sector is required";
+        if (!String(formData.totalArea?.sqft || "").trim()) e.sqft = "Total area (sqft) is required";
+        if (!formData.totalArea?.configuration?.trim()) e.configuration = "Configuration (e.g., 3 BHK) is required";
+      } else if (currentStep === 1) {
+        if (formData.price === "" || formData.price === null || isNaN(Number(formData.price))) {
+          e.price = "Sale price is required";
+        }
+      }
+    }
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      const messages = Object.values(e).join("\n");
+      toast.error(`❌ Please fix the following:\n${messages}`);
+    }
+    return Object.keys(e).length === 0;
+  };
   const handleNext = () => {
+    if (!validateStep()) {
+      toast.error("❌ Please fill the required fields highlighted above.");
+      return;
+    }
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
   };
   const handlePrev = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
+
+  // —— Helpers to surface backend validation nicely ——
+  const prettyField = (f) => {
+    if (!f) return "Field";
+    const map = {
+      monthlyRent: "Monthly rent",
+      price: "Price",
+      Sector: "Sector",
+      title: "Title",
+      address: "Address",
+      location: "Location",
+      "totalArea.sqft": "Total area (sqft)",
+      "totalArea.configuration": "Configuration",
+    };
+    if (map[f]) return map[f];
+    // convert camelCase / nested to Title Case
+    return String(f)
+      .replace(/\./g, " ")
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (s) => s.toUpperCase())
+      .trim();
+  };
+
+  const extractBackendErrors = (payload) => {
+    try {
+      // Mongoose classic: { errors: { field: { message } } }
+      if (payload && payload.errors && typeof payload.errors === "object") {
+        const fieldErrors = {};
+        const messages = [];
+        Object.entries(payload.errors).forEach(([path, val]) => {
+          const msg = val?.message || (typeof val === "string" ? val : `Invalid value for ${prettyField(path)}`);
+          fieldErrors[path] = msg;
+          messages.push(msg);
+        });
+        return { fieldErrors, messages };
+      }
+
+      // Custom shape: { error: 'ValidationError', details: [ { path, message } ] }
+      if (payload && Array.isArray(payload.details)) {
+        const fieldErrors = {};
+        const messages = [];
+        payload.details.forEach((d) => {
+          if (!d) return;
+          const path = d.path || d.field;
+          const msg = d.message || `${prettyField(path)} is invalid`;
+          if (path) fieldErrors[path] = msg;
+          messages.push(msg);
+        });
+        if (messages.length) return { fieldErrors, messages };
+      }
+
+      // Parse common Mongoose message: "Path `title` is required."
+      if (payload && typeof payload.message === "string") {
+        const fieldErrors = {};
+        const messages = [];
+        const rx = /Path\s+`([^`]+)`\s+is\s+required/gi;
+        let m;
+        while ((m = rx.exec(payload.message))) {
+          const field = m[1];
+          const msg = `${prettyField(field)} is required`;
+          fieldErrors[field] = msg;
+          messages.push(msg);
+        }
+        if (messages.length) return { fieldErrors, messages };
+      }
+    } catch (_) {}
+    return null;
+  };
+
   const handleSubmit = async () => {
     if (loading) return;
+    if (!validateStep()) {
+      toast.error("❌ Please complete all required fields before submitting.");
+      return;
+    }
     setLoading(true);
     try {
       // Normalize Sector input
       if (formData.Sector) {
-        const formattedSector = formData.Sector
-          .trim()
+        const formattedSector = formData.Sector.trim()
           .replace(/[^a-zA-Z0-9]/g, " ")
           .replace(/\s+/g, " ")
           .toLowerCase();
@@ -226,27 +347,21 @@ export default function PropertyListingForm() {
         } else {
           normalized = formattedSector.charAt(0).toUpperCase() + formattedSector.slice(1);
         }
-
-        // Use setFormData to update React state rather than mutating the object directly
-        setFormData(prev => ({ ...prev, Sector: normalized }));
-
-        // Debug log to confirm normalization
-        console.log("Normalized Sector ->", normalized);
+        setFormData((prev) => ({ ...prev, Sector: normalized }));
       }
-      // ✅ Normalize configuration for both Rent and Sale (ensure consistent "X BHK" format)
+
+      // Normalize configuration for both Rent and Sale (ensure consistent "X BHK" format)
       if (formData.totalArea?.configuration) {
         const rawConfig = formData.totalArea.configuration.trim().toUpperCase();
         const bhkMatch = rawConfig.match(/(\d+)\s*-?\s*BHK?/i);
         const normalizedConfig = bhkMatch ? `${bhkMatch[1]} BHK` : rawConfig;
-
         formData.totalArea.configuration = normalizedConfig;
-        console.log("✅ Normalized Configuration ->", normalizedConfig);
       }
-      const form = new FormData();
+
       // Build FormData object
+      const form = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "totalArea" && value && typeof value === "object") {
-          // Append both sqft and configuration separately
           if (value.sqft) form.append("totalArea.sqft", value.sqft);
           if (value.configuration) form.append("totalArea.configuration", value.configuration);
         } else if (Array.isArray(value)) {
@@ -258,24 +373,69 @@ export default function PropertyListingForm() {
       images.forEach((imgObj) => {
         if (imgObj.file) form.append("images", imgObj.file);
       });
+
       const url =
         formData.purpose === "Sale"
           ? `${process.env.REACT_APP_ADD_SALE_PROPERTY_API}`
           : `${process.env.REACT_APP_ADD_RENT_PROPERTY_API}`;
+
       const res = await fetch(url, {
         method: "POST",
         body: form,
         credentials: "include",
       });
+
       if (res.ok) {
         toast.success("✅ Property submitted successfully!");
         setTimeout(() => navigate("/"), 1500);
+        return;
+      }
+
+      // ---- Not OK: try to surface field-level errors from backend ----
+      let errPayload = null;
+      const rawText = await res.text();
+      try { errPayload = rawText ? JSON.parse(rawText) : null; } catch (_) {}
+
+      // 1) Try structured payload first
+      let parsed = extractBackendErrors(errPayload || {});
+
+      // 2) If not, try parsing from the raw text string (common with Mongoose error strings)
+      if (!parsed && typeof rawText === "string" && rawText.trim().length) {
+        parsed = extractBackendErrors({ message: rawText });
+      }
+
+      // 3) If still nothing, manually detect "Path `field` is required" and surface it
+      if (!parsed && typeof rawText === "string") {
+        const rx = /Path\s+`([^`]+)`\s+is\s+required/gi;
+        const fieldErrors = {};
+        const messages = [];
+        let m;
+        while ((m = rx.exec(rawText))) {
+          const field = m[1];
+          const pretty = prettyField(field);
+          const msg = `${pretty} is required`;
+          fieldErrors[field] = msg;
+          messages.push(msg);
+        }
+        if (messages.length) {
+          parsed = { fieldErrors, messages };
+        }
+      }
+
+      if (parsed) {
+        // Highlight fields on the form + show toast with exact missing fields
+        setErrors((prev) => ({ ...prev, ...(parsed.fieldErrors || {}) }));
+        toast.error(`❌ Please fix the following:\n${parsed.messages.join("\n")}`);
       } else {
-        const err = await res.json();
-        toast.error("❌ Submission failed: " + (err.message || res.statusText));
+        // Fallback generic message
+        const genericMsg =
+          (errPayload && (errPayload.message || errPayload.error)) ||
+          (typeof rawText === "string" ? rawText : "") ||
+          "❌ Error while creating property";
+        toast.error(genericMsg);
       }
     } catch (error) {
-      toast.error("❌ Submission failed: " + error.message);
+      toast.error(`❌ Network/Server error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -464,7 +624,11 @@ export default function PropertyListingForm() {
   };
   const uploadedImagesStyle = {
     display: "grid",
-    gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(4, 1fr)",
+    gridTemplateColumns: isMobile
+      ? "repeat(2, 1fr)"
+      : isTablet
+      ? "repeat(3, 1fr)"
+      : "repeat(4, 1fr)",
     gap: isMobile ? "8px" : "15px",
     marginTop: isMobile ? "16px" : "25px",
   };
@@ -489,7 +653,14 @@ export default function PropertyListingForm() {
           onClick={() => imageInputRef.current?.click()}
         >
           <Upload size={48} color="#00A79D" style={{ margin: "0 auto 15px" }} />
-          <p style={{ color: "#003366", fontSize: "18px", fontWeight: "600", margin: "10px 0" }}>
+          <p
+            style={{
+              color: "#003366",
+              fontSize: "18px",
+              fontWeight: "600",
+              margin: "10px 0",
+            }}
+          >
             Click to upload or drag and drop
           </p>
           <p style={{ color: "#4A6A8A", fontSize: "14px", margin: 0 }}>
@@ -506,15 +677,28 @@ export default function PropertyListingForm() {
         </div>
         {images.length > 0 && (
           <div>
-            <p style={{ color: "#003366", fontWeight: "600", marginTop: "30px", marginBottom: "15px" }}>
+            <p
+              style={{
+                color: "#003366",
+                fontWeight: "600",
+                marginTop: "30px",
+                marginBottom: "15px",
+              }}
+            >
               Uploaded Photos ({images.length})
             </p>
             <div style={uploadedImagesStyle}>
               {images.map((img, idx) => (
                 <div key={idx} style={{ position: "relative" }}>
-                  <img src={img.url} alt={`upload-${idx}`} style={uploadedImageStyle} />
+                  <img
+                    src={img.url}
+                    alt={`upload-${idx}`}
+                    style={uploadedImageStyle}
+                  />
                   <button
-                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                    onClick={() =>
+                      setImages(images.filter((_, i) => i !== idx))
+                    }
                     style={{
                       position: "absolute",
                       top: "5px",
@@ -552,7 +736,9 @@ export default function PropertyListingForm() {
           </p>
           <div style={{ display: "flex", gap: "20px", marginTop: "40px" }}>
             <div
-              onClick={() => handleChange({ target: { name: "purpose", value: "Rent" } })}
+              onClick={() =>
+                handleChange({ target: { name: "purpose", value: "Rent" } })
+              }
               style={{
                 flex: 1,
                 padding: "40px",
@@ -572,16 +758,30 @@ export default function PropertyListingForm() {
                 e.currentTarget.style.backgroundColor = "#FFFFFF";
               }}
             >
-              <Home size={48} color="#00A79D" style={{ margin: "0 auto 20px" }} />
-              <h3 style={{ color: "#003366", fontSize: "24px", fontWeight: "700", marginBottom: "10px" }}>
+              <Home
+                size={48}
+                color="#00A79D"
+                style={{ margin: "0 auto 20px" }}
+              />
+              <h3
+                style={{
+                  color: "#003366",
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  marginBottom: "10px",
+                }}
+              >
                 For Rent
               </h3>
               <p style={{ color: "#4A6A8A", fontSize: "15px", margin: 0 }}>
-                List your property for rental purposes with detailed amenities and policies
+                List your property for rental purposes with detailed amenities
+                and policies
               </p>
             </div>
             <div
-              onClick={() => handleChange({ target: { name: "purpose", value: "Sale" } })}
+              onClick={() =>
+                handleChange({ target: { name: "purpose", value: "Sale" } })
+              }
               style={{
                 flex: 1,
                 padding: "40px",
@@ -601,8 +801,19 @@ export default function PropertyListingForm() {
                 e.currentTarget.style.backgroundColor = "#FFFFFF";
               }}
             >
-              <DollarSign size={48} color="#00A79D" style={{ margin: "0 auto 20px" }} />
-              <h3 style={{ color: "#003366", fontSize: "24px", fontWeight: "700", marginBottom: "10px" }}>
+              <DollarSign
+                size={48}
+                color="#00A79D"
+                style={{ margin: "0 auto 20px" }}
+              />
+              <h3
+                style={{
+                  color: "#003366",
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  marginBottom: "10px",
+                }}
+              >
                 For Sale
               </h3>
               <p style={{ color: "#4A6A8A", fontSize: "15px", margin: 0 }}>
@@ -631,10 +842,12 @@ export default function PropertyListingForm() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g., Spacious 2BHK Apartment in Sector 46"
-                  style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = '#00A79D')}
-                  onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
+                  style={{ ...inputStyle, borderColor: errors.title ? "#ef4444" : inputStyle.borderColor }}
+                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                  required
                 />
+                {errors.title && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.title}</p>)}
               </div>
 
               <div style={fieldStyle}>
@@ -645,8 +858,8 @@ export default function PropertyListingForm() {
                   onChange={handleChange}
                   placeholder="Provide a short description highlighting key features, condition, and location..."
                   style={textareaStyle}
-                  onFocus={(e) => (e.target.style.borderColor = '#00A79D')}
-                  onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
+                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
 
@@ -658,10 +871,11 @@ export default function PropertyListingForm() {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address"
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: errors.address ? "#ef4444" : inputStyle.borderColor }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
+                {errors.address && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.address}</p>)}
               </div>
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Sector *</label>
@@ -671,10 +885,12 @@ export default function PropertyListingForm() {
                   value={formData.Sector}
                   onChange={handleChange}
                   placeholder="e.g., Sector 46, Gurugram , Haryana"
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: errors.Sector ? "#ef4444" : inputStyle.borderColor }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                  required
                 />
+                {errors.Sector && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.Sector}</p>)}
               </div>
               <div style={gridStyle}>
                 <div>
@@ -696,25 +912,27 @@ export default function PropertyListingForm() {
                   </select>
                 </div>
                 <div>
-                 <label style={inputLabelStyle}>Total Area *</label>
-<div style={{ display: "flex", gap: "10px" }}>
-  <input
-    type="number"
-    name="totalArea.sqft"
-    value={formData.totalArea.sqft}
-    onChange={handleChange}
-    placeholder="Area in sqft (e.g., 1200)"
-    style={{ ...inputStyle, flex: 1 }}
-  />
-  <input
-    type="text"
-    name="totalArea.configuration"
-    value={formData.totalArea.configuration}
-    onChange={handleChange}
-    placeholder="Configuration (e.g., 3 BHK)"
-    style={{ ...inputStyle, flex: 1 }}
-  />
-</div>
+                  <label style={inputLabelStyle}>Total Area *</label>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <input
+                      type="number"
+                      name="totalArea.sqft"
+                      value={formData.totalArea.sqft}
+                      onChange={handleChange}
+                      placeholder="Area in sqft (e.g., 1200)"
+                      style={{ ...inputStyle, flex: 1, borderColor: errors.sqft ? "#ef4444" : inputStyle.borderColor }}
+                    />
+                    {errors.sqft && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.sqft}</p>)}
+                    <input
+                      type="text"
+                      name="totalArea.configuration"
+                      value={formData.totalArea.configuration}
+                      onChange={handleChange}
+                      placeholder="Configuration (e.g., 3 BHK)"
+                      style={{ ...inputStyle, flex: 1, borderColor: errors.configuration ? "#ef4444" : inputStyle.borderColor }}
+                    />
+                    {errors.configuration && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.configuration}</p>)}
+                  </div>
                 </div>
               </div>
               <div style={gridStyle}>
@@ -844,10 +1062,11 @@ export default function PropertyListingForm() {
                     value={formData.monthlyRent}
                     onChange={handleChange}
                     placeholder="e.g., 50000"
-                    style={inputStyle}
+                    style={{ ...inputStyle, borderColor: errors.monthlyRent ? "#ef4444" : inputStyle.borderColor }}
                     onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                     onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   />
+                  {errors.monthlyRent && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.monthlyRent}</p>)}
                 </div>
                 <div>
                   <label style={inputLabelStyle}>Security Deposit (₹) *</label>
@@ -897,37 +1116,41 @@ export default function PropertyListingForm() {
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Utilities Included</label>
                 <div style={checkboxGroupStyle}>
-                  {["Electricity", "Water", "Gas", "Internet", "Maintenance"].map(
-                    (util) => (
-                      <label
-                        key={util}
-                        style={checkboxLabelStyle}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.borderColor = "#00A79D")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.borderColor = "#E5E7EB")
-                        }
-                      >
-                        <input
-                          type="checkbox"
-                          name="utilities"
-                          value={util}
-                          checked={(formData.utilities || []).includes(util)}
-                          onChange={handleChange}
-                          style={{
-                            width: "18px",
-                            height: "18px",
-                            cursor: "pointer",
-                            accentColor: "#00A79D",
-                          }}
-                        />
-                        <span style={{ fontSize: "14px", color: "#333333" }}>
-                          {util}
-                        </span>
-                      </label>
-                    )
-                  )}
+                  {[
+                    "Electricity",
+                    "Water",
+                    "Gas",
+                    "Internet",
+                    "Maintenance",
+                  ].map((util) => (
+                    <label
+                      key={util}
+                      style={checkboxLabelStyle}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.borderColor = "#00A79D")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.borderColor = "#E5E7EB")
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        name="utilities"
+                        value={util}
+                        checked={(formData.utilities || []).includes(util)}
+                        onChange={handleChange}
+                        style={{
+                          width: "18px",
+                          height: "18px",
+                          cursor: "pointer",
+                          accentColor: "#00A79D",
+                        }}
+                      />
+                      <span style={{ fontSize: "14px", color: "#333333" }}>
+                        {util}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
               <div style={fieldStyle}>
@@ -1025,7 +1248,9 @@ export default function PropertyListingForm() {
                         type="checkbox"
                         name="communityFeatures"
                         value={feat}
-                        checked={(formData.communityFeatures || []).includes(feat)}
+                        checked={(formData.communityFeatures || []).includes(
+                          feat
+                        )}
                         onChange={handleChange}
                         style={{
                           width: "18px",
@@ -1060,7 +1285,9 @@ export default function PropertyListingForm() {
           return (
             <div>
               <h2 style={formTitleStyle}>Policies & Rules</h2>
-              <p style={formSubtitleStyle}>Set clear expectations for tenants</p>
+              <p style={formSubtitleStyle}>
+                Set clear expectations for tenants
+              </p>
               <div style={gridStyle}>
                 <div>
                   <label style={inputLabelStyle}>Pet Policy *</label>
@@ -1164,10 +1391,11 @@ export default function PropertyListingForm() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g., Luxurious 3BHK Villa in Prime Location"
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: errors.title ? "#ef4444" : inputStyle.borderColor }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
+                {errors.title && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.title}</p>)}
               </div>
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Location/Address *</label>
@@ -1177,10 +1405,11 @@ export default function PropertyListingForm() {
                   value={formData.location}
                   onChange={handleChange}
                   placeholder="Enter complete address or location"
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: errors.location ? "#ef4444" : inputStyle.borderColor }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
+                {errors.location && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.location}</p>)}
               </div>
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Sector *</label>
@@ -1190,10 +1419,11 @@ export default function PropertyListingForm() {
                   value={formData.Sector}
                   onChange={handleChange}
                   placeholder="e.g., Sector 46"
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: errors.Sector ? "#ef4444" : inputStyle.borderColor }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
+                {errors.Sector && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.Sector}</p>)}
               </div>
               <div style={gridStyle}>
                 <div>
@@ -1224,16 +1454,18 @@ export default function PropertyListingForm() {
                       value={formData.totalArea.sqft}
                       onChange={handleChange}
                       placeholder="Area in sqft (e.g., 1200)"
-                      style={{ ...inputStyle, flex: 1 }}
+                      style={{ ...inputStyle, flex: 1, borderColor: errors.sqft ? "#ef4444" : inputStyle.borderColor }}
                     />
+                    {errors.sqft && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.sqft}</p>)}
                     <input
                       type="text"
                       name="totalArea.configuration"
                       value={formData.totalArea.configuration}
                       onChange={handleChange}
                       placeholder="Configuration (e.g., 3 BHK)"
-                      style={{ ...inputStyle, flex: 1 }}
+                      style={{ ...inputStyle, flex: 1, borderColor: errors.configuration ? "#ef4444" : inputStyle.borderColor }}
                     />
+                    {errors.configuration && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.configuration}</p>)}
                   </div>
                   {/*
                   <input
@@ -1306,10 +1538,11 @@ export default function PropertyListingForm() {
                   value={formData.price}
                   onChange={handleChange}
                   placeholder="e.g., 5000000"
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: errors.price ? "#ef4444" : inputStyle.borderColor }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
+                {errors.price && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.price}</p>)}
               </div>
               <div
                 style={{
@@ -1338,28 +1571,106 @@ export default function PropertyListingForm() {
                   }}
                 >
                   <div>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "13px", color: "#4A6A8A", fontWeight: "600" }}>Title</p>
-                    <p style={{ margin: 0, fontSize: "15px", color: "#003366" }}>{formData.title || "Not provided"}</p>
+                    <p
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "13px",
+                        color: "#4A6A8A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Title
+                    </p>
+                    <p
+                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
+                    >
+                      {formData.title || "Not provided"}
+                    </p>
                   </div>
                   <div>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "13px", color: "#4A6A8A", fontWeight: "600" }}>Location</p>
-                    <p style={{ margin: 0, fontSize: "15px", color: "#003366" }}>{formData.location || "Not provided"}</p>
+                    <p
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "13px",
+                        color: "#4A6A8A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Location
+                    </p>
+                    <p
+                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
+                    >
+                      {formData.location || "Not provided"}
+                    </p>
                   </div>
                   <div>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "13px", color: "#4A6A8A", fontWeight: "600" }}>Bedrooms</p>
-                    <p style={{ margin: 0, fontSize: "15px", color: "#003366" }}>{formData.bedrooms || "Not specified"}</p>
+                    <p
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "13px",
+                        color: "#4A6A8A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Bedrooms
+                    </p>
+                    <p
+                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
+                    >
+                      {formData.bedrooms || "Not specified"}
+                    </p>
                   </div>
                   <div>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "13px", color: "#4A6A8A", fontWeight: "600" }}>Bathrooms</p>
-                    <p style={{ margin: 0, fontSize: "15px", color: "#003366" }}>{formData.bathrooms || "Not specified"}</p>
+                    <p
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "13px",
+                        color: "#4A6A8A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Bathrooms
+                    </p>
+                    <p
+                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
+                    >
+                      {formData.bathrooms || "Not specified"}
+                    </p>
                   </div>
                   <div>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "13px", color: "#4A6A8A", fontWeight: "600" }}>Area</p>
-                    <p style={{ margin: 0, fontSize: "15px", color: "#003366" }}>{formData.area || "Not specified"}</p>
+                    <p
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "13px",
+                        color: "#4A6A8A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Area
+                    </p>
+                    <p
+                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
+                    >
+                      {formData.area || "Not specified"}
+                    </p>
                   </div>
                   <div>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "13px", color: "#4A6A8A", fontWeight: "600" }}>Price</p>
-                    <p style={{ margin: 0, fontSize: "15px", color: "#003366" }}>{formData.price || "Not specified"}</p>
+                    <p
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "13px",
+                        color: "#4A6A8A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Price
+                    </p>
+                    <p
+                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
+                    >
+                      {formData.price || "Not specified"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1389,8 +1700,8 @@ export default function PropertyListingForm() {
         pauseOnHover
         theme="colored"
         toastStyle={{
-          backgroundColor: "#003366",  // Prussian Blue
-          color: "#FFFFFF",            // White text
+          backgroundColor: "#003366", // Prussian Blue
+          color: "#FFFFFF", // White text
           borderLeft: "6px solid #00A79D", // Teal accent
           fontWeight: "600",
         }}
@@ -1441,7 +1752,7 @@ export default function PropertyListingForm() {
           left: 0,
           width: "100%",
           zIndex: 999,
-          backgroundColor: "#FFFFFF" // or match your navbar background
+          backgroundColor: "#FFFFFF", // or match your navbar background
         }}
       >
         <TopNavigationBar
@@ -1492,11 +1803,19 @@ export default function PropertyListingForm() {
                 ← Previous
               </button>
               {currentStep === steps.length - 1 ? (
-                <button onClick={handleSubmit} style={buttonStyle("primary")} disabled={loading}>
+                <button
+                  onClick={handleSubmit}
+                  style={buttonStyle("primary")}
+                  disabled={loading}
+                >
                   Submit Property
                 </button>
               ) : (
-                <button onClick={handleNext} style={buttonStyle("primary")} disabled={loading}>
+                <button
+                  onClick={handleNext}
+                  style={buttonStyle("primary")}
+                  disabled={loading}
+                >
                   Next <ChevronRight size={isMobile ? 15 : 18} />
                 </button>
               )}

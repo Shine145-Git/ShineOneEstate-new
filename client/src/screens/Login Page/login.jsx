@@ -9,6 +9,7 @@ export default function LoginModal() {
   const [time, setTime] = useState(180);
   const [message, setMessage] = useState(null); // { text: string, type: 'success' | 'error' }
   const [loading, setLoading] = useState(false);
+  const [buttonLoading, setButtonLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,8 +21,11 @@ export default function LoginModal() {
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return;
-
+    setButtonLoading(true);
+    if (!email) {
+      setTimeout(() => setButtonLoading(false), 2000);
+      return;
+    }
     try {
       console.log("Sending OTP request for email:", email);
       // API endpoint configurable via .env (REACT_APP_LOGIN_REQUEST_OTP_API)
@@ -50,13 +54,18 @@ export default function LoginModal() {
       console.error(error);
       console.log("OTP request error:", error);
       setMessage({ text: "Error sending OTP", type: "error" });
+    } finally {
+      setTimeout(() => setButtonLoading(false), 2000);
     }
   };
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    if (!otp) return;
-
+    setButtonLoading(true);
+    if (!otp) {
+      setTimeout(() => setButtonLoading(false), 2000);
+      return;
+    }
     setLoading(true);
     try {
       console.log(
@@ -88,7 +97,6 @@ export default function LoginModal() {
         } else {
           navigate("/"); // fallback
         }
-
         // TODO: redirect or store user info/token if needed
       } else {
         setMessage({
@@ -102,10 +110,12 @@ export default function LoginModal() {
       setMessage({ text: "Error verifying OTP", type: "error" });
     } finally {
       setLoading(false);
+      setTimeout(() => setButtonLoading(false), 2000);
     }
   };
 
   const handleResendOtp = async () => {
+    setButtonLoading(true);
     try {
       console.log("Resending OTP for email:", email);
       const response = await fetch(`${process.env.REACT_APP_LOGIN_REQUEST_OTP_API}`, {
@@ -125,6 +135,8 @@ export default function LoginModal() {
     } catch (err) {
       console.error("Resend OTP error:", err);
       setMessage({ text: "Error resending OTP", type: "error" });
+    } finally {
+      setTimeout(() => setButtonLoading(false), 2000);
     }
   };
 
@@ -178,6 +190,26 @@ export default function LoginModal() {
         zIndex: 50,
       }}
     >
+      {buttonLoading && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgba(255,255,255,0.7)",
+          zIndex: 100,
+        }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "6px solid #f3f4f6",
+            borderTop: "6px solid #003366",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }} />
+        </div>
+      )}
       <div
         style={{
           background: "#F4F7F9",
@@ -186,9 +218,11 @@ export default function LoginModal() {
           width: "90%",
           maxWidth: "420px",
           boxShadow: "0 20px 60px rgba(0, 51, 102, 0.3)",
+          position: "relative",
         }}
       >
         {step === "email" ? (
+          <>
           <form onSubmit={handleEmailSubmit}>
             <h2
               style={{
@@ -282,6 +316,7 @@ export default function LoginModal() {
                 transition: "transform 0.2s, box-shadow 0.2s",
                 boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
               }}
+              disabled={buttonLoading}
               onMouseEnter={(e) => {
                 e.target.style.transform = "translateY(-2px)";
                 e.target.style.boxShadow = "0 6px 20px rgba(0, 167, 157, 0.4)";
@@ -291,10 +326,27 @@ export default function LoginModal() {
                 e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
               }}
             >
-              Continue
+              {buttonLoading ? "Loading..." : "Continue"}
             </button>
           </form>
+          <span
+            onClick={() => navigate("/")}
+            style={{
+              position: "absolute",
+              bottom: "12px",
+              right: "16px",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#10b981",
+              cursor: "pointer",
+              textDecoration: "underline",
+            }}
+          >
+            Go to Dashboard
+          </span>
+          </>
         ) : (
+          <>
           <form onSubmit={handleOtpSubmit}>
             <h2
               style={{
@@ -375,22 +427,25 @@ export default function LoginModal() {
               <button
                 type="button"
                 onClick={handleResendOtp}
+                disabled={buttonLoading}
+                aria-busy={buttonLoading}
                 style={{
                   color: "#00A79D",
                   fontSize: "14px",
                   fontWeight: "600",
                   background: "none",
                   border: "none",
-                  cursor: "pointer",
+                  cursor: buttonLoading ? "not-allowed" : "pointer",
                   textDecoration: "underline",
+                  opacity: buttonLoading ? 0.6 : 1,
                 }}
               >
-                Resend OTP
+                {buttonLoading ? "Resending..." : "Resend OTP"}
               </button>
             </div>
             <button
               type="submit"
-              disabled={time === 0 || loading}
+              disabled={time === 0 || loading || buttonLoading}
               style={{
                 width: "100%",
                 padding: "14px",
@@ -420,7 +475,7 @@ export default function LoginModal() {
                 e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
               }}
             >
-              {loading ? "Verifying..." : "Verify & Continue"}
+              {buttonLoading ? "Loading..." : (loading ? "Verifying..." : "Verify & Continue")}
             </button>
             <button
               type="button"
@@ -445,8 +500,31 @@ export default function LoginModal() {
               Back to Email
             </button>
           </form>
+          <span
+            onClick={() => navigate("/")}
+            style={{
+              position: "absolute",
+              bottom: "12px",
+              right: "16px",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#10b981",
+              cursor: "pointer",
+              textDecoration: "underline",
+            }}
+          >
+            Go to Dashboard
+          </span>
+          </>
         )}
       </div>
+          <style>{`
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}</style>
     </div>
+
   );
 }

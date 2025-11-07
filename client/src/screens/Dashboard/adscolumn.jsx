@@ -147,7 +147,7 @@ export default function AutoRotatingAds() {
     if (isMobile) {
       return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-          <div style={{ marginTop: '120px' }}>
+          <div style={{ marginTop: isMobile ? '-250px' : '120px' }}>
             {children}
           </div>
         </div>

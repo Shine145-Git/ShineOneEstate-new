@@ -32,7 +32,7 @@ export default function PropertySnapshot() {
   const styles = {
     container: {
       maxWidth: '1400px',
-      margin: isMobile ? '0 auto 1rem auto' : '0 auto',
+      margin: isMobile ? '0 auto 0.5rem auto' : '0 auto',
       padding: isMobile ? '1rem' : '2rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       backgroundColor: '#F4F7F9',
@@ -41,7 +41,7 @@ export default function PropertySnapshot() {
       fontSize: isMobile ? '1.4rem' : '2rem',
       fontWeight: '700',
       color: '#333333',
-      marginBottom: isMobile ? '0.75rem' : '0.5rem',
+      // marginBottom: isMobile ? '0.75rem' : '0.5rem',
       position: 'relative',
       paddingBottom: '0.75rem',
     },
@@ -55,7 +55,7 @@ export default function PropertySnapshot() {
     },
     card: {
       backgroundColor: '#FFFFFF',
-      borderRadius: '12px',
+      borderRadius: '2px',
       padding: isMobile ? '1.25rem 1.5rem' : '2.5rem',
       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
       border: '1px solid #E5E5E5',
@@ -97,9 +97,9 @@ export default function PropertySnapshot() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'flex-start',
-      gap: '24px',
+      gap: '1px',
       flexWrap: 'wrap',
-      padding: isMobile ? '1rem' : '2rem',
+      padding: isMobile ? '0rem' : '2rem',
       flexDirection: isMobile ? 'column' : 'row',
     },
     mainContent: {

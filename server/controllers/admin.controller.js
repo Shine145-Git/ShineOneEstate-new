@@ -8,6 +8,7 @@ const SearchHistory = require('../models/SearchHistory.model');
 const PropertyAnalysis = require('../models/PropertyAnalysis.model');
 const Reward = require('../models/Rewards.model');
 const CustomerSupport = require('../models/CustomerSupport.model');
+const ServiceRequest = require('../models/serviceRequests.model');
 
 
 
@@ -822,6 +823,249 @@ const updateUserRole = async (req, res) => {
     res.status(500).json({ message: "Error updating user role", error: error.message });
   }
 };
+const getAllProperties = async (req, res) => {
+  try {
+    const { limit } = req.query;
+    // Fetch all properties
+    const rentalProperties = await Property.find().populate("owner", "name email");
+    const saleProperties = await SaleProperty.find().populate("ownerId", "name email");
+
+    const rentalLimit = limit && !isNaN(Number(limit)) ? Number(limit) : rentalProperties.length;
+    const saleLimit = limit && !isNaN(Number(limit)) ? Number(limit) : saleProperties.length;
+    const limitedRental = rentalProperties.slice(0, rentalLimit);
+    const limitedSale = saleProperties.slice(0, saleLimit);
+
+    // Fetch review statuses
+    const reviewStatuses = await PropertyReviewStatus.find();
+
+    // Merge review statuses into property data
+    let allProperties = [
+      ...limitedRental.map((prop) => {
+        const review = reviewStatuses.find(
+          (r) => r.propertyId.toString() === prop._id.toString()
+        );
+        return {
+          ...prop.toObject(),
+          defaultpropertytype: "rental",
+          isReviewed: review ? review.isReviewed : false,
+        };
+      }),
+      ...limitedSale.map((prop) => {
+        const review = reviewStatuses.find(
+          (r) => r.propertyId.toString() === prop._id.toString()
+        );
+        return {
+          ...prop.toObject(),
+          defaultpropertytype: "sale",
+          isReviewed: review ? review.isReviewed : false,
+        };
+      }),
+    ];
+
+    const numericLimit = limit && !isNaN(Number(limit)) ? Number(limit) : null;
+    if (numericLimit) {
+      // Shuffle and take only the requested number of properties
+      allProperties = allProperties
+        .sort(() => 0.5 - Math.random()) // randomize order
+        .slice(0, numericLimit);
+    }
+
+    res.status(200).json(allProperties);
+  } catch (error) {
+    console.error("Error fetching all properties:", error);
+    res.status(500).json({
+      message: "Server error while fetching all properties",
+      error: error.message,
+    });
+  }
+};
+// Admin can update any service request details (including status)
+
+const updateServiceRequestDetails = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Unauthorized: Please log in.' });
+    }
+
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid request ID' });
+    }
+
+    // Only admin can update request details
+    const isAdmin = req.user.role === 'admin' || req.user.isAdmin === true;
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admin can update request details' });
+    }
+
+    // Load current doc first (to compare changes + enforce renter/owner rule)
+    const current = await ServiceRequest.findById(id);
+    if (!current) return res.status(404).json({ message: 'Service request not found' });
+
+    const {
+      // core editable fields
+      userRole,
+      propertyType,
+      propertyId,
+      address,
+      serviceType,
+      contactNumber,
+      preferredDate,
+      notes,
+      status,
+      // optional: allow admin to reassign the ticket
+      createdBy, // ObjectId (optional)
+    } = req.body || {};
+    // console.log("Incoming update payload:", req.body);
+
+    // Build update operator
+    const update = { $set: {}, $unset: {} };
+    const changedFields = [];
+
+    // (optional) reassign createdBy
+    if (createdBy !== undefined) {
+      if (!mongoose.isValidObjectId(createdBy)) {
+        return res.status(400).json({ message: 'Invalid createdBy id' });
+      }
+      update.$set.createdBy = createdBy;
+      changedFields.push('createdBy');
+    }
+
+    // Validate userRole
+    let effectiveRole = current.userRole;
+    if (userRole !== undefined) {
+      const allowedRoles = ['owner', 'renter'];
+      if (!allowedRoles.includes(userRole)) {
+        return res.status(400).json({ message: "Invalid userRole. Allowed: 'owner', 'renter'" });
+      }
+      update.$set.userRole = userRole;
+      effectiveRole = userRole;
+      changedFields.push('userRole');
+    }
+
+    // Validate serviceType
+    if (serviceType !== undefined) {
+      const allowedServices = ServiceRequest.schema.path('serviceType').enumValues;
+      if (!allowedServices.includes(serviceType)) {
+        return res.status(400).json({ message: `Invalid serviceType. Allowed: ${allowedServices.join(', ')}` });
+      }
+      update.$set.serviceType = serviceType;
+      changedFields.push('serviceType');
+    }
+
+    // Validate status
+    let statusChanged = false;
+    if (status !== undefined) {
+      const allowedStatuses = ServiceRequest.schema.path('status').enumValues;
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` });
+      }
+      if (current.status !== status) statusChanged = true;
+      update.$set.status = status;
+      changedFields.push('status');
+    }
+
+    // Normalize phone
+    if (contactNumber !== undefined) {
+      const normalizedPhone = String(contactNumber).replace(/\s|\-/g, '');
+      update.$set.contactNumber = normalizedPhone;
+      changedFields.push('contactNumber');
+    }
+
+    if (preferredDate !== undefined) {
+      update.$set.preferredDate = preferredDate ? new Date(preferredDate) : null;
+      changedFields.push('preferredDate');
+    }
+
+    if (notes !== undefined) {
+      update.$set.notes = notes;
+      changedFields.push('notes');
+    }
+
+    if (address !== undefined) {
+      update.$set.address = address;
+      changedFields.push('address');
+    }
+
+    // Property linkage rules based on role
+    if (effectiveRole === 'owner') {
+      if (propertyType !== undefined) {
+        const allowedTypes = ['RentalProperty', 'SaleProperty'];
+        if (!allowedTypes.includes(propertyType)) {
+          return res.status(400).json({ message: "Invalid propertyType. Allowed: 'RentalProperty', 'SaleProperty'" });
+        }
+        update.$set.propertyType = propertyType;
+        changedFields.push('propertyType');
+      }
+      if (propertyId !== undefined) {
+        if (!mongoose.isValidObjectId(propertyId)) {
+          return res.status(400).json({ message: 'Invalid propertyId' });
+        }
+        update.$set.propertyId = propertyId;
+        changedFields.push('propertyId');
+      }
+
+      // If owner request ends up without propertyId, ensure address exists
+      const finalPropId = (propertyId !== undefined) ? propertyId : current.propertyId;
+      const finalAddr = (address !== undefined) ? address : current.address;
+      if (!finalPropId && !finalAddr) {
+        return res.status(400).json({ message: 'Either propertyId or address is required for owner requests.' });
+      }
+    } else {
+      // renter: must have address; clear property link
+      if (address === undefined && !current.address) {
+        return res.status(400).json({ message: 'address is required for renter requests' });
+      }
+      update.$unset.propertyId = '';
+      update.$unset.propertyType = '';
+    }
+
+    // Add audit trail / timeline entry
+    // We maintain a "timeline" array (if present) with status changes & a condensed edit note.
+    if (statusChanged) {
+      update.$push = update.$push || {};
+      update.$push.timeline = {
+        status,
+        date: new Date(),
+        description: `Status updated to "${status}" by admin`,
+      };
+    } else if (changedFields.length > 0) {
+      update.$push = update.$push || {};
+      update.$push.timeline = {
+        status: current.status,
+        date: new Date(),
+        description: `Fields updated by admin: ${changedFields.join(', ')}`,
+      };
+    }
+
+    if (Object.keys(update.$unset).length === 0) delete update.$unset;
+
+    // console.log("MongoDB update object:", JSON.stringify(update, null, 2));
+    // Execute update
+    const updatedDoc = await ServiceRequest.findByIdAndUpdate(
+      id,
+      update,
+      { new: true, runValidators: true }
+    )
+      .populate({ path: 'createdBy', select: 'name email mobileNumber' })
+      .populate({
+        path: 'propertyId',
+        select: 'title address Sector location defaultpropertytype images',
+        strictPopulate: false,
+      })
+      .lean();
+
+    return res.status(200).json({
+      message: 'Request updated successfully',
+      request: updatedDoc,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Server error while updating request details',
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   getPendingPayments,
@@ -833,5 +1077,7 @@ module.exports = {
   getUserRewardsStatus,
   toggleActiveStatus,
   toggleReviewStatus,
-  updateUserRole
+  updateUserRole,
+  getAllProperties,
+  updateServiceRequestDetails
 };

@@ -56,6 +56,7 @@ export default function PropertyCards() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [propertiesPerPage] = useState(10);
+  const [totalProperties, setTotalProperties] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export default function PropertyCards() {
       }
     };
     fetchUserMetrics();
-  }, []);
+  }, [currentPage]);
 
   const handleLogout = async () => {
     await fetch(process.env.REACT_APP_LOGOUT_API, {
@@ -104,43 +105,25 @@ export default function PropertyCards() {
   const fetchProperties = async () => {
     try {
       setLoading(true);
+      const baseURL = process.env.REACT_APP_Base_API;
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/properties/my`,
+        `${baseURL}/api/properties/my?limit=${propertiesPerPage}&page=${currentPage}`,
         { credentials: "include" }
       );
       const data = await response.json();
-      let props = Array.isArray(data) ? data : data.properties || [];
-      // For each property, fetch metrics and merge
-      const metricsPromises = props.map(async (property) => {
-        try {
-          const metricsRes = await axios.get(
-            `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS}/${property._id}`,
-            { withCredentials: true }
-          );
-          const metrics = metricsRes.data || {};
-          return {
-            ...property,
-            totalViews: Array.isArray(metrics.views) ? metrics.views.length : 0,
-            totalRatings: Array.isArray(metrics.ratings)
-              ? metrics.ratings.length
-              : 0,
-          };
-        } catch (err) {
-          // If metrics can't be fetched, default to 0
-          return {
-            ...property,
-            totalViews: 0,
-            totalRatings: 0,
-          };
-        }
-      });
-      props = await Promise.all(metricsPromises);
-      // Add defaultPropertyType to each property
-      props = props.map((p) => ({
-        ...p,
-        defaultPropertyType: p.monthlyRent ? "rental" : "sale",
-      }));
-      setProperties(props);
+      const normalized = Array.isArray(data.properties)
+        ? data.properties.map((p) => ({
+            ...p,
+            // Normalize to a single canonical field used everywhere in UI
+            defaultPropertyType:
+              p.defaultPropertyType ||
+              p.defaultpropertytype ||
+              p.propertyCategory ||
+              (p.monthlyRent ? "rental" : p.price ? "sale" : undefined),
+          }))
+        : [];
+      setProperties(normalized);
+      setTotalProperties(data.total || 0);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -255,32 +238,21 @@ export default function PropertyCards() {
       return bPrice - aPrice;
     }
     if (sortOption === "Rental First") {
-      return a.defaultPropertyType === "rental" &&
-        b.defaultPropertyType === "sale"
-        ? -1
-        : a.defaultPropertyType === "sale" && b.defaultPropertyType === "rental"
-        ? 1
-        : 0;
+      const at = a.defaultPropertyType || "";
+      const bt = b.defaultPropertyType || "";
+      return at === "rental" && bt === "sale" ? -1 : at === "sale" && bt === "rental" ? 1 : 0;
     }
     if (sortOption === "Sale First") {
-      return a.defaultPropertyType === "sale" &&
-        b.defaultPropertyType === "rental"
-        ? -1
-        : a.defaultPropertyType === "rental" && b.defaultPropertyType === "sale"
-        ? 1
-        : 0;
+      const at = a.defaultPropertyType || "";
+      const bt = b.defaultPropertyType || "";
+      return at === "sale" && bt === "rental" ? -1 : at === "rental" && bt === "sale" ? 1 : 0;
     }
     return 0;
   });
 
-  // Pagination logic
-  const indexOfLastProperty = currentPage * propertiesPerPage;
-  const indexOfFirstProperty = indexOfLastProperty - propertiesPerPage;
-  const currentProperties = sortedProperties.slice(
-    indexOfFirstProperty,
-    indexOfLastProperty
-  );
-  const totalPages = Math.ceil(sortedProperties.length / propertiesPerPage);
+  // Pagination logic (server-based)
+  const currentProperties = sortedProperties;
+  const totalPages = Math.ceil(totalProperties / propertiesPerPage);
 
   // Handle property update (edit)
   const handleUpdateProperty = async (updatedData) => {
@@ -644,7 +616,7 @@ export default function PropertyCards() {
                     color: "#0F172A",
                   }}
                 >
-                  {sortedProperties.length} ALL Products
+                  {sortedProperties.length} ALL Properties
                 </h3>
                 <div
                   className="properties-main-card-list-header-actions"
@@ -975,7 +947,7 @@ export default function PropertyCards() {
                                 }}
                               >
                                 | Property Type :{" "}
-                                {p.defaultPropertyType.toUpperCase()}
+                                {(p.defaultPropertyType ? p.defaultPropertyType.toUpperCase() : "").trim()}
                               </span>
                             </div>
 
@@ -1172,7 +1144,11 @@ export default function PropertyCards() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  { p.defaultpropertytype === "rental" ? navigate(`/Rentaldetails/${p._id}`) : navigate(`/Saledetails/${p._id}`) }
+                                  if ((p.defaultPropertyType || "").toLowerCase() === "rental") {
+                                    navigate(`/Rentaldetails/${p._id}`);
+                                  } else {
+                                    navigate(`/Saledetails/${p._id}`);
+                                  }
                                 }}
                                 style={{
                                   backgroundColor: "#F1F5F9",

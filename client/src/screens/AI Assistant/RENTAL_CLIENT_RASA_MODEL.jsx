@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const VoiceAssistantRent = () => {
   // Ready sound for mic
@@ -39,6 +39,7 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
   // const [collectedPrefs, setCollectedPrefs] = useState({});
   const collectedPrefsRef = useRef([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
     useEffect(scrollToBottom, [messages]);
@@ -323,6 +324,27 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
   }, [sessionId]);
 
   useEffect(() => { window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); }; }, []);
+
+  // Stop mic & speech if user navigates away from the assistant route
+  useEffect(() => {
+    const allowedPath = "/AIassistant-Rent";
+    if (location.pathname !== allowedPath) {
+      try {
+        if (recognitionRef.current) {
+          recognitionRef.current.onstart = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.stop();
+        }
+      } catch {}
+      try { window.speechSynthesis.cancel(); } catch {}
+      isRecognizingRef.current = false;
+      isBotSpeakingRef.current = false;
+      speakingRef.current = false;
+      setListening(false);
+    }
+  }, [location]);
 
     return (
       <>

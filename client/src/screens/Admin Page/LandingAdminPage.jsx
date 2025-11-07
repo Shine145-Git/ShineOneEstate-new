@@ -11,8 +11,12 @@ import {
   BarChart3,
   Settings,
 } from 'lucide-react';
+import TopNavigationBar from "../Dashboard/TopNavigationBar";
+import { useNavigate } from "react-router-dom";
 
 const AdminLandingPage = () => {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
   const [hoveredCard, setHoveredCard] = useState(null);
   const [admins, setAdmins] = useState([]);
   const emailRef = useRef();
@@ -37,6 +41,39 @@ const AdminLandingPage = () => {
     };
     fetchAdmins();
   }, []);
+
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = [
+    "For Buyers",
+    "For Tenants",
+    "For Owners",
+    "For Dealers / Builders",
+    "Insights",
+  ];
 
   const handleUpdateRole = async () => {
     const email = emailRef.current.value;
@@ -129,7 +166,17 @@ const AdminLandingPage = () => {
     route: '/admin/add-property',
     color: '#f97316', // orange color similar to other cards
     gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-  },
+    },
+    {
+    id: 'Services',
+    title: 'Services',
+    description: 'Manage service requests and track progress',
+    icon: Home,
+    route: '/admin/services',
+    color: '#f97316', // orange color similar to other cards
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    },
+    
 ];
 
   const styles = {
@@ -249,6 +296,22 @@ const AdminLandingPage = () => {
 
   return (
     <div style={styles.container}>
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          marginBottom: "20px",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF",
+        }}
+      >
+        <TopNavigationBar user={user} handleLogout={handleLogout} navItems={navItems} />
+      </div>
+      {/* Spacer to push content below fixed navbar */}
+      <div style={{ height: 72 }} />
       <div style={styles.content}>
         {/* Header */}
         <div style={styles.header}>

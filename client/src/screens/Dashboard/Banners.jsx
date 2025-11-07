@@ -13,27 +13,27 @@ export default function Banners(user) {
   }, []);
 
   // Helper: mobile or desktop spacing
-  const outerPadding = isMobile ? '18px 4px' : '40px 20px';
-  const bannerPadding = isMobile ? '18px' : '40px';
-  const banner2Padding = isMobile ? '18px' : '40px';
-  const banner3Padding = isMobile ? '22px 10px' : '50px 40px';
-  const gapMain = isMobile ? '18px' : '30px';
-  const iconSize = isMobile ? 28 : 40;
-  const statIconSize = isMobile ? 22 : 32;
-  const circleSize = isMobile ? 52 : 80;
-  const statCardPadding = isMobile ? '12px 8px' : '20px 28px';
-  const statCardMinWidth = isMobile ? '100px' : '180px';
-  const statCard2Padding = isMobile ? '18px' : '30px';
+  const outerPadding = isMobile ? '12px 6px' : '40px 20px';
+  const bannerPadding = isMobile ? '12px' : '40px';
+  const banner2Padding = isMobile ? '12px' : '40px';
+  const banner3Padding = isMobile ? '12px' : '50px 40px';
+  const gapMain = isMobile ? '12px' : '30px';
+  const iconSize = isMobile ? 18 : 40;
+  const statIconSize = isMobile ? 18 : 32;
+  const circleSize = isMobile ? 34 : 80;
+  const statCardPadding = isMobile ? '10px 6px' : '20px 28px';
+  const statCardMinWidth = isMobile ? '90px' : '180px';
+  const statCard2Padding = isMobile ? '12px' : '30px';
   const statCard2MinWidth = isMobile ? '120px' : '250px';
-  const h2FontSize = isMobile ? '18px' : '28px';
-  const pFontSize = isMobile ? '14px' : '18px';
-  const statNumberFontSize = isMobile ? '20px' : '32px';
+  const h2FontSize = isMobile ? '14px' : '28px';
+  const pFontSize = isMobile ? '11px' : '18px';
+  const statNumberFontSize = isMobile ? '17px' : '32px';
   const statNumber2FontSize = isMobile ? '28px' : '48px';
   const statSubFontSize = isMobile ? '10px' : '14px';
   const stat2FontSize = isMobile ? '14px' : '24px';
   const stat2SubFontSize = isMobile ? '9px' : '12px';
-  const btnFontSize = isMobile ? '15px' : '18px';
-  const btnPadding = isMobile ? '12px 18px' : '18px 40px';
+  const btnFontSize = isMobile ? '13px' : '18px';
+  const btnPadding = isMobile ? '6px 12px' : '18px 40px';
   const btnGap = isMobile ? '8px' : '12px';
   const banner3h2FontSize = isMobile ? '20px' : '32px';
   const banner3pFontSize = isMobile ? '13px' : '18px';
@@ -56,11 +56,12 @@ export default function Banners(user) {
       <div style={{
         background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
         borderRadius: '16px',
-        padding: bannerPadding,
+        padding: isMobile ? '12px' : bannerPadding,
         marginBottom: isMobile ? '18px' : '30px',
         boxShadow: '0 10px 30px rgba(0, 51, 102, 0.2)',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        overflowX: isMobile ? 'hidden' : 'visible',
       }}>
         <div style={{
           position: 'absolute',
@@ -150,7 +151,7 @@ export default function Banners(user) {
             borderRadius: '12px',
             border: '2px solid rgba(255, 255, 255, 0.2)',
             textAlign: 'center',
-            minWidth: statCardMinWidth,
+            minWidth: isMobile ? 'auto' : statCardMinWidth,
             margin: isMobile ? '0 auto' : 0,
             marginTop: isMobile ? '8px' : 0
           }}>
@@ -187,11 +188,12 @@ export default function Banners(user) {
       <div style={{
         background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
         borderRadius: '16px',
-        padding: banner2Padding,
+        padding: isMobile ? '12px' : banner2Padding,
         marginBottom: isMobile ? '18px' : '30px',
         boxShadow: '0 10px 30px rgba(0, 167, 157, 0.25)',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        overflowX: isMobile ? 'hidden' : 'visible',
       }}>
         <div style={{
           position: 'absolute',
@@ -273,11 +275,11 @@ export default function Banners(user) {
           </div>
           <div style={{
             backgroundColor: '#FFFFFF',
-            padding: isMobile ? '12px 10px' : '24px 32px',
+            padding: isMobile ? '12px' : '24px 32px',
             borderRadius: '12px',
             boxShadow: '0 8px 25px rgba(0, 51, 102, 0.2)',
             textAlign: 'center',
-            minWidth: statCardMinWidth,
+            minWidth: isMobile ? 'auto' : statCardMinWidth,
             margin: isMobile ? '0 auto' : 0,
             marginTop: isMobile ? '8px' : 0
           }}>
@@ -338,10 +340,11 @@ export default function Banners(user) {
       <div style={{
         background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
         borderRadius: '16px',
-        padding: banner3Padding,
+        padding: isMobile ? '12px' : banner3Padding,
         boxShadow: '0 10px 30px rgba(0, 51, 102, 0.2)',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        overflowX: isMobile ? 'hidden' : 'visible',
       }}>
         {/* Decorative circles */}
         <div style={{
@@ -510,7 +513,7 @@ export default function Banners(user) {
             borderRadius: '16px',
             padding: statCard2Padding,
             border: '2px solid rgba(255, 255, 255, 0.2)',
-            minWidth: statCard2MinWidth,
+            minWidth: isMobile ? 'auto' : statCard2MinWidth,
             margin: isMobile ? '0 auto' : 0
           }}>
             <div style={{
@@ -540,7 +543,7 @@ export default function Banners(user) {
                 color: '#F4F7F9',
                 fontSize: statSubFontSize
               }}>
-                On Magicbricks
+                
               </div>
             </div>
             <div style={{

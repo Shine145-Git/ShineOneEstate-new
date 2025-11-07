@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import EditPropertyModal from "../User-Properties/editpropertymodal";
+import TopNavigationBar from "../Dashboard/TopNavigationBar";
 
 const AdminPropertyManager = () => {
   const [properties, setProperties] = useState([]);
@@ -12,6 +13,7 @@ const AdminPropertyManager = () => {
   const [stats, setStats] = useState({ total: 0, reviewed: 0, notReviewed: 0, active: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const PROPERTIES_PER_PAGE = 20;
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   const fetchAllProperties = async () => {
@@ -43,6 +45,39 @@ const AdminPropertyManager = () => {
   useEffect(() => {
     fetchAllProperties();
   }, []);
+
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = [
+    "For Buyers",
+    "For Tenants",
+    "For Owners",
+    "For Dealers / Builders",
+    "Insights",
+  ];
 
   const toggleActive = async (propertyId) => {
     try {
@@ -136,6 +171,26 @@ const AdminPropertyManager = () => {
 
   return (
     <div style={styles.container}>
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          marginBottom: "20px",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF", // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
+      {/* Spacer to push content below fixed navbar */}
+      <div style={{ height: 72 }} />
       {/* Header */}
       <div style={styles.header}>
         <div>

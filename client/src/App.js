@@ -33,6 +33,10 @@ import AboutPage from "./screens/Customer Support/About";
 import AdminPropertyManager from "./screens/Admin Page/admin.propertyManager";
 import AdminProtectedRoute from "./screens/Admin Page/AdminProtectedRoutes";
 import AdminPropertyListingForm from "./screens/Admin Page/admin.addproperty";
+import InvestRealEstatePage from "./screens/Dashboard/InvestinRealEstateCardSection";
+import ServiceRequestApp from "./screens/Managed Services/CreateServices";
+import ServiceTrackingSystem from "./screens/Managed Services/ManageServices";
+import AdminServiceTracking from "./screens/Admin Page/admin.servicesDashboard";
 
 function App() {
   const navigate = useNavigate();
@@ -63,6 +67,7 @@ function App() {
       <Route path="/rewards" element={<RewardsPage />} />
       {/* <Route path="/user-details" element={<UserDetailsForm />} /> */}
       <Route path="/price-predictor" element={<PricePredictor />} />
+      <Route path="/investrealestate" element={<InvestRealEstatePage />} />
 
       
       <Route path="/admin/Landingpage" element={<AdminProtectedRoute element={<AdminLandingPage />} />} />
@@ -73,6 +78,8 @@ function App() {
       <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<AdminProperties />} />} />
       <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />
       <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
+      <Route path="/admin/services" element={<AdminProtectedRoute element={<AdminServiceTracking />} />} />
+      
 
       <Route path="/support" element={<CustomerSupportPage />} />
       <Route path="/chatbot" element={<Chatbot />} />
@@ -80,6 +87,8 @@ function App() {
       <Route path="/savedproperties" element={<Savedproperties />} />
       <Route path="/property-analytics/:id" element={<PropertyAnalytics />} />
       <Route path="/enquiry-page/:id" element={<EnquiryPage />} />
+      <Route path="/servicesCreate" element={<ServiceRequestApp />} />
+      <Route path="/services" element={<ServiceTrackingSystem />} />
     </Routes>
   );
 }

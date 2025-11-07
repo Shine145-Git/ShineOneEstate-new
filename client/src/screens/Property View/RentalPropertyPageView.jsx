@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Home, Bed, Bath, Maximize, Car, DollarSign, MapPin, Calendar, Shield, Wrench, Flame, Wind, Zap, Droplet, Users, AlertCircle, PawPrint, Cigarette, Share2, Heart, Phone } from 'lucide-react';
+import { Home, Bed, Bath, Maximize, Car, DollarSign, MapPin, Calendar, Shield, Wrench, Flame, Wind, Zap, Droplet, Users, AlertCircle, PawPrint, Cigarette, Share2, Heart, Phone , X } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
 import MapIntegration from "./mapsintegration";
 import { Button } from "@mui/material";
 import SimilarProperties from "./Similarproperties";
+import EnquiryPage from "../Visit Schedule/enquiry"; // adjust the path if needed
+
+
+
 
 // Engagement and Rating API helpers
 const addEngagementTime = async (propertyId, seconds) => {
@@ -43,6 +47,10 @@ export default function RentalPropertyPage() {
   const [userComment, setUserComment] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [openMapModal, setOpenMapModal] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  
+    const openEnquiry = () => setShowEnquiryModal(true);
+    const closeEnquiry = () => setShowEnquiryModal(false);
 
   const handleSubmitRating = async () => {
     if (userRating < 1) {
@@ -713,31 +721,7 @@ export default function RentalPropertyPage() {
               position: 'sticky',
               top: '20px'
             }}>
-              <button
-                onClick={() => navigate(`/property-visit/${property._id}`)}
-                style={{
-                  width: '100%',
-                  background: '#00A79D',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '14px',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  marginBottom: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'background 0.2s'
-                }}
-                onMouseOver={e => e.currentTarget.style.background = '#00887a'}
-                onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
-              >
-                <Calendar size={20} />
-                Schedule a Viewing
-              </button>
+              
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
@@ -818,25 +802,84 @@ export default function RentalPropertyPage() {
                 </span>
               </div>
               <button
-                onClick={() => navigate('/support')}
                 style={{
                   width: '100%',
-                  background: '#00A79D',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '12px',
+                  background: '#003366',
+                  color: '#FFFFFF',
+                  padding: '14px 40px',
                   borderRadius: '8px',
-                  fontWeight: '600',
                   fontSize: '16px',
+                  fontWeight: '600',
+                  border: 'none',
                   cursor: 'pointer',
-                  transition: 'background 0.2s'
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                 }}
-                onMouseOver={e => e.currentTarget.style.background = '#00887a'}
-                onMouseOut={e => e.currentTarget.style.background = '#00A79D'}
+                onClick={openEnquiry}
               >
-                Send Inquiry
+                Enquiry
               </button>
             </div>
+            {showEnquiryModal && (
+              <div
+                onClick={closeEnquiry}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 1200,
+                  backdropFilter: 'blur(4px)'
+                }}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '32px',
+                    width: '90%',
+                    maxWidth: '600px',
+                    position: 'relative',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                  }}
+                  className="enquiry-modal"
+                >
+                  <button
+                    onClick={closeEnquiry}
+                    aria-label="Close enquiry"
+                    style={{
+                      position: 'absolute',
+                      top: '16px',
+                      right: '16px',
+                      background: '#F4F7F9',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#4A6A8A'
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
+
+                  {/* Pass the property id to your enquiry page */}
+                  <EnquiryPage propertyId={property?._id} />
+                </div>
+              </div>
+            )}
+            <style>{`
+              .enquiry-modal { animation: fadeInAnimation 0.3s ease-in-out; }
+              @keyframes fadeInAnimation {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+              }
+            `}</style>
 
             {/* Quick Info */}
             <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>

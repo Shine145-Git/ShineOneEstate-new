@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, User, Home, Search, DollarSign, Star, Award, Calendar, Phone, Mail } from 'lucide-react';
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import { useNavigate } from 'react-router-dom';
+
 
 const UserManagementDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -7,6 +10,8 @@ const UserManagementDashboard = () => {
   const [error, setError] = useState(null);
   const [expandedUsers, setExpandedUsers] = useState({});
   const [expandedProperties, setExpandedProperties] = useState({});
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
 
   // Toggle state for expanded AI Assistant preferences per user
   const [expandedAIUsers, setExpandedAIUsers] = useState({});
@@ -17,6 +22,32 @@ const UserManagementDashboard = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   const fetchUsers = async () => {
     try {
@@ -381,6 +412,24 @@ const UserManagementDashboard = () => {
 
   return (
     <div style={styles.container}>
+         {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          marginBottom: "20px",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF", // or match your navbar background
+        }}
+      >
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
+      </div>
       <div style={styles.header}>
         <h1 style={styles.title}>User Management Dashboard</h1>
         <p style={styles.subtitle}>Comprehensive overview of all registered users and their activities</p>

@@ -128,6 +128,7 @@ const createSaleProperty = async (req, res) => {
 
 // ================================
 // Get all active Sale Properties
+// Not used anywhere
 // ================================
 const getSaleProperties = async (req, res) => {
   try {
@@ -141,35 +142,9 @@ const getSaleProperties = async (req, res) => {
 };
 
 
-// ================================
-// Toggle the isActive status of a Sale Property
-// ================================
-const toggleSalePropertyStatus = async (req, res) => {
-  try {
-    // Destructure property ID from request parameters
-    const { id } = req.params;
-
-    // Step 1: Find property by ID
-    const property = await SaleProperty.findById(id);
-    if (!property) return res.status(404).json({ message: "Property not found" });
-
-    // Step 2: Toggle isActive flag
-    property.isActive = !property.isActive;
-
-    // Step 3: Save updated property
-    await property.save();
-
-    // Step 4: Respond with success message and updated property
-    res.status(200).json({ message: `Property ${property.isActive ? 'activated' : 'deactivated'} successfully`, property });
-
-  } catch (error) {
-    res.status(500).json({ message: "Failed to toggle property status", error: error.message });
-  }
-};
-
 
 module.exports = {
   createSaleProperty,
   getSaleProperties,
-  toggleSalePropertyStatus,
+  
 };

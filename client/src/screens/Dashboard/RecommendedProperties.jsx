@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Image, MapPin, Home, Maximize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }) => {
+const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, hasMore, onLoadMore, locationQueryFields }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const itemsPerPage = 4;
   const navigate = useNavigate();
@@ -225,7 +225,13 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }
           }}
           onClick={() => {
             if (user) {
-              navigate('/seeAllproperties', { state: { recommendedProperties: properties } });
+              navigate('/seeAllproperties', {
+                state: {
+                  recommendedProperties: properties,
+                  // Pass location fields when provided so SeeAllProperties can use backend pagination
+                  locationQueryFields: Array.isArray(locationQueryFields) && locationQueryFields.length > 0 ? locationQueryFields : undefined,
+                },
+              });
             } else {
               navigate('/login');
             }
@@ -282,7 +288,8 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }
                     if (!user) {
                       navigate("/login");
                     } else {
-                      if (property.defaultpropertytype === "rental") {
+                      const t = (property.defaultpropertytype || property.defaultPropertyType || property.propertyCategory || '').toLowerCase();
+                      if (t === 'rental') {
                         navigate(`/Rentaldetails/${property._id}`);
                       } else {
                         navigate(`/Saledetails/${property._id}`);
@@ -361,6 +368,28 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick }
               <ChevronRight size={24} color="#003366" />
             </button>
           )}
+        </div>
+      )}
+      {hasMore && (
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            onClick={onLoadMore}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#00A79D',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = '#007f73')}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = '#00A79D')}
+          >
+            Load More Properties
+          </button>
         </div>
       )}
       <style>

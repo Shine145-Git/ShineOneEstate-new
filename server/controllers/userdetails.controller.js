@@ -168,27 +168,47 @@ exports.getMyProperties = async (req, res) => {
 
     const userId = req.user._id;
 
-    // Fetch rental and sale properties concurrently
-    const [rentalProperties, saleProperties] = await Promise.all([
-      RentalProperty.find({ owner: userId }).sort({ createdAt: -1 }).lean(),
-      SaleProperty.find({ ownerId: userId }).sort({ createdAt: -1 }).lean(),
+    // Pagination params
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    // Fetch rental and sale properties concurrently (only IDs first for performance)
+    const [rentalIds, saleIds] = await Promise.all([
+      RentalProperty.find({ owner: userId }).sort({ createdAt: -1 }).select('_id'),
+      SaleProperty.find({ ownerId: userId }).sort({ createdAt: -1 }).select('_id'),
     ]);
 
-    // Combine and tag properties by category
-    const allProperties = [
-      ...rentalProperties.map((p) => ({ ...p, propertyCategory: "rental" })),
-      ...saleProperties.map((p) => ({ ...p, propertyCategory: "sale" })),
+    const total = rentalIds.length + saleIds.length;
+    const rentalCount = rentalIds.length;
+    const saleCount = saleIds.length;
+
+    // Combine IDs and slice for pagination
+    const combinedIds = [
+      ...rentalIds.map(p => ({ id: p._id, type: 'rental' })),
+      ...saleIds.map(p => ({ id: p._id, type: 'sale' }))
     ];
+    const paginatedIds = combinedIds.slice(skip, skip + limit);
 
-    // Sort combined properties by creation date descending
-    allProperties.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Resolve full property data for the current page
+    const properties = await Promise.all(
+      paginatedIds.map(async (item) => {
+        if (item.type === 'rental') {
+          return await RentalProperty.findById(item.id).lean().then(p => ({ ...p, propertyCategory: 'rental' }));
+        } else {
+          return await SaleProperty.findById(item.id).lean().then(p => ({ ...p, propertyCategory: 'sale' }));
+        }
+      })
+    );
 
-    // Send response with counts and properties
-    res.status(200).json({
-      total: allProperties.length,
-      rentalCount: rentalProperties.length,
-      saleCount: saleProperties.length,
-      properties: allProperties,
+    // Send paginated response
+    return res.status(200).json({
+      total,
+      rentalCount,
+      saleCount,
+      page,
+      limit,
+      properties,
     });
   } catch (error) {
     res.status(500).json({

@@ -1,3 +1,7 @@
+// ================== SERVICE REQUEST ROUTES ==================
+const { createServiceRequest, getServiceRequests, updateServiceRequestStatus } = require("../controllers/Services.controller");
+
+;
 const express = require("express");
 const router = express.Router();
 const User = require("../models/user.model.js");
@@ -20,14 +24,14 @@ const {
   
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
-const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole } = require("../controllers/admin.controller");
+const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole , getAllProperties , updateServiceRequestDetails } = require("../controllers/admin.controller");
 const { predictPrice } = require("../controllers/aimodel.controller");
 const { distributeReward, checkEligibility } = require("../controllers/rewards.controller");
 const { createPayment, getPaymentsForUser } = require("../controllers/payment.controller");
 const { requestCallback } = require("../controllers/Customersupport.js");
 const { getChatResponse, getInitialQuestions } = require("../controllers/ChatBot.controller.js");
 const { createSaleProperty, getSaleProperties } = require("../controllers/Saleproperty.controller");
-const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllProperties} = require("../controllers/Viewproperties.controller");
+const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllActiveProperties} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
@@ -85,7 +89,7 @@ router.put("/api/user/update-property/:id", verifyToken, upload.array("images" ,
 router.delete("/api/user/delete-property/:id", verifyToken, deleteProperty);
 
 // ================== PROPERTY ROUTES ==================
-router.get("/api/properties",  verifyTokenOptional, getAllProperties);
+router.get("/api/activeproperties", verifyTokenOptional, getAllActiveProperties);
 router.get("/api/getRentalproperties/:id", verifyTokenOptional, getRentalPropertyById);
 router.get("/api/properties/:id", verifyToken, getPropertyById);
 
@@ -113,6 +117,7 @@ router.get("/api/get-callback-requests", verifyToken, checkAdminEmail, getCallba
 router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRewardsStatus);
 
 router.patch("/api/admin/update-role", verifyToken, checkAdminEmail, updateUserRole);
+router.get("/api/properties",  verifyToken,checkAdminEmail, getAllProperties);
 
 // ================== PROPERTY STATUS ROUTES (ADMIN) ==================
 router.patch("/api/admin/property/:id/toggle-active", verifyToken, checkAdminEmail, toggleActiveStatus);
@@ -167,6 +172,19 @@ router.post("/api/user/preferences-SALE-aria", verifyToken, (req, res) => {
   req.body.assistantType = "sale";
   saveUserPreferencesARIA(req, res);
 });
+
+// ================== Services API ==================
+// Create a new service request (owner or renter)
+router.post("/api/createservices", verifyToken, createServiceRequest);
+
+// Fetch service requests with pagination (admin can view all, user sees only their own)
+router.get("/api/services", verifyToken, getServiceRequests);
+
+// User updates status of their own request
+router.patch("/api/services/:id/status", verifyToken, updateServiceRequestStatus);
+
+// Admin updates status of any request
+router.patch("/api/admin/services/:id/status", verifyToken, checkAdminEmail, updateServiceRequestDetails)
 
 
 

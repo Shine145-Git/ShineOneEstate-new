@@ -41,7 +41,7 @@ const EnquiryPage = ({ propertyId }) => {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success('Enquiry submitted successfully!');
+        toast.success('Enquiry submitted successfully! We will get in touch with you soon.');
         setFormData({ message: '' });
         setErrors({});
       } else {

@@ -93,12 +93,35 @@ const Searchproperty = () => {
   const [smokingPolicyFilter, setSmokingPolicyFilter] = useState("");
   const [amenitiesFilter, setAmenitiesFilter] = useState([]);
 
+  // Pagination (server-driven)
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [hasMore, setHasMore] = useState(true);
+
   useEffect(() => {
     if (location.state?.type === "sale") setPropertyTypeFilter("sale");
     else if (location.state?.type === "rent") setPropertyTypeFilter("rent");
     else if (location.state?.type === "new") setSortBy("newest");
     else setPropertyTypeFilter("");
   }, [location.state]);
+
+  // Read ?type=sale|rent from URL and set state only (no fetch/loader here)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    const t = (params.get("type") || "").toLowerCase();
+    if (t === "rent" || t === "sale") {
+      setPropertyTypeFilter(t);
+      setPage(1);
+    }
+  }, [location.search]);
+
+  // When type is set (from URL or elsewhere) and no text query, fetch using fast-path
+  useEffect(() => {
+    if (!searchQuery.trim() && (propertyTypeFilter === 'rent' || propertyTypeFilter === 'sale')) {
+      setPage(1);
+      fetchSearchResults("", { append: false, pageOverride: 1 });
+    }
+  }, [propertyTypeFilter]);
 
   const [savedProperties, setSavedProperties] = useState(new Set());
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
@@ -139,35 +162,53 @@ const Searchproperty = () => {
 
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
-  const fetchSearchResults = async (queryToSearch) => {
+  const fetchSearchResults = async (queryToSearch, options = { append: false, pageOverride: null }) => {
     const searchVal = typeof queryToSearch === "string" ? queryToSearch : searchQuery;
-    if (searchVal.trim() === "") return;
+    const activeTypeState = (propertyTypeFilter || "").toLowerCase();
+
+    // If neither query nor type is available, do nothing and ensure loader is off
+    if (searchVal.trim() === "" && !activeTypeState) {
+      setFilteredPayments([]);
+      setLoading(false);
+      setHasMore(false);
+      return;
+    }
 
     setLoading(true);
     const startTime = Date.now();
     try {
       const params = new URLSearchParams();
-      params.append("query", searchVal.trim());
+      const activeQuery = searchVal.trim();
+      const activeType = (propertyTypeFilter || "").toLowerCase();
+      const pageToLoad = options.pageOverride ?? page;
+
+      if (activeQuery) params.append("query", activeQuery);
+      if (activeType) params.append("type", activeType);
+      params.append("limit", String(limit));
+      params.append("page", String(pageToLoad));
+
       const apiUrl = process.env.REACT_APP_SEARCH_PROPERTIES_API;
       const res = await axios.get(`${apiUrl}?${params.toString()}`);
 
-      let filteredData = res.data.map(p => ({
-        ...p,
-        type: p.defaultpropertytype || "rental"
-      }));
+      let incoming = Array.isArray(res.data) ? res.data : [];
 
-      // Property type
-      if (propertyTypeFilter) {
-        const normalizedFilter = propertyTypeFilter.toLowerCase() === "rent" ? "rental" : propertyTypeFilter.toLowerCase();
-        filteredData = filteredData.filter((p) => p.defaultpropertytype?.toLowerCase() === normalizedFilter);
-      }
+      // Normalize incoming items
+      let normalized = incoming.map((p) => {
+        const rawType = (p.type || p.defaultpropertytype || "").toLowerCase();
+        const normType = rawType.includes("rent") ? "rent" : rawType.includes("sale") ? "sale" : (p.monthlyRent ? "rent" : "sale");
+        return {
+          ...p,
+          type: normType, // 'rent' | 'sale' for app logic
+          defaultpropertytype: normType === "rent" ? "rental" : "sale",
+        };
+      });
 
-      // Dashboard type
+      // Apply dashboard-specific shaping
       const dashboardType = location.state?.type;
       if (dashboardType === "new") {
-        filteredData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        normalized.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } else if (dashboardType === "commercial") {
-        filteredData = filteredData
+        normalized = normalized
           .filter((p) =>
             /office|tower|commercial|space/i.test(p.title || "") ||
             /office|tower|commercial|space/i.test(p.description || "") ||
@@ -175,84 +216,88 @@ const Searchproperty = () => {
           )
           .sort(() => Math.random() - 0.5);
       } else if (dashboardType === "project") {
-        filteredData = filteredData
+        normalized = normalized
           .filter((p) => (p.images?.length || 0) > 2)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       }
 
-      // Filter by bedrooms
+      // Client-side filters (bed/bath/price/area/etc.)
+      if (propertyTypeFilter) {
+        const normalizedFilter = propertyTypeFilter.toLowerCase() === "rent" ? "rental" : "sale";
+        normalized = normalized.filter((p) => (p.defaultpropertytype || "").toLowerCase() === normalizedFilter);
+      }
       if (bedroomsFilter !== "") {
-        filteredData = filteredData.filter(p => Number(p.bedrooms) === Number(bedroomsFilter));
+        normalized = normalized.filter(p => Number(p.bedrooms) === Number(bedroomsFilter));
       }
-      // Filter by bathrooms
       if (bathroomsFilter !== "") {
-        filteredData = filteredData.filter(p => Number(p.bathrooms) === Number(bathroomsFilter));
+        normalized = normalized.filter(p => Number(p.bathrooms) === Number(bathroomsFilter));
       }
-      // Filter by price (rent or sale)
       if (minPriceFilter !== "") {
-        filteredData = filteredData.filter(p => {
+        normalized = normalized.filter(p => {
           const price = p.monthlyRent || p.price || 0;
           return price >= Number(minPriceFilter);
         });
       }
       if (maxPriceFilter !== "") {
-        filteredData = filteredData.filter(p => {
+        normalized = normalized.filter(p => {
           const price = p.monthlyRent || p.price || 0;
           return price <= Number(maxPriceFilter);
         });
       }
-      // Filter by area
       if (minAreaFilter !== "") {
-        filteredData = filteredData.filter(p => {
+        normalized = normalized.filter(p => {
           const area = p.area || p.totalArea?.sqft || 0;
           return area >= Number(minAreaFilter);
         });
       }
       if (maxAreaFilter !== "") {
-        filteredData = filteredData.filter(p => {
+        normalized = normalized.filter(p => {
           const area = p.area || p.totalArea?.sqft || 0;
           return area <= Number(maxAreaFilter);
         });
       }
-      // Move-in date (rentals only)
       if (moveInDateFilter && propertyTypeFilter === "rent") {
-        filteredData = filteredData.filter(p => {
+        normalized = normalized.filter(p => {
           if (!p.availableFrom) return true;
-          // Compare as YYYY-MM-DD
           return new Date(p.availableFrom) <= new Date(moveInDateFilter);
         });
       }
-      // Parking
       if (parkingFilter !== "") {
-        filteredData = filteredData.filter(p =>
+        normalized = normalized.filter(p =>
           (p.parking || "").toLowerCase() === parkingFilter.toLowerCase()
         );
       }
-      // Pet policy
       if (petPolicyFilter !== "") {
-        filteredData = filteredData.filter(p =>
+        normalized = normalized.filter(p =>
           (p.petPolicy || "").toLowerCase() === petPolicyFilter.toLowerCase()
         );
       }
-      // Smoking policy
       if (smokingPolicyFilter !== "") {
-        filteredData = filteredData.filter(p =>
+        normalized = normalized.filter(p =>
           (p.smokingPolicy || "").toLowerCase() === smokingPolicyFilter.toLowerCase()
         );
       }
-      // Amenities (all selected must be present)
       if (amenitiesFilter.length > 0) {
-        filteredData = filteredData.filter(p => {
+        normalized = normalized.filter(p => {
           const amenities = Array.isArray(p.amenities) ? p.amenities.map(a => a.toLowerCase()) : [];
           return amenitiesFilter.every(sel => amenities.includes(sel.toLowerCase()));
         });
       }
 
-      filteredData = filteredData.filter(p => p.isActive !== false);
-      setFilteredPayments(filteredData);
+      normalized = normalized.filter(p => p.isActive !== false);
+
+      if (options.append) {
+        setFilteredPayments(prev => [...prev, ...normalized]);
+      } else {
+        setFilteredPayments(normalized);
+      }
+
+      // If returned fewer than 'limit', we are at the end
+      setHasMore(incoming.length === limit);
     } catch (error) {
       console.error("Search API error:", error);
-      setFilteredPayments([]);
+      if (!options.append) setFilteredPayments([]);
+      setHasMore(false);
     } finally {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, 2000 - elapsed);
@@ -261,24 +306,37 @@ const Searchproperty = () => {
   };
 
   const getSortedProperties = () => {
-    let sorted = [...filteredPayments];
-    if (sortBy === "price-low") {
-      sorted.sort((a, b) => {
-        const priceA = a.monthlyRent || a.price || 0;
-        const priceB = b.monthlyRent || b.price || 0;
-        return priceA - priceB;
-      });
-    } else if (sortBy === "price-high") {
-      sorted.sort((a, b) => {
-        const priceA = a.monthlyRent || a.price || 0;
-        const priceB = b.monthlyRent || b.price || 0;
-        return priceB - priceA;
-      });
-    } else if (sortBy === "newest") {
-      sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
-    return sorted;
-  };
+  // Start from the fetched list
+  let filtered = [...filteredPayments];
+
+  // DEFENSIVE FILTER: apply the dropdown filter at render-time too
+  if (propertyTypeFilter) {
+    const normalizedFilter =
+      propertyTypeFilter.toLowerCase() === "rent" ? "rental" : "sale";
+    filtered = filtered.filter(
+      (p) => (p.defaultpropertytype || "").toLowerCase() === normalizedFilter
+    );
+  }
+
+  // Now sort
+  let sorted = [...filtered];
+  if (sortBy === "price-low") {
+    sorted.sort((a, b) => {
+      const priceA = a.monthlyRent || a.price || 0;
+      const priceB = b.monthlyRent || b.price || 0;
+      return priceA - priceB;
+    });
+  } else if (sortBy === "price-high") {
+    sorted.sort((a, b) => {
+      const priceA = a.monthlyRent || a.price || 0;
+      const priceB = b.monthlyRent || b.price || 0;
+      return priceB - priceA;
+    });
+  } else if (sortBy === "newest") {
+    sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+  return sorted;
+};
 
   const toggleSaveProperty = (propertyId, e) => {
     e.stopPropagation();
@@ -335,12 +393,10 @@ const Searchproperty = () => {
             return;
           }
           addPropertyView(property._id);
-          if (property.type === "rental") {
+          if (isRental) {
             navigate(`/Rentaldetails/${property._id}`);
-          } else if (property.type === "sale") {
-            navigate(`/Saledetails/${property._id}`);
           } else {
-            console.warn("Unknown property type:", property.type);
+            navigate(`/Saledetails/${property._id}`);
           }
         }}
       >
@@ -611,17 +667,21 @@ const Searchproperty = () => {
   };
 
   const sortedProperties = getSortedProperties();
-  const propertiesPerPage = 20;
-  const indexOfLastProperty = currentPage * propertiesPerPage;
-  const indexOfFirstProperty = indexOfLastProperty - propertiesPerPage;
-  const currentProperties = sortedProperties.slice(indexOfFirstProperty, indexOfLastProperty);
-  const totalPages = Math.ceil(sortedProperties.length / propertiesPerPage);
 
-  const handlePageChange = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+  // Server-driven pagination: we don't know total pages without a count.
+  // We'll show Prev/Next buttons using `page` and `hasMore`.
+
+  const handlePageChange = (nextPage) => {
+    if (nextPage < 1) return;
+    // If moving forward but backend told us there's no more, block
+    if (nextPage > page && !hasMore) return;
+
+    setCurrentPage(nextPage); // keep if used elsewhere
+    setPage(nextPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Fetch this specific page fresh (not append, since you paginate via buttons)
+    fetchSearchResults(searchQuery, { append: false, pageOverride: nextPage });
   };
 
   return (
@@ -830,8 +890,9 @@ const Searchproperty = () => {
                 onClick={(e) => {
                   createRipple(e);
                   if (searchQuery.trim() !== "") {
+                    setPage(1);
                     setLoading(true);
-                    fetchSearchResults(searchQuery.trim());
+                    fetchSearchResults(searchQuery.trim(), { append: false, pageOverride: 1 });
                     setShowSuggestions(false);
                   }
                 }}
@@ -891,29 +952,35 @@ const Searchproperty = () => {
             }}>
               {/* Property Type */}
               <select
-                value={propertyTypeFilter}
-                onChange={(e) => setPropertyTypeFilter(e.target.value)}
-                style={{
-                  padding: "0.625rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #00A79D",
-                  backgroundColor: "#FFFFFF",
-                  color: "#333333",
-                  fontSize: "0.875rem",
-                  cursor: "pointer",
-                  fontWeight: "500",
-                  outline: "none",
-                  transition: "background 0.2s"
-                }}
-                onFocus={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
-                onBlur={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
-                onMouseOver={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
-                onMouseOut={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
-              >
-                <option value="">All Types</option>
-                <option value="rent">For Rent</option>
-                <option value="sale">For Sale</option>
-              </select>
+  value={propertyTypeFilter}
+  onChange={(e) => {
+    const val = e.target.value;
+    setPropertyTypeFilter(val);
+    setCurrentPage(1); // keep pagination sane when filter changes
+    setPage(1);
+    fetchSearchResults(searchQuery, { append: false, pageOverride: 1 });
+  }}
+  style={{
+    padding: "0.625rem 1rem",
+    borderRadius: "8px",
+    border: "1px solid #00A79D",
+    backgroundColor: "#FFFFFF",
+    color: "#333333",
+    fontSize: "0.875rem",
+    cursor: "pointer",
+    fontWeight: "500",
+    outline: "none",
+    transition: "background 0.2s"
+  }}
+  onFocus={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
+  onBlur={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
+  onMouseOver={e => e.currentTarget.style.backgroundColor = "#22D3EE"}
+  onMouseOut={e => e.currentTarget.style.backgroundColor = "#FFFFFF"}
+>
+  <option value="">All Types</option>
+  <option value="rent">For Rent</option>
+  <option value="sale">For Sale</option>
+</select>
               {/* Sort By */}
               <select
                 value={sortBy}
@@ -1184,7 +1251,8 @@ const Searchproperty = () => {
                     }}
                     onClick={() => {
                       setShowFilters(false);
-                      fetchSearchResults(searchQuery);
+                      setPage(1);
+                      fetchSearchResults(searchQuery, { append: false, pageOverride: 1 });
                     }}
                   >
                     Apply Filters
@@ -1248,74 +1316,55 @@ const Searchproperty = () => {
                     gridTemplateColumns: viewMode === "grid" && !isMobile ? "repeat(auto-fill, minmax(350px, 1fr))" : "1fr",
                     gap: "1.25rem"
                   }}>
-                    {currentProperties.map((property) => (
+                    {sortedProperties.map((property) => (
                       <PropertyCard key={property._id} property={property} isGridView={viewMode === "grid"} />
                     ))}
                   </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      marginTop: "2rem",
-                      gap: "0.5rem",
-                      flexWrap: "wrap"
-                    }}>
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        style={{
-                          padding: "0.625rem 1.25rem",
-                          borderRadius: "8px",
-                          border: "1px solid #e5e7eb",
-                          backgroundColor: currentPage === 1 ? "#f3f4f6" : "#fff",
-                          color: currentPage === 1 ? "#9ca3af" : "#1f2937",
-                          cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                          fontWeight: "600",
-                          fontSize: "0.875rem"
-                        }}
-                      >
-                        Previous
-                      </button>
-                      
-                      {[...Array(totalPages)].map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handlePageChange(idx + 1)}
-                          style={{
-                            padding: "0.625rem 1rem",
-                            borderRadius: "8px",
-                            border: "1px solid #e5e7eb",
-                            backgroundColor: currentPage === idx + 1 ? "#10b981" : "#fff",
-                            color: currentPage === idx + 1 ? "#fff" : "#1f2937",
-                            fontWeight: currentPage === idx + 1 ? "700" : "500",
-                            cursor: "pointer",
-                            fontSize: "0.875rem"
-                          }}
-                        >
-                          {idx + 1}
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        style={{
-                          padding: "0.625rem 1.25rem",
-                          borderRadius: "8px",
-                          border: "1px solid #e5e7eb",
-                          backgroundColor: currentPage === totalPages ? "#f3f4f6" : "#fff",
-                          color: currentPage === totalPages ? "#9ca3af" : "#1f2937",
-                          cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                          fontWeight: "600",
-                          fontSize: "0.875rem"
-                        }}
-                      >
-                        Next
-                      </button>
+                  {/* Pagination (server-driven) */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    marginTop: "2rem",
+                    gap: "0.5rem",
+                    flexWrap: "wrap"
+                  }}>
+                    <button
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={page === 1 || loading}
+                      style={{
+                        padding: "0.625rem 1.25rem",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: page === 1 ? "#f3f4f6" : "#fff",
+                        color: page === 1 ? "#9ca3af" : "#1f2937",
+                        cursor: page === 1 ? "not-allowed" : "pointer",
+                        fontWeight: "600",
+                        fontSize: "0.875rem"
+                      }}
+                    >
+                      Previous
+                    </button>
+                    <div style={{ display: "flex", alignItems: "center", padding: "0 0.75rem", color: "#4A6A8A", fontWeight: 600 }}>
+                      Page {page}
                     </div>
-                  )}
+                    <button
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={!hasMore || loading}
+                      style={{
+                        padding: "0.625rem 1.25rem",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: !hasMore ? "#f3f4f6" : "#fff",
+                        color: !hasMore ? "#9ca3af" : "#1f2937",
+                        cursor: !hasMore ? "not-allowed" : "pointer",
+                        fontWeight: "600",
+                        fontSize: "0.875rem"
+                      }}
+                    >
+                      Next
+                    </button>
+                  </div>
                 </>
               )}
             </div>

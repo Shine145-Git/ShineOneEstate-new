@@ -101,18 +101,24 @@ const getPropertyById = async (req, res) => {
   }
 };
 
-const getAllProperties = async (req, res) => {
+const getAllActiveProperties = async (req, res) => {
   try {
+    const { limit } = req.query;
     // Fetch all properties
-    const rentalProperties = await Property.find().populate("owner", "name email");
-    const saleProperties = await SaleProperty.find().populate("ownerId", "name email");
+    const rentalProperties = await Property.find({ isActive: true }).populate("owner", "name email");
+    const saleProperties = await SaleProperty.find({ isActive: true }).populate("ownerId", "name email");
+
+    const rentalLimit = limit && !isNaN(Number(limit)) ? Number(limit) : rentalProperties.length;
+    const saleLimit = limit && !isNaN(Number(limit)) ? Number(limit) : saleProperties.length;
+    const limitedRental = rentalProperties.slice(0, rentalLimit);
+    const limitedSale = saleProperties.slice(0, saleLimit);
 
     // Fetch review statuses
     const reviewStatuses = await PropertyReviewStatus.find();
 
     // Merge review statuses into property data
-    const allProperties = [
-      ...rentalProperties.map((prop) => {
+    let allProperties = [
+      ...limitedRental.map((prop) => {
         const review = reviewStatuses.find(
           (r) => r.propertyId.toString() === prop._id.toString()
         );
@@ -122,7 +128,7 @@ const getAllProperties = async (req, res) => {
           isReviewed: review ? review.isReviewed : false,
         };
       }),
-      ...saleProperties.map((prop) => {
+      ...limitedSale.map((prop) => {
         const review = reviewStatuses.find(
           (r) => r.propertyId.toString() === prop._id.toString()
         );
@@ -133,6 +139,14 @@ const getAllProperties = async (req, res) => {
         };
       }),
     ];
+
+    const numericLimit = limit && !isNaN(Number(limit)) ? Number(limit) : null;
+    if (numericLimit) {
+      // Shuffle and take only the requested number of properties
+      allProperties = allProperties
+        .sort(() => 0.5 - Math.random()) // randomize order
+        .slice(0, numericLimit);
+    }
 
     res.status(200).json(allProperties);
   } catch (error) {
@@ -149,5 +163,5 @@ module.exports = {
   getRentalPropertyById,
   getSalePropertyById,
   getPropertyById,
-  getAllProperties,
+  getAllActiveProperties,
 };

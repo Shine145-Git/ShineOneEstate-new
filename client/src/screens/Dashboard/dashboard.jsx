@@ -35,7 +35,7 @@ import ToolsShowcase from "./Tools";
 import Adcarousel from "./Adcarousel";
 
 export default function RealEstateDashboard() {
-  const [activeTab, setActiveTab] = useState("Buy");
+  const [activeTab, setActiveTab] = useState("All Properties");
   // Loading state for search
   const [isLoading, setIsLoading] = useState(false);
   // Floating Chat Button Modal State
@@ -80,6 +80,10 @@ export default function RealEstateDashboard() {
     fetchSuggestions();
   }, [searchQuery]);
   const [propertiesInArea, setPropertiesInArea] = useState([]);
+  const [areaPage, setAreaPage] = useState(1);
+  const [areaLimit] = useState(10);
+  const [areaHasMore, setAreaHasMore] = useState(true);
+  const [areaLoading, setAreaLoading] = useState(false);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -88,45 +92,72 @@ export default function RealEstateDashboard() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+  // Helper for paginated properties in area
+  const fetchAreaPage = async ({ page = 1, replace = false }) => {
+    if (!userLocation) return;
+    // Debounce-like guard if already loading
+    if (areaLoading) return;
+    setAreaLoading(true);
+    try {
+      const fields = [
+        userLocation.area,
+        userLocation.village,
+        userLocation.city_district,
+        userLocation.county,
+        userLocation.state_district,
+        userLocation.state,
+      ].filter(Boolean);
+
+      const resProps = await fetch(
+        `${process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API}?page=${page}&limit=${areaLimit}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ queryFields: fields }),
+        }
+      );
+
+      const text = await resProps.text();
+      if (resProps.ok) {
+        const chunk = JSON.parse(text);
+        const safeChunk = Array.isArray(chunk) ? chunk : [];
+        // hasMore if we received a full page
+        setAreaHasMore(safeChunk.length === areaLimit);
+        if (replace) {
+          setPropertiesInArea(safeChunk);
+        } else {
+          setPropertiesInArea((prev) => [...prev, ...safeChunk]);
+        }
+      } else {
+        if (replace) setPropertiesInArea([]);
+        setAreaHasMore(false);
+      }
+    } catch (err) {
+      if (replace) setPropertiesInArea([]);
+      setAreaHasMore(false);
+    } finally {
+      setAreaLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!userLocation) return;
-
-    // Debounce API call to avoid duplicate consecutive searches
-    const debounceTimeout = setTimeout(async () => {
-      try {
-        const fields = [
-          userLocation.area,
-          userLocation.village,
-          userLocation.city_district,
-          userLocation.county,
-          userLocation.state_district,
-          userLocation.state,
-        ].filter(Boolean);
-
-        const resProps = await fetch(
-          `${process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API}`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ queryFields: fields }),
-          }
-        );
-
-        const text = await resProps.text();
-        if (resProps.ok) {
-          const propsData = JSON.parse(text);
-          setPropertiesInArea(propsData);
-        } else {
-          setPropertiesInArea([]);
-        }
-      } catch (err) {
-        setPropertiesInArea([]);
-      }
-    }, 300); // 300ms debounce
-
+    // Reset to first page whenever location changes
+    setAreaPage(1);
+    setAreaHasMore(true);
+    // Debounced initial fetch
+    const debounceTimeout = setTimeout(() => {
+      fetchAreaPage({ page: 1, replace: true });
+    }, 300);
     return () => clearTimeout(debounceTimeout);
   }, [userLocation]);
+
+  useEffect(() => {
+    if (!userLocation) return;
+    if (areaPage === 1) return; // initial load handled by the other effect
+    fetchAreaPage({ page: areaPage, replace: false });
+  }, [areaPage]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -183,7 +214,7 @@ export default function RealEstateDashboard() {
       try {
         if (!user) {
           const res = await fetch(
-            `${process.env.REACT_APP_ALL_RENT_PROPERTY_FETCH_API}`,
+            `${process.env.REACT_APP_Base_API}/api/activeproperties?limit=12`,
             {
               method: "GET",
               credentials: "include",
@@ -320,7 +351,7 @@ export default function RealEstateDashboard() {
         backgroundColor: "#F4F7F9",
         minHeight: "100vh",
         position: "relative",
-        paddingTop: "80px" // adjust based on navbar height
+        paddingTop: "50px" // adjust based on navbar height
       }}
     >
       {isLoading && (
@@ -365,6 +396,7 @@ export default function RealEstateDashboard() {
               border-radius: 12px !important;
               box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
               padding: 0 !important;
+              
             }
             .search-box-container input[type="text"] {
               font-size: 15px !important;
@@ -439,10 +471,17 @@ export default function RealEstateDashboard() {
             }
             .property-snapshot-section,
             .news-section,
-            .footer-section,
-            .hero-banner-section {
+            .footer-section {
               padding: 1.2rem 0.5rem !important;
-              margin: 0.5rem 0 !important;
+              margin: 0.25rem 0 !important;
+            }
+            .hero-banner-section {
+              margin: 0 !important;
+              margin-top: 0px !important;
+              padding-top: 0 !important;
+            }
+            .dashboard-cards-section:first-of-type {
+              margin: 0.25rem 0 !important;
             }
             .property-dashboard-section {
               padding: 1.2rem 0.5rem !important;
@@ -640,8 +679,9 @@ export default function RealEstateDashboard() {
         style={{
           width: "100%",
           position: "relative",
-          padding: isMobile ? "0" : "0",
-          marginBottom: isMobile ? "1.5rem" : "2.5rem",
+          padding: 0,
+          
+          marginBottom: isMobile ? "1rem" : "1.5rem",
         }}
       >
         {/* Hero Banner / Carousel */}
@@ -650,8 +690,8 @@ export default function RealEstateDashboard() {
         <div
           className="search-box-container"
           style={{
-            position: isMobile ? "static" : "absolute",
-            bottom: isMobile ? "unset" : "-135px",
+            position: isMobile ? "unset" : "absolute",
+            bottom: isMobile ? "unset" : "-110px",
             left: isMobile ? "unset" : "50%",
             transform: isMobile ? "none" : "translateX(-50%)",
             width: isMobile ? "98vw" : "90%",
@@ -1285,13 +1325,15 @@ export default function RealEstateDashboard() {
           )}
         </div>
       </div>
+      {/* Spacer to offset the negative hero margin under fixed navbar */}
+      <div style={{ height: isMobile ? 0 : 0 }} />
 
       {/* Cards Section */}
-      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
-        { <CardSection />}
+      <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.25rem 0" : "6.5rem 0" }}>
+        { <CardSection user={user} />}
       </div>
       {/* Property Dashboard Section */}
-      <div className="property-dashboard-section" style={{ padding: isMobile ? "1.2rem 0.5rem" : "2rem 0" }}>
+      <div className="property-dashboard-section" >
         <PropertyDashboard
           properties={user ? recommended : properties}
           user={user}
@@ -1300,15 +1342,15 @@ export default function RealEstateDashboard() {
         />
       </div>
       {/* Property Snapshot Section */}
-      <div className="property-snapshot-section" style={{ padding: isMobile ? "1.2rem 0.5rem" : "2rem 0" }}>
+      <div className="property-snapshot-section" style={{ marginTop: isMobile ? "0.25rem" : "0.5rem" }} >
         <PropertySnapshot />
       </div>
       {/* News Section */}
-      <div id="news" className="news-section" style={{ padding: isMobile ? "1.2rem 0.5rem" : "2rem 0" }}>
+      <div id="news" className="news-section" >
         <PropertyHeroSection />
       </div>
       {/* Advertisement Section */}
-      <div className="dashboard-ads-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
+      <div className="dashboard-ads-section" >
         <LandingPage />
       </div>
       {/* {Banners} */}
@@ -1320,7 +1362,56 @@ export default function RealEstateDashboard() {
           user={user}
           title="Properties in your area"
           onPropertyClick={handlePropertyClick}
+          hasMore={areaHasMore}
+          onLoadMore={() => setAreaPage((p) => p + 1)}
+          locationQueryFields={[
+            userLocation?.area,
+            userLocation?.village,
+            userLocation?.city_district,
+            userLocation?.county,
+            userLocation?.state_district,
+            userLocation?.state,
+          ].filter(Boolean)}
         />
+      </div>
+      {/* Location-based list pagination controls */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: isMobile ? "0.5rem" : "1rem" }}>
+        {areaLoading && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#4A6A8A", fontWeight: 600 }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                border: "3px solid #e5e7eb",
+                borderTop: "3px solid #00A79D",
+                animation: "spin 0.9s linear infinite",
+              }}
+            />
+            Loading…
+          </div>
+        )}
+        {!areaLoading && areaHasMore && (
+          <button
+            onClick={() => setAreaPage((p) => p + 1)}
+            style={{
+              backgroundColor: "#00A79D",
+              color: "#fff",
+              border: "none",
+              padding: isMobile ? "10px 16px" : "12px 20px",
+              borderRadius: 8,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            }}
+          >
+            Load more in your area
+          </button>
+        )}
+        {!areaLoading && !areaHasMore && propertiesInArea.length > 0 && (
+          <div style={{ color: "#4A6A8A", fontWeight: 600 }}>You’re all caught up.</div>
+        )}
       </div>
       {/* Tools */}
       <div className="dashboard-cards-section" style={{ margin: isMobile ? "0.5rem 0" : "2rem 0" }}>
@@ -1383,7 +1474,12 @@ export default function RealEstateDashboard() {
             <a href="/" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>Home</a>
             <a href="/about" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>About</a>
             <a href="/support" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>Contact</a>
-            <a href="/add-property" style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}>Post Property</a>
+            <a 
+              href={user ? "/add-property" : "/login"}
+              style={{ color: "#FFFFFF", textDecoration: "none", fontWeight: "600", fontSize: isMobile ? "0.95rem" : "0.9rem" }}
+            >
+              Post Property
+            </a>
           </div>
           <div
             style={{

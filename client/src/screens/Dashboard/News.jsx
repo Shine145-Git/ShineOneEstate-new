@@ -105,7 +105,7 @@ const PropertyHeroSection = () => {
 
   const isMobile = window.innerWidth < 768;
 
-  const containerStyle = { backgroundColor: "#F4F7F9", padding: isMobile ? "20px 10px" : "40px 20px" };
+  const containerStyle = { backgroundColor: "#F4F7F9",marginTop: isMobile ? "-150px" : "0px", padding: isMobile ? "0px 0px" : "40px 20px" };
   const topTagStyle = {
     textAlign: "center",
     color: "#4A6A8A",

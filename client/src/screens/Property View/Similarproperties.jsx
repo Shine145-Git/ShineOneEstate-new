@@ -7,6 +7,7 @@ const SimilarProperties = ({ sector, propertyType }) => {
   const [nearbyProps, setNearbyProps] = useState([]);
   const [allProps, setAllProps] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [navigating, setNavigating] = useState(false);
 
   const navigate = useNavigate();
 
@@ -112,11 +113,16 @@ const SimilarProperties = ({ sector, propertyType }) => {
   const renderCards = (list) =>
     list.map((prop, idx) => {
       const handleClick = () => {
-        if (prop.defaultpropertytype === "rental" || prop.type === "rent") {
-          navigate(`/Rentaldetails/${prop._id}`);
-        } else {
-          navigate(`/Saledetails/${prop._id}`);
-        }
+        setNavigating(true);
+        const targetPath =
+          prop.defaultpropertytype === "rental" || prop.type === "rent"
+            ? `/Rentaldetails/${prop._id}`
+            : `/Saledetails/${prop._id}`;
+
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: "auto" });
+          navigate(targetPath);
+        }, 2000);
       };
 
       return (
@@ -164,202 +170,244 @@ const SimilarProperties = ({ sector, propertyType }) => {
     });
 
   return (
-    <div
-      style={{
-        marginTop: "2rem",
-        padding: "1rem",
-        background: "#fff",
-        borderRadius: "10px",
-      }}
-    >
-      <h3 style={{ fontSize: "20px", fontWeight: "600", color: "#003366" }}>
-        Similar Properties
-      </h3>
-
-      <div style={{ marginBottom: "2rem" }}>
-        <h4 style={{ fontSize: "17px", color: "#003366" }}>
-          Properties in {sector}
-        </h4>
-        <div style={{ position: "relative" }}>
-          {recentSearchProps.length > 1 && (
-            <button
-              onClick={() => scrollContainer(recentRef, "left")}
-              style={{
-                position: "absolute",
-                left: "0",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#003366",
-                color: "#fff",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                cursor: "pointer",
-                zIndex: 2
-              }}
-            >
-              ‹
-            </button>
-          )}
+    <>
+      {navigating && (
+        <>
+          <style>
+            {`
+              @keyframes spinNav {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
           <div
-            ref={recentRef}
             style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(255,255,255,0.85)",
               display: "flex",
-              gap: "1rem",
-              overflowX: "auto",
-              scrollBehavior: "smooth",
-              padding: "0.5rem 2rem",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+              pointerEvents: "auto"
             }}
           >
-            {renderCards(recentSearchProps)}
-          </div>
-          {recentSearchProps.length > 1 && (
-            <button
-              onClick={() => scrollContainer(recentRef, "right")}
+            <div
               style={{
-                position: "absolute",
-                right: "0",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#003366",
-                color: "#fff",
-                border: "none",
+                border: "6px solid #e0e0e0",
+                borderTop: "6px solid #003366",
                 borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                cursor: "pointer",
-                zIndex: 2
+                width: "56px",
+                height: "56px",
+                animation: "spinNav 1s linear infinite"
               }}
-            >
-              ›
-            </button>
-          )}
-        </div>
-      </div>
+            />
+            <p style={{ marginTop: 12, color: "#003366", fontWeight: 600 }}>
+              Loading property...
+            </p>
+          </div>
+        </>
+      )}
 
-      <div style={{ marginBottom: "2rem" }}>
-        <h4 style={{ fontSize: "17px", color: "#003366" }}>
-          Properties Near {sector}
-        </h4>
-        <div style={{ position: "relative" }}>
-          {nearbyProps.length > 1 && (
-            <button
-              onClick={() => scrollContainer(nearbyRef, "left")}
-              style={{
-                position: "absolute",
-                left: "0",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#003366",
-                color: "#fff",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                cursor: "pointer",
-                zIndex: 2
-              }}
-            >
-              ‹
-            </button>
-          )}
-          <div
-            ref={nearbyRef}
-            style={{
-              display: "flex",
-              gap: "1rem",
-              overflowX: "auto",
-              scrollBehavior: "smooth",
-              padding: "0.5rem 2rem",
-            }}
-          >
-            {renderCards(nearbyProps)}
-          </div>
-          {nearbyProps.length > 1 && (
-            <button
-              onClick={() => scrollContainer(nearbyRef, "right")}
-              style={{
-                position: "absolute",
-                right: "0",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#003366",
-                color: "#fff",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                cursor: "pointer",
-                zIndex: 2
-              }}
-            >
-              ›
-            </button>
-          )}
-        </div>
-      </div>
+      <div
+        style={{
+          marginTop: "2rem",
+          padding: "1rem",
+          background: "#fff",
+          borderRadius: "10px",
+        }}
+      >
+        <h3 style={{ fontSize: "20px", fontWeight: "600", color: "#003366" }}>
+          Similar Properties
+        </h3>
 
-      <div style={{ marginBottom: "2rem" }}>
-        <h4 style={{ fontSize: "17px", color: "#003366" }}>Recommended for You</h4>
-        <div style={{ position: "relative" }}>
-          {allProps.length > 1 && (
-            <button
-              onClick={() => scrollContainer(allRef, "left")}
+        <div style={{ marginBottom: "2rem" }}>
+          <h4 style={{ fontSize: "17px", color: "#003366" }}>
+            Properties in {sector}
+          </h4>
+          <div style={{ position: "relative" }}>
+            {recentSearchProps.length > 1 && (
+              <button
+                onClick={() => scrollContainer(recentRef, "left")}
+                style={{
+                  position: "absolute",
+                  left: "0",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#003366",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  cursor: "pointer",
+                  zIndex: 2
+                }}
+              >
+                ‹
+              </button>
+            )}
+            <div
+              ref={recentRef}
               style={{
-                position: "absolute",
-                left: "0",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#003366",
-                color: "#fff",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                cursor: "pointer",
-                zIndex: 2
+                display: "flex",
+                gap: "1rem",
+                overflowX: "auto",
+                scrollBehavior: "smooth",
+                padding: "0.5rem 2rem",
               }}
             >
-              ‹
-            </button>
-          )}
-          <div
-            ref={allRef}
-            style={{
-              display: "flex",
-              gap: "1rem",
-              overflowX: "auto",
-              scrollBehavior: "smooth",
-              padding: "0.5rem 2rem",
-            }}
-          >
-            {renderCards(allProps)}
+              {renderCards(recentSearchProps)}
+            </div>
+            {recentSearchProps.length > 1 && (
+              <button
+                onClick={() => scrollContainer(recentRef, "right")}
+                style={{
+                  position: "absolute",
+                  right: "0",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#003366",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  cursor: "pointer",
+                  zIndex: 2
+                }}
+              >
+                ›
+              </button>
+            )}
           </div>
-          {allProps.length > 1 && (
-            <button
-              onClick={() => scrollContainer(allRef, "right")}
+        </div>
+
+        <div style={{ marginBottom: "2rem" }}>
+          <h4 style={{ fontSize: "17px", color: "#003366" }}>
+            Properties Near {sector}
+          </h4>
+          <div style={{ position: "relative" }}>
+            {nearbyProps.length > 1 && (
+              <button
+                onClick={() => scrollContainer(nearbyRef, "left")}
+                style={{
+                  position: "absolute",
+                  left: "0",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#003366",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  cursor: "pointer",
+                  zIndex: 2
+                }}
+              >
+                ‹
+              </button>
+            )}
+            <div
+              ref={nearbyRef}
               style={{
-                position: "absolute",
-                right: "0",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#003366",
-                color: "#fff",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                cursor: "pointer",
-                zIndex: 2
+                display: "flex",
+                gap: "1rem",
+                overflowX: "auto",
+                scrollBehavior: "smooth",
+                padding: "0.5rem 2rem",
               }}
             >
-              ›
-            </button>
-          )}
+              {renderCards(nearbyProps)}
+            </div>
+            {nearbyProps.length > 1 && (
+              <button
+                onClick={() => scrollContainer(nearbyRef, "right")}
+                style={{
+                  position: "absolute",
+                  right: "0",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#003366",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  cursor: "pointer",
+                  zIndex: 2
+                }}
+              >
+                ›
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: "2rem" }}>
+          <h4 style={{ fontSize: "17px", color: "#003366" }}>Recommended for You</h4>
+          <div style={{ position: "relative" }}>
+            {allProps.length > 1 && (
+              <button
+                onClick={() => scrollContainer(allRef, "left")}
+                style={{
+                  position: "absolute",
+                  left: "0",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#003366",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  cursor: "pointer",
+                  zIndex: 2
+                }}
+              >
+                ‹
+              </button>
+            )}
+            <div
+              ref={allRef}
+              style={{
+                display: "flex",
+                gap: "1rem",
+                overflowX: "auto",
+                scrollBehavior: "smooth",
+                padding: "0.5rem 2rem",
+              }}
+            >
+              {renderCards(allProps)}
+            </div>
+            {allProps.length > 1 && (
+              <button
+                onClick={() => scrollContainer(allRef, "right")}
+                style={{
+                  position: "absolute",
+                  right: "0",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#003366",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  cursor: "pointer",
+                  zIndex: 2
+                }}
+              >
+                ›
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

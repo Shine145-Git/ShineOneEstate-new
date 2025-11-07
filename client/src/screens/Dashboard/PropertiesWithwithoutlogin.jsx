@@ -125,7 +125,7 @@ const PropertyDashboard = ({
     borderRadius: "12px",
     overflow: "hidden",
     boxShadow: "0 2px 12px rgba(0, 51, 102, 0.08)",
-    flex: "0 0 calc(25% - 18px)",
+    flex: "0 0 calc(22% - 18px)",
     cursor: "pointer",
     transition: "all 0.3s ease",
     border: "1px solid rgba(74, 106, 138, 0.1)",
@@ -256,7 +256,10 @@ const PropertyDashboard = ({
           onClick={() => {
             if (user) {
               navigate("/seeAllproperties", {
-                state: { recommendedProperties: properties },
+                state: {
+                  recommendedProperties: properties,
+                  paginateActive: true, // tell SeeAll to use /activeproperties pagination
+                },
               });
             } else {
               navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
@@ -294,7 +297,7 @@ const PropertyDashboard = ({
             </div>
           ) : (
             <div style={cardsContainerStyle}>
-              {properties.filter(property => property.isActive).map((property, idx) => (
+              {(user ? properties : properties.slice(0, 12)).filter(property => property.isActive).map((property, idx) => (
                 <div
                   key={property._id || property.id || idx}
                   style={cardStyle}
@@ -416,12 +419,18 @@ const PropertyDashboard = ({
       <style>
       {`
         @media (max-width: 768px) {
-          /* Property card & skeleton responsive */
-          .skeleton-card,
-          div[style*="calc(25%"] {
-            flex: 0 0 100% !important;
+          /* Skeleton keeps fixed height */
+          .skeleton-card {
+            flex: 0 0 95% !important;
             max-width: 100% !important;
             height: 220px !important;
+            min-width: 0 !important;
+          }
+          /* Real card should grow to fit its content on mobile */
+          div[style*="flex: 0 0 calc(22% - 18px)"] {
+            flex: 0 0 90% !important;
+            max-width: 90% !important;
+            height: auto !important;
             min-width: 0 !important;
           }
           /* Reduce gaps and paddings */

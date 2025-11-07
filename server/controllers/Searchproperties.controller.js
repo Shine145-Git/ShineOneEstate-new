@@ -8,6 +8,118 @@ const SearchHistory = require("../models/SearchHistory.model");
 const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
 
 // ===============================
+// 🛠️ Helper Utilities (internal-only, no API contract change)
+// ===============================
+const getPagination = (req) => {
+  const rawLimit = Number(req.query.limit);
+  const rawPage = Number(req.query.page);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const skip = (page - 1) * limit;
+  return { limit, page, skip };
+};
+
+const normalizeUserQuery = (raw) => {
+  if (!raw || typeof raw !== 'string') return '';
+  let q = raw
+    .toLowerCase()
+    .replace(/\b(sec|sector|s)\b/gi, 'sector')
+    .replace(/\b(blk|block)\b/gi, 'block')
+    .replace(/\b(rd|road)\b/gi, 'road')
+    .replace(/\b(st|street)\b/gi, 'street')
+    .trim();
+
+  const sectorMatch = q.match(/sector\s*-?\s*(\d+)/i);
+  if (sectorMatch) {
+    q = q.replace(/sector\s*-?\s*\d+/i, `Sector-${sectorMatch[1]}`);
+  } else if (/^\d+$/.test(q)) {
+    q = `Sector-${q}`;
+  }
+
+  const bhkMatch = q.match(/(\d+)\s*[-]?\s*bhk/i);
+  if (bhkMatch) {
+    q = q.replace(/(\d+)\s*[-]?\s*bhk/i, `${bhkMatch[1]} BHK`);
+  }
+
+  const combinedMatch = q.match(/(\d+)\s*bhk.*sector\s*-?\s*(\d+)/i);
+  if (combinedMatch) {
+    q = `${combinedMatch[1]} BHK in Sector-${combinedMatch[2]}`;
+  } else {
+    const looseSectorMatch = q.match(/\bsector\s*-?\s*(\d+)\b/i);
+    if (looseSectorMatch) {
+      q = q.replace(/\bsector\s*-?\s*\d+\b/i, `Sector-${looseSectorMatch[1]}`);
+    }
+  }
+  return q;
+};
+
+const buildFilterObject = ({ normalizedQuery, normalizedType, extras = {} }) => {
+  const filter = { isActive: true };
+
+  // Optional type enforcement (kept for main-search path)
+  if (normalizedType === 'rent') filter.defaultpropertytype = /rental/i;
+  if (normalizedType === 'sale') filter.defaultpropertytype = /sale/i;
+
+  if (normalizedQuery) {
+    const sectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
+    const bhkMatch = normalizedQuery.match(/(\d+)\s*BHK/i);
+    const sectorNum = sectorMatch ? sectorMatch[1] : null;
+    const bhkNum = bhkMatch ? bhkMatch[1] : null;
+
+    const bhkRegex = bhkNum ? new RegExp(`${bhkNum}\\s*BHK`, 'i') : null;
+    const sectorRegex = sectorNum ? new RegExp(`\\bsector\\s*-?\\s*${sectorNum}\\b(?!\\d)`, 'i') : null;
+    const fullQueryRegex = new RegExp(normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const gurgaonRegex = /(gurgaon|gurugram)/i;
+
+    const orConditions = [];
+    if (bhkRegex) orConditions.push({ 'totalArea.configuration': bhkRegex });
+    orConditions.push({ address: fullQueryRegex });
+    orConditions.push({ description: fullQueryRegex });
+    orConditions.push({ address: gurgaonRegex });
+    orConditions.push({ description: gurgaonRegex });
+
+    if (sectorRegex && bhkRegex) {
+      filter.$and = [{ Sector: sectorRegex }, { $or: orConditions }];
+    } else if (sectorRegex) {
+      filter.$and = [{ Sector: sectorRegex }];
+    } else if (bhkRegex) {
+      filter.$or = orConditions;
+    } else {
+      filter.$or = orConditions;
+    }
+  }
+
+  // Optional *non-mandatory* extra filters (do not break API)
+  const { minPrice, maxPrice, bedrooms, bathrooms, minArea, maxArea } = extras;
+  const rangeClauses = [];
+  if (minPrice || maxPrice) {
+    // Match either monthlyRent or price depending on doc
+    const priceOr = [];
+    const priceCond = {};
+    if (minPrice) priceCond.$gte = Number(minPrice);
+    if (maxPrice) priceCond.$lte = Number(maxPrice);
+    priceOr.push({ monthlyRent: priceCond });
+    priceOr.push({ price: priceCond });
+    rangeClauses.push({ $or: priceOr });
+  }
+  if (minArea || maxArea) {
+    const areaCond = {};
+    if (minArea) areaCond.$gte = Number(minArea);
+    if (maxArea) areaCond.$lte = Number(maxArea);
+    rangeClauses.push({ $or: [{ area: areaCond }, { 'totalArea.sqft': areaCond }] });
+  }
+  if (bedrooms) rangeClauses.push({ bedrooms: Number(bedrooms) });
+  if (bathrooms) rangeClauses.push({ bathrooms: Number(bathrooms) });
+
+  if (rangeClauses.length) {
+    if (filter.$and) filter.$and = [...filter.$and, ...rangeClauses];
+    else filter.$and = rangeClauses;
+  }
+
+  return filter;
+};
+
+// ===============================
 // 🔹 SEARCH PROPERTIES
 // ===============================
 /**
@@ -21,9 +133,38 @@ exports.searchProperties = async (req, res) => {
   try {
     // ---------- CONSTANTS & PARAMS ----------
     const { query, type } = req.query;
+    const hasQuery = typeof query === 'string' && query.trim().length > 0;
+    const normalizedType = type ? String(type).trim().toLowerCase() : '';
+    const { limit: parsedLimit, skip } = getPagination(req);
     const userId = req.user?._id;
-    if (!query)
-      return res.status(400).json({ message: "Search query is required" });
+    // Fast path: if query is missing/blank but type is present, return top N of that type
+    if (!hasQuery && normalizedType) {
+      try {
+        if (normalizedType === 'rent') {
+          const rentals = await RentalProperty.find({ isActive: true })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit)
+            .populate('owner', 'name email')
+            .lean();
+          const withType = rentals.map((p) => ({ ...p, type: 'rent', defaultpropertytype: 'rental' }));
+          return res.status(200).json(withType);
+        }
+        if (normalizedType === 'sale') {
+          const sales = await SaleProperty.find({ isActive: true })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit)
+            .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
+            .lean();
+          const withType = sales.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
+          return res.status(200).json(withType);
+        }
+        return res.status(400).json({ message: "Invalid type. Use 'rent' or 'sale'." });
+      } catch (e) {
+        return res.status(500).json({ message: 'Server error while fetching top properties', error: e.message });
+      }
+    }
 
     // ---------- SAVE SEARCH HISTORY ----------
     if (userId) {
@@ -36,122 +177,64 @@ exports.searchProperties = async (req, res) => {
     }
 
     // ---------- QUERY NORMALIZATION ----------
-    // Advanced normalization (case-insensitive, consistent sector, etc.)
-    let normalizedQuery = query
-      .toLowerCase()
-      .replace(/\b(sec|sector|s)\b/gi, "sector")
-      .replace(/\b(blk|block)\b/gi, "block")
-      .replace(/\b(rd|road)\b/gi, "road")
-      .replace(/\b(st|street)\b/gi, "street")
-      .trim();
+    const rawQuery = hasQuery ? query : '';
+    const normalizedQuery = normalizeUserQuery(rawQuery);
 
-    // Normalize "Sector-<number>" format
-    const sectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
-    if (sectorMatch) {
-      normalizedQuery = normalizedQuery.replace(
-        /sector\s*-?\s*\d+/i,
-        `Sector-${sectorMatch[1]}`
-      );
-    } else if (/^\d+$/.test(normalizedQuery.trim())) {
-      normalizedQuery = `Sector-${normalizedQuery.trim()}`;
-    }
-
-    // Normalize BHK configuration (e.g. "2bhk" → "2 BHK")
-    const bhkMatch = normalizedQuery.match(/(\d+)\s*[-]?\s*bhk/i);
-    if (bhkMatch) {
-      normalizedQuery = normalizedQuery.replace(
-        /(\d+)\s*[-]?\s*bhk/i,
-        `${bhkMatch[1]} BHK`
-      );
-    }
-
-    // Handle combined queries like "2bhk in sec 46" → "2 BHK in Sector-46"
-    const combinedMatch = normalizedQuery.match(/(\d+)\s*bhk.*sector\s*-?\s*(\d+)/i);
-    if (combinedMatch) {
-      normalizedQuery = `${combinedMatch[1]} BHK in Sector-${combinedMatch[2]}`;
-    } else {
-      // Fallback: handle cases like "sec 45" or "sector45"
-      const looseSectorMatch = normalizedQuery.match(/\bsector\s*-?\s*(\d+)\b/i);
-      if (looseSectorMatch) {
-        normalizedQuery = normalizedQuery.replace(
-          /\bsector\s*-?\s*\d+\b/i,
-          `Sector-${looseSectorMatch[1]}`
-        );
-      }
-    }
-
-
-    // Recalculate matches after full normalization
-    const finalSectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
-    const finalBhkMatch = normalizedQuery.match(/(\d+)\s*BHK/i);
-
-    const sectorNum = finalSectorMatch ? finalSectorMatch[1] : null;
-    const bhkNum = finalBhkMatch ? finalBhkMatch[1] : null;
-
-    // Build regexes safely
-    const bhkRegex = bhkNum ? new RegExp(`${bhkNum}\\s*BHK`, "i") : null;
-    // Stricter regex for sector matching (e.g., Sector-45 matches only 45, not 451)
-    const sectorRegex = sectorNum
-      ? new RegExp(`\\bsector\\s*-?\\s*${sectorNum}\\b(?!\\d)`, "i")
-      : null;
-
-    // Full query regex for phrase match
-    const fullQueryRegex = new RegExp(
-      normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-      "i"
-    );
-
-
-    // Only exact sector and bhk-based matches will be fetched; avoids partials like 451 for 45
-    // Combine all possible matching conditions intelligently based on detected query type
-    const orConditions = [];
-    if (bhkRegex) orConditions.push({ "totalArea.configuration": bhkRegex });
-    orConditions.push({ address: fullQueryRegex });
-    orConditions.push({ description: fullQueryRegex });
-    // Add special handling for Gurgaon/Gurugram equivalence
-    const gurgaonRegex = /(gurgaon|gurugram)/i;
-    orConditions.push({ address: gurgaonRegex });
-    orConditions.push({ description: gurgaonRegex });
-
-    let filter = { isActive: true };
-
-    // If both sector and bhk are present → require sector AND (bhk/text)
-    if (sectorRegex && bhkRegex) {
-      filter.$and = [{ Sector: sectorRegex }, { $or: orConditions }];
-    }
-    // If only sector → just sector
-    else if (sectorRegex) {
-      filter.$and = [{ Sector: sectorRegex }];
-    }
-    // If only bhk → only bhk/text
-    else if (bhkRegex) {
-      filter.$or = orConditions;
-    }
-    // If neither → default to text search
-    else {
-      filter.$or = orConditions;
-    }
-
-
-
-    // ---------- MAIN SEARCH LOGIC ----------
-    const rentalMain = await RentalProperty.find(filter).populate("owner", "name email");
-    const saleMain = await SaleProperty.find(filter).populate({
-      path: "ownerId",
-      select: "name email",
-      strictPopulate: false,
+    const filter = buildFilterObject({
+      normalizedQuery,
+      normalizedType,
+      extras: {
+        minPrice: req.query.minPrice,
+        maxPrice: req.query.maxPrice,
+        bedrooms: req.query.bedrooms,
+        bathrooms: req.query.bathrooms,
+        minArea: req.query.minArea,
+        maxArea: req.query.maxArea,
+      },
     });
 
-    let mainResults = [];
-    const normalizedType = type?.trim().toLowerCase();
+    // ---------- MAIN SEARCH LOGIC ----------
+    let rentalMain = [];
+    let saleMain = [];
 
-    if (normalizedType === "rent") {
-      mainResults = rentalMain.map((p) => ({ ...p.toObject(), type: "rent" }));
-    } else if (normalizedType === "sale") {
-      mainResults = saleMain.map((p) => ({ ...p.toObject(), type: "sale" }));
+    if (normalizedType === 'rent') {
+      rentalMain = await RentalProperty.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit)
+        .populate('owner', 'name email')
+        .lean();
+    } else if (normalizedType === 'sale') {
+      saleMain = await SaleProperty.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit)
+        .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
+        .lean();
     } else {
-      const rentalsWithType = rentalMain.map((p) => ({ ...p.toObject(), type: "rent" }));
-      const salesWithType = saleMain.map((p) => ({ ...p.toObject(), type: "sale" }));
+      // No explicit type => search both
+      rentalMain = await RentalProperty.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit)
+        .populate('owner', 'name email')
+        .lean();
+      saleMain = await SaleProperty.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit)
+        .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
+        .lean();
+    }
+
+    let mainResults = [];
+    if (normalizedType === 'rent') {
+      mainResults = rentalMain.map((p) => ({ ...p, type: 'rent', defaultpropertytype: 'rental' }));
+    } else if (normalizedType === 'sale') {
+      mainResults = saleMain.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
+    } else {
+      const rentalsWithType = rentalMain.map((p) => ({ ...p, type: 'rent', defaultpropertytype: 'rental' }));
+      const salesWithType = saleMain.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
       mainResults = [...rentalsWithType, ...salesWithType];
     }
 
@@ -385,52 +468,91 @@ exports.searchPropertiesonLocation = async (req, res) => {
   try {
     // ----- Extract query fields -----
     const { queryFields } = req.body; // array of location fields
+    // console.log("🔍 Location-based search query fields:", queryFields);
+
     const userId = req.user?._id;
-    if (
-      !queryFields ||
-      !Array.isArray(queryFields) ||
-      queryFields.length === 0
-    ) {
+    // Add pagination parameters (global pagination applied after merging models)
+    const { limit: parsedLimit, skip } = getPagination(req);
+
+    if (!queryFields || !Array.isArray(queryFields) || queryFields.length === 0) {
       return res.status(400).json({ message: "Search query is required" });
     }
-    // ----- Save user search history -----
-   // ----- Save user search history (no duplicates) -----
-if (userId) {
-  const currentQuery = queryFields.join(", ");
-  const exists = await SearchHistory.findOne({
-    user: userId,
-    query: currentQuery,
-  });
 
-  if (!exists) {
-    await SearchHistory.create({
-      user: userId,
-      query: currentQuery,
-      type: "location", // optional tagging
+    // ----- Save user search history (no duplicates) -----
+    if (userId) {
+      const currentQuery = queryFields.join(", ");
+      const exists = await SearchHistory.findOne({ user: userId, query: currentQuery });
+      if (!exists) {
+        await SearchHistory.create({ user: userId, query: currentQuery, type: "location" });
+      }
+    }
+
+    // ----- Build OR search conditions (dedupe & robust field coverage) -----
+    const uniqueFields = [...new Set(queryFields.filter(Boolean))];
+    const orConditions = uniqueFields.flatMap((field) => {
+      const regex = new RegExp(String(field).trim(), "i");
+      return [
+        { Sector: regex },
+        { address: regex },
+        { city: regex },
+        { state: regex },
+        { locality: regex },
+        // Optional fallbacks if your schema includes them
+        { district: regex },
+        { county: regex },
+        { area: regex },
+      ];
     });
-  }
-}
-    // ----- Build OR search conditions -----
-   const orConditions = queryFields.flatMap((field) => {
-  const regex = new RegExp(field, "i");
-  return [
-    { Sector: regex },
-    { address: regex },
-    { city: regex },
-    { state: regex },
-    { locality: regex }, // optional if exists
-  ];
-});
-    // ----- Query Rental Properties -----
-    const results = await RentalProperty.find({
-      $and: [{ isActive: true }, { $or: orConditions }],
-    }).populate("owner", "name email");
-    // ----- Return results -----
-    res.status(200).json(results || []);
+
+    const baseFilter = { $and: [{ isActive: true }, { $or: orConditions }] };
+
+    // ----- Query both models (pull extra to allow global slice) -----
+    // We over-fetch then apply a global skip/limit post-merge for correct cross-model pagination.
+    const overFetch = parsedLimit * 2 + skip; // try to ensure we have enough to slice globally
+
+    const [rentalMatches, saleMatches] = await Promise.all([
+      RentalProperty.find(baseFilter)
+        .sort({ createdAt: -1 })
+        .limit(overFetch)
+        .populate("owner", "name email")
+        .lean(),
+      SaleProperty.find(baseFilter)
+        .sort({ createdAt: -1 })
+        .limit(overFetch)
+        .populate({ path: "ownerId", select: "name email", strictPopulate: false })
+        .lean(),
+    ]);
+
+    // Annotate with type and normalize defaultpropertytype
+    const rentalsWithType = rentalMatches.map((p) => ({
+      ...p,
+      type: "rent",
+      defaultpropertytype: "rental",
+    }));
+    const salesWithType = saleMatches.map((p) => ({
+      ...p,
+      type: "sale",
+      defaultpropertytype: "sale",
+    }));
+
+    // Merge and sort by createdAt desc
+    const merged = [...rentalsWithType, ...salesWithType].sort((a, b) => {
+      const da = new Date(a.createdAt || 0).getTime();
+      const db = new Date(b.createdAt || 0).getTime();
+      return db - da;
+    });
+
+    // Apply global pagination
+    const pageSlice = merged.slice(skip, skip + parsedLimit);
+
+    // console.log("🔍 Location-based combined results count (pre-slice, post-merge):", merged.length);
+    // console.log("🔍 Location-based returned page size:", pageSlice.length, "page:", Math.floor(skip / parsedLimit) + 1);
+
+    // ----- Return results (array to keep API backward-compatible) -----
+    return res.status(200).json(pageSlice);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Server error while searching properties" });
+    console.error("❌ Location-based search error:", error);
+    return res.status(500).json({ message: "Server error while searching properties" });
   }
 };
 

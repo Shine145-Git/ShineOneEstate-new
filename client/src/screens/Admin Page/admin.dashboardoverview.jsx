@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import TopNavigationBar from '../Dashboard/TopNavigationBar';
 import { TrendingUp, Users, Home, DollarSign, Search, Award, Activity, Eye, Bookmark, Star, ChevronDown, ChevronUp } from 'lucide-react';
 
 const AdminDashboard = () => {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +20,33 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const handleLogout = async () => {
+    await fetch(process.env.REACT_APP_LOGOUT_API, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    setUser(null);
+    navigate('/login');
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (res.ok) setUser(data);
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const navItems = ['For Buyers', 'For Tenants', 'For Owners', 'For Dealers / Builders', 'Insights'];
 
   const fetchDashboardData = async () => {
     try {
@@ -314,6 +345,22 @@ const AdminDashboard = () => {
 
   return (
     <div style={styles.container}>
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: 'fixed',
+          marginBottom: '20px',
+          top: 0,
+          left: 0,
+          width: '100%',
+          zIndex: 999,
+          backgroundColor: '#FFFFFF', // or match your navbar background
+        }}
+      >
+        <TopNavigationBar user={user} handleLogout={handleLogout} navItems={navItems} />
+      </div>
+      {/* Spacer to push content below fixed navbar */}
+      <div style={{ height: 72 }} />
       <header style={styles.header}>
         <h1 style={styles.headerTitle}>Admin Dashboard Overview</h1>
         <p style={styles.headerSubtitle}>

@@ -15,9 +15,121 @@ const SeeAllProperties = ({ properties = [] }) => {
   const navigate = useNavigate();
 
   // Use recommendedProperties from previous page if passed
-  const recommendedProperties = location.state?.recommendedProperties;
-  const displayProperties = recommendedProperties?.length > 0 ? recommendedProperties : properties;
-  const activeProperties = displayProperties.filter(p => p.isActive !== false);
+  const recommendedProperties = location.state?.recommendedProperties || [];
+  // Optional: if parent passed location queryFields for server pagination
+  const locationQueryFields = location.state?.locationQueryFields || null;
+  const paginateActive = Boolean(location.state?.paginateActive);
+
+  // Unified list rendered on this page
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(14); // page size
+  const [hasMore, setHasMore] = useState(false); // remote modes: whether there is a next page
+  const [loading, setLoading] = useState(false);
+  // For local fallback mode only
+  const [localAll, setLocalAll] = useState([]);
+  const [localTotalPages, setLocalTotalPages] = useState(1);
+
+  useEffect(() => {
+    // If location-based pagination is available
+    if (Array.isArray(locationQueryFields) && locationQueryFields.length > 0) {
+      setPage(1);
+      setHasMore(false);
+      setItems([]);
+      fetchLocationPage(1, true);
+      return;
+    }
+    // If active-properties pagination is requested
+    if (paginateActive) {
+      setPage(1);
+      setHasMore(false);
+      setItems([]);
+      fetchActivePage(1, true);
+      return;
+    }
+    // Fallback: local array pagination using recommended/provided props
+    const display = (recommendedProperties.length > 0 ? recommendedProperties : properties) || [];
+    const active = display.filter(p => p && p.isActive !== false);
+    setLocalAll(active);
+    const total = Math.max(1, Math.ceil(active.length / limit));
+    setLocalTotalPages(total);
+    setPage(1);
+    setItems(active.slice(0, limit));
+    setHasMore(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(locationQueryFields), paginateActive, JSON.stringify(recommendedProperties), JSON.stringify(properties), limit]);
+
+  // Fetch one page from active-properties backend (server pagination)
+  const fetchActivePage = async (nextPage, replace = true) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const url = `${process.env.REACT_APP_Base_API}/api/activeproperties?page=${nextPage}&limit=${limit}`;
+      const res = await fetch(url, { method: 'GET', credentials: 'include' });
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : (Array.isArray(data.properties) ? data.properties : []);
+      const activeChunk = arr.filter(p => p && p.isActive !== false);
+      // If we received a full page, we can assume there MAY be a next page
+      setHasMore(activeChunk.length === limit);
+      setItems(activeChunk);
+    } catch (err) {
+      console.error('Error loading active properties:', err);
+      setItems([]);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch one page from location-based backend (server pagination)
+  const fetchLocationPage = async (nextPage, replace = true) => {
+    if (!Array.isArray(locationQueryFields) || locationQueryFields.length === 0) return;
+    if (loading) return;
+    setLoading(true);
+    try {
+      const url = `${process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API}?page=${nextPage}&limit=${limit}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queryFields: locationQueryFields }),
+      });
+      const data = await res.json();
+      const chunk = Array.isArray(data) ? data : [];
+      const activeChunk = chunk.filter(p => p && p.isActive !== false);
+      setHasMore(activeChunk.length === limit);
+      setItems(activeChunk);
+    } catch (err) {
+      console.error('Error loading properties by location:', err);
+      setItems([]);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Page change effect: fetch or slice for current page
+  useEffect(() => {
+    // Location mode
+    if (Array.isArray(locationQueryFields) && locationQueryFields.length > 0) {
+      fetchLocationPage(page, true);
+      return;
+    }
+    // Active mode
+    if (paginateActive) {
+      fetchActivePage(page, true);
+      return;
+    }
+    // Local fallback mode
+    if (localAll.length > 0) {
+      const start = (page - 1) * limit;
+      const end = start + limit;
+      setItems(localAll.slice(start, end));
+    } else {
+      setItems([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
 
   const handleLogout = async () => {
@@ -70,8 +182,8 @@ const SeeAllProperties = ({ properties = [] }) => {
         border: '1px solid #E8EEF3',
       }}
       onClick={() => {
-        const type = property.defaultpropertytype?.toLowerCase();
-        if (type === "rental") {
+        const t = (property.defaultpropertytype || property.defaultPropertyType || property.propertyCategory || '').toLowerCase();
+        if (t === 'rental') {
           navigate(`/Rentaldetails/${property._id}`);
         } else {
           navigate(`/Saledetails/${property._id}`);
@@ -292,9 +404,61 @@ const SeeAllProperties = ({ properties = [] }) => {
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: '20px'
             }}>
-              {activeProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+              {items.map((property) => (
+                <PropertyCard key={property._id || property.id} property={property} />
               ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {/* Prev */}
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+                style={{
+                  padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #E8EEF3',
+                  backgroundColor: page === 1 ? '#F4F7F9' : '#fff', color: page === 1 ? '#9ca3af' : '#1f2937',
+                  cursor: page === 1 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '0.9rem'
+                }}
+              >
+                Previous
+              </button>
+
+              {/* Page numbers */}
+              {(() => {
+                // Compute total pages for local mode; for remote, show a sliding window
+                const pages = [];
+                const total = (Array.isArray(locationQueryFields) && locationQueryFields.length > 0) || paginateActive
+                  ? (hasMore ? page + 1 : page)
+                  : localTotalPages;
+                const start = Math.max(1, page - 2);
+                const end = Math.min(total, page + 2);
+                for (let i = start; i <= end; i++) pages.push(i);
+                return pages.map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n)}
+                    disabled={loading}
+                    style={{
+                      padding: '0.6rem 0.9rem', borderRadius: 8, border: '1px solid #E8EEF3',
+                      backgroundColor: page === n ? '#00A79D' : '#fff', color: page === n ? '#fff' : '#1f2937',
+                      fontWeight: page === n ? 800 : 600, cursor: 'pointer', fontSize: '0.9rem'
+                    }}
+                  >
+                    {n}
+                  </button>
+                ));
+              })()}
+
+              {/* Next */}
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={loading || (!hasMore && ((Array.isArray(locationQueryFields) && locationQueryFields.length > 0) || paginateActive)) || (!paginateActive && !(Array.isArray(locationQueryFields) && locationQueryFields.length > 0) && page >= localTotalPages)}
+                style={{
+                  padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #E8EEF3',
+                  backgroundColor: '#fff', color: '#1f2937', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer'
+                }}
+              >
+                Next
+              </button>
             </div>
           </div>
 
@@ -393,6 +557,9 @@ const SeeAllProperties = ({ properties = [] }) => {
           </div>
         </div>
       </footer>
+      <style>{`
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
