@@ -27,6 +27,9 @@ totalArea: {
   },
   Sector: { type: String , required: true},
   images: [String],
+  // Cloudinary metadata (sticky account + stable folder)
+  cloudinaryAccountIndex: { type: Number, default: null },
+  cloudinaryFolder: { type: String },
   defaultpropertytype: { type: String, default: "sale", immutable: true },
   ownernumber: { type: String },
   isActive: { type: Boolean, default: true },

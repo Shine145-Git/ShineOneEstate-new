@@ -1,16 +1,9 @@
 // Controller for managing Sale Properties: creation, retrieval, and status toggling.
 // Handles image uploads via Cloudinary, sector normalization, and property activation state.
 
-const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
-const { uploadoncloudinary } = require("../config/FileHandling");
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const { uploadWithFallback } = require("../config/FileHandling");
 
 const SaleProperty = require('../models/SaleProperty.model.js');
 const Sector = require('../models/Sector.model.js');
@@ -70,13 +63,37 @@ const createSaleProperty = async (req, res) => {
       }
     }
 
+    // Determine address folder segment for Cloudinary (prefer explicit address, then location)
+    const addressArg = (req.body.address && String(req.body.address))
+      || (location && (location.address ? String(location.address) : String(location)))
+      || null;
+
+    // Build a stable composite folder: <Sector or 'sale-properties'>/<Address>
+    const sectorFolder = (normalizedSector || 'sale-properties')
+      .toString()
+      .replace(/[^a-zA-Z0-9-_]/g, '_')
+      .substring(0, 80);
+    const addressSegment = addressArg
+      ? addressArg.toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80)
+      : null;
+    const compositeFolder = addressSegment ? `${sectorFolder}/${addressSegment}` : sectorFolder;
+
     // Step 2: Handle image uploads or accept image URLs (after sector normalization)
     let images = [];
+    let stickyAccountIndex = null; // ensure a single Cloudinary account per property
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
-          const result = await uploadoncloudinary(file.path, normalizedSector || "sale-properties");
-          images.push(result.secure_url);
+          const { secure_url, accountIndex } = await uploadWithFallback(
+            file.path,
+            compositeFolder,
+            stickyAccountIndex,
+            null
+          );
+          images.push(secure_url);
+          if (stickyAccountIndex === null && Number.isInteger(accountIndex)) {
+            stickyAccountIndex = accountIndex;
+          }
         } catch (uploadError) {
           console.error("❌ Cloudinary upload error:", uploadError);
         }
@@ -114,6 +131,8 @@ const createSaleProperty = async (req, res) => {
       ownerId,
       Sector: normalizedSector,
       isActive: true,
+      cloudinaryAccountIndex: stickyAccountIndex !== null ? stickyAccountIndex : undefined,
+      cloudinaryFolder: compositeFolder,
     });
 
     // Step 6: Save property and respond

@@ -54,7 +54,11 @@ const RentalpropertySchema = new mongoose.Schema(
 
     // Image upload
     images: [{ type: String }],
-   defaultpropertytype: { type: String, default: "rental", immutable: true },
+    defaultpropertytype: { type: String, default: "rental", immutable: true },
+
+    // Cloudinary metadata (sticky account + stable folder)
+    cloudinaryAccountIndex: { type: Number, default: null },
+    cloudinaryFolder: { type: String },
 
     // Ownership info
     owner: {

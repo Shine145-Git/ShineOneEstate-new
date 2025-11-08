@@ -513,8 +513,8 @@ const getAdminOverview = async (req, res) => {
     last30Days.setDate(last30Days.getDate() - 30);
     const activeUsersPayments = await Payment.distinct('resident', { paymentDate: { $gte: last30Days } });
     const activeUsersSearches = await SearchHistory.distinct('user', { createdAt: { $gte: last30Days } });
-    const activeUsersProperties = await RentalProperty.distinct('owner', { createdAt: { $gte: last30Days } });
-    const activeUsersPropertiesSale = await SaleProperty.distinct('owner', { createdAt: { $gte: last30Days } });
+const activeUsersProperties = await RentalProperty.distinct('owner', { createdAt: { $gte: last30Days } });
+const activeUsersPropertiesSale = await SaleProperty.distinct('ownerId', { createdAt: { $gte: last30Days } }); // <- use ownerId for sale
     const activeUsersSet = new Set([...activeUsersPayments, ...activeUsersSearches, ...activeUsersProperties, ...activeUsersPropertiesSale]);
     const activeUsersCount = activeUsersSet.size;
     const inactiveUsersCount = totalUsers - activeUsersCount;
@@ -695,10 +695,12 @@ const getAllUsersDetailed = async (req, res) => {
         };
       }));
 
-      // Properties posted (both Rental and Sale)
-      const rentalProperties = await RentalProperty.find({ owner: userId });
-      const saleProperties = await SaleProperty.find({ owner: userId });
-      const allProperties = [...rentalProperties, ...saleProperties];
+      // Properties posted (both Rental and Sale) — merged and sorted by createdAt (newest first)
+      const rentalProperties = await RentalProperty.find({ owner: userId }).lean();
+      const saleProperties = await SaleProperty.find({ ownerId: userId }).lean();
+      const allProperties = [...rentalProperties, ...saleProperties].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
 
       // Engagement stats from PropertyAnalysis for properties posted by user
       const propertyIds = allProperties.map(p => p._id);
@@ -827,7 +829,7 @@ const getAllProperties = async (req, res) => {
   try {
     const { limit } = req.query;
     // Fetch all properties
-    const rentalProperties = await Property.find().populate("owner", "name email");
+    const rentalProperties = await RentalProperty.find().populate("owner", "name email");
     const saleProperties = await SaleProperty.find().populate("ownerId", "name email");
 
     const rentalLimit = limit && !isNaN(Number(limit)) ? Number(limit) : rentalProperties.length;

@@ -1149,7 +1149,7 @@ export default function RealEstateDashboard() {
                 />
                 <input
                   type="text"
-                  placeholder={'Search "3 BHK" or "Sector-46 or 3 BHK in Sector-46"'}
+                  placeholder={'Search "3 BHK" or "Sector-46 or 3 BHK in Sector-46 or 1200 sqft or ₹20,000 / month"'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => {

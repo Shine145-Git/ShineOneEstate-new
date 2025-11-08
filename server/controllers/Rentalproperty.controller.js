@@ -11,23 +11,13 @@ const SearchHistory = require("../models/SearchHistory.model.js");
 const RentalProperty = require("../models/Rentalproperty.model.js");
 const Sector = require("../models/Sector.model.js");
 
-const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const xlsx = require("xlsx");
-const { uploadoncloudinary } = require("../config/FileHandling");
+const { uploadWithFallback } = require("../config/FileHandling");
 
 // Multer setup for Excel file uploads (if needed)
 const excelStorage = multer.memoryStorage();
 const excelUpload = multer({ storage: excelStorage });
-
-// ==============================
-// Cloudinary Configuration
-// ==============================
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // ==============================
 // 🔹 createRentalProperty
@@ -145,7 +135,7 @@ const createRentalProperty = async (req, res) => {
     let images = [];
 
     // ------------------------------
-    // Upload images to Cloudinary if files exist
+    // Upload images to Cloudinary if files exist (stick to one account per property)
     // ------------------------------
     if (req.files && req.files.length > 0) {
       // Determine sector folder name (default if missing)
@@ -153,9 +143,32 @@ const createRentalProperty = async (req, res) => {
         ? propertyData.Sector.replace(/[^a-zA-Z0-9-_]/g, "_")
         : "Uncategorized";
 
+      // Build composite folder with address segment and persist on payload
+      const addressSegment = propertyData.address
+        ? propertyData.address.toString().replace(/[^a-zA-Z0-9-_]/g, "_").substring(0, 80)
+        : null;
+      const compositeFolder = addressSegment ? `${sectorFolder}/${addressSegment}` : sectorFolder;
+      propertyData.cloudinaryFolder = compositeFolder;
+
+      // ensure all images for this property go to the same Cloudinary account
+      let stickyAccountIndex = null;
+
       for (const file of req.files) {
-        const result = await uploadoncloudinary(file.path, propertyData.Sector);
-        images.push(result.secure_url);
+        const { secure_url, accountIndex } = await uploadWithFallback(
+          file.path,
+          compositeFolder,
+          stickyAccountIndex,
+          null
+        );
+        images.push(secure_url);
+        if (stickyAccountIndex === null && Number.isInteger(accountIndex)) {
+          stickyAccountIndex = accountIndex;
+        }
+      }
+
+      // persist the chosen account index on the property for future updates
+      if (stickyAccountIndex !== null) {
+        propertyData.cloudinaryAccountIndex = stickyAccountIndex;
       }
     }
 

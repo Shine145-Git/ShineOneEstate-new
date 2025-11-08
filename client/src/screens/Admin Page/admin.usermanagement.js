@@ -18,6 +18,8 @@ const UserManagementDashboard = () => {
 
   // State to store each user's reward activity summary
   const [userRewards, setUserRewards] = useState({});
+  // Visible property counts per user (for Load More)
+  const [visiblePropertyCounts, setVisiblePropertyCounts] = useState({});
 
   useEffect(() => {
     fetchUsers();
@@ -755,119 +757,196 @@ const UserManagementDashboard = () => {
                       <Home size={20} />
                       Properties Posted ({user.propertiesPosted.length})
                     </h3>
-                    {user.propertiesPosted.map((property, propIndex) => {
-                      const key = `${userIndex}-${propIndex}`;
-                      const isRental = property.monthlyRent !== undefined;
-                      
-                      return (
-                        <div
-                          key={propIndex}
+                    {user.propertiesPosted
+                      .slice(0, (visiblePropertyCounts[user._id] || 10))
+                      .map((property, propIndex) => {
+                        const key = `${userIndex}-${propIndex}`;
+                        const dpt = (property.defaultpropertytype || '').toLowerCase();
+                        const isRental = dpt ? dpt === 'rental' : property.monthlyRent !== undefined;
+                        
+                        return (
+                          <div
+                            key={propIndex}
+                            style={{
+                              ...styles.propertyDropdown,
+                              ...(expandedProperties[key] ? styles.propertyDropdownActive : {})
+                            }}
+                          >
+                            <div
+                              style={styles.propertyHeader}
+                              onClick={() => togglePropertyExpansion(userIndex, propIndex)}
+                            >
+                              <div style={styles.propertyTitle}>
+                                <Home size={18} />
+                                Property {propIndex + 1}
+                                { (property.title || property.propertyType) && (
+                                  <span style={{ marginLeft: 8, color: '#4A6A8A', fontWeight: 600 }}>
+                                    — {property.title || property.propertyType}
+                                  </span>
+                                )}
+                                <span style={{
+                                  ...styles.propertyType,
+                                  ...(isRental ? styles.rentalType : styles.saleType)
+                                }}>
+                                  {isRental ? 'RENTAL' : 'SALE'}
+                                </span>
+                              </div>
+                              {expandedProperties[key] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </div>
+                            <div style={{
+                              ...styles.propertyDetails,
+                              ...(expandedProperties[key] ? styles.propertyDetailsExpanded : {})
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 12px' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const isSale = property.defaultpropertytype === 'sale' || (!property.defaultpropertytype && !isRental);
+                                    navigate(isSale ? `/Saledetails/${property._id}` : `/Rentaldetails/${property._id}`);
+                                  }}
+                                  style={{
+                                    background: '#003366',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    borderRadius: 8,
+                                    padding: '10px 14px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                  }}
+                                >
+                                  Open Details
+                                </button>
+                              </div>
+                              <div style={styles.infoGrid}>
+                                {isRental ? (
+                                  <>
+                                    <div style={styles.infoItem}>
+                                      <div style={styles.infoLabel}>Monthly Rent</div>
+                                      <div style={styles.infoValue}>
+                                        ₹{property.monthlyRent?.toLocaleString() || 'N/A'}
+                                      </div>
+                                    </div>
+                                    <div style={styles.infoItem}>
+                                      <div style={styles.infoLabel}>Address</div>
+                                      <div style={styles.infoValue}>{property.address  + property.Sector|| 'N/A'}</div>
+                                    </div>
+                                    {property.totalArea?.sqft !== undefined && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Total Area (sqft)</div>
+                                        <div style={styles.infoValue}>{property.totalArea.sqft}</div>
+                                      </div>
+                                    )}
+                                    {property.totalArea?.configuration && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Configuration</div>
+                                        <div style={styles.infoValue}>{property.totalArea.configuration}</div>
+                                      </div>
+                                    )}
+                                    {typeof property.cloudinaryAccountIndex === 'number' && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Cloudinary Account</div>
+                                        <div style={styles.infoValue}>#{property.cloudinaryAccountIndex + 1}</div>
+                                      </div>
+                                    )}
+                                    {property.cloudinaryFolder && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Cloudinary Folder</div>
+                                        <div style={styles.infoValue}>{property.cloudinaryFolder}</div>
+                                      </div>
+                                    )}
+                                    {property.propertyType && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Property Type</div>
+                                        <div style={styles.infoValue}>{property.propertyType}</div>
+                                      </div>
+                                    )}
+                                    {property.bhkType && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>BHK Type</div>
+                                        <div style={styles.infoValue}>{property.bhkType}</div>
+                                      </div>
+                                    )}
+                                    {property.furnishing && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Furnishing</div>
+                                        <div style={styles.infoValue}>{property.furnishing}</div>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <div style={styles.infoItem}>
+                                      <div style={styles.infoLabel}>Price</div>
+                                      <div style={styles.infoValue}>
+                                        ₹{property.price?.toLocaleString() || 'N/A'}
+                                      </div>
+                                    </div>
+                                    <div style={styles.infoItem}>
+                                      <div style={styles.infoLabel}>Location</div>
+                                      <div style={styles.infoValue}>{property.location || 'N/A'}</div>
+                                    </div>
+                                    {property.totalArea?.sqft !== undefined && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Total Area (sqft)</div>
+                                        <div style={styles.infoValue}>{property.totalArea.sqft}</div>
+                                      </div>
+                                    )}
+                                    {property.totalArea?.configuration && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Configuration</div>
+                                        <div style={styles.infoValue}>{property.totalArea.configuration}</div>
+                                      </div>
+                                    )}
+                                    {property.propertyType && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>Property Type</div>
+                                        <div style={styles.infoValue}>{property.propertyType}</div>
+                                      </div>
+                                    )}
+                                    {property.bhkType && (
+                                      <div style={styles.infoItem}>
+                                        <div style={styles.infoLabel}>BHK Type</div>
+                                        <div style={styles.infoValue}>{property.bhkType}</div>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                                {property.createdAt && (
+                                  <div style={styles.infoItem}>
+                                    <div style={styles.infoLabel}>Posted On</div>
+                                    <div style={styles.infoValue}>{formatDate(property.createdAt)}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    {user.propertiesPosted.length > (visiblePropertyCounts[user._id] || 20) && (
+                      <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                        <button
+                          onClick={() =>
+                            setVisiblePropertyCounts((prev) => ({
+                              ...prev,
+                              [user._id]: (prev[user._id] || 20) + 20,
+                            }))
+                          }
                           style={{
-                            ...styles.propertyDropdown,
-                            ...(expandedProperties[key] ? styles.propertyDropdownActive : {})
+                            background: '#003366',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: 8,
+                            padding: '10px 16px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                           }}
                         >
-                          <div
-                            style={styles.propertyHeader}
-                            onClick={() => togglePropertyExpansion(userIndex, propIndex)}
-                          >
-                            <div style={styles.propertyTitle}>
-                              <Home size={18} />
-                              Property {propIndex + 1}
-                              <span style={{
-                                ...styles.propertyType,
-                                ...(isRental ? styles.rentalType : styles.saleType)
-                              }}>
-                                {isRental ? 'RENTAL' : 'SALE'}
-                              </span>
-                            </div>
-                            {expandedProperties[key] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                          </div>
-                          <div style={{
-                            ...styles.propertyDetails,
-                            ...(expandedProperties[key] ? styles.propertyDetailsExpanded : {})
-                          }}>
-                            <div style={styles.infoGrid}>
-                              {isRental ? (
-                                <>
-                                  <div style={styles.infoItem}>
-                                    <div style={styles.infoLabel}>Monthly Rent</div>
-                                    <div style={styles.infoValue}>
-                                      ₹{property.monthlyRent?.toLocaleString() || 'N/A'}
-                                    </div>
-                                  </div>
-                                  <div style={styles.infoItem}>
-                                    <div style={styles.infoLabel}>Address</div>
-                                    <div style={styles.infoValue}>{property.address  + property.Sector|| 'N/A'}</div>
-                                  </div>
-                                  {property.locality && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>Locality</div>
-                                      <div style={styles.infoValue}>{property.locality}</div>
-                                    </div>
-                                  )}
-                                  {property.propertyType && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>Property Type</div>
-                                      <div style={styles.infoValue}>{property.propertyType}</div>
-                                    </div>
-                                  )}
-                                  {property.bhkType && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>BHK Type</div>
-                                      <div style={styles.infoValue}>{property.bhkType}</div>
-                                    </div>
-                                  )}
-                                  {property.furnishing && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>Furnishing</div>
-                                      <div style={styles.infoValue}>{property.furnishing}</div>
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <>
-                                  <div style={styles.infoItem}>
-                                    <div style={styles.infoLabel}>Price</div>
-                                    <div style={styles.infoValue}>
-                                      ₹{property.price?.toLocaleString() || 'N/A'}
-                                    </div>
-                                  </div>
-                                  <div style={styles.infoItem}>
-                                    <div style={styles.infoLabel}>Location</div>
-                                    <div style={styles.infoValue}>{property.location || 'N/A'}</div>
-                                  </div>
-                                  {property.propertyType && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>Property Type</div>
-                                      <div style={styles.infoValue}>{property.propertyType}</div>
-                                    </div>
-                                  )}
-                                  {property.bhkType && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>BHK Type</div>
-                                      <div style={styles.infoValue}>{property.bhkType}</div>
-                                    </div>
-                                  )}
-                                  {property.area && (
-                                    <div style={styles.infoItem}>
-                                      <div style={styles.infoLabel}>Area</div>
-                                      <div style={styles.infoValue}>{property.area} sq ft</div>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              {property.createdAt && (
-                                <div style={styles.infoItem}>
-                                  <div style={styles.infoLabel}>Posted On</div>
-                                  <div style={styles.infoValue}>{formatDate(property.createdAt)}</div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          Load more properties
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

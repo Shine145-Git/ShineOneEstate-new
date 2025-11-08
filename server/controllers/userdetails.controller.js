@@ -4,10 +4,12 @@
  *              managing user properties (rental and sale), and property updates/deletions.
  */
 
-const cloudinary = require("cloudinary").v2;
 const User = require('../models/user.model');
 const RentalProperty = require('../models/Rentalproperty.model');
 const SaleProperty = require('../models/SaleProperty.model');
+
+const { uploadWithFallback } = require("../config/FileHandling");
+const fs = require("fs");
 
 // ===============================
 // 🔹 GET USER DETAILS (From req.user)
@@ -173,26 +175,28 @@ exports.getMyProperties = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const skip = (page - 1) * limit;
 
-    // Fetch rental and sale properties concurrently (only IDs first for performance)
-    const [rentalIds, saleIds] = await Promise.all([
-      RentalProperty.find({ owner: userId }).sort({ createdAt: -1 }).select('_id'),
-      SaleProperty.find({ ownerId: userId }).sort({ createdAt: -1 }).select('_id'),
+    // Fetch rental and sale properties concurrently with createdAt for global sorting
+    const [rentalMeta, saleMeta] = await Promise.all([
+      RentalProperty.find({ owner: userId }).select('_id createdAt').lean(),
+      SaleProperty.find({ ownerId: userId }).select('_id createdAt').lean(),
     ]);
 
-    const total = rentalIds.length + saleIds.length;
-    const rentalCount = rentalIds.length;
-    const saleCount = saleIds.length;
+    const rentalCount = rentalMeta.length;
+    const saleCount = saleMeta.length;
+    const total = rentalCount + saleCount;
 
-    // Combine IDs and slice for pagination
-    const combinedIds = [
-      ...rentalIds.map(p => ({ id: p._id, type: 'rental' })),
-      ...saleIds.map(p => ({ id: p._id, type: 'sale' }))
-    ];
-    const paginatedIds = combinedIds.slice(skip, skip + limit);
+    // Merge and sort by createdAt (newest first) across both models
+    const merged = [
+      ...rentalMeta.map(p => ({ id: p._id, type: 'rental', createdAt: new Date(p.createdAt || 0) })),
+      ...saleMeta.map(p => ({ id: p._id, type: 'sale', createdAt: new Date(p.createdAt || 0) })),
+    ].sort((a, b) => b.createdAt - a.createdAt);
+
+    // Apply pagination after global sort
+    const paginated = merged.slice(skip, skip + limit);
 
     // Resolve full property data for the current page
     const properties = await Promise.all(
-      paginatedIds.map(async (item) => {
+      paginated.map(async (item) => {
         if (item.type === 'rental') {
           return await RentalProperty.findById(item.id).lean().then(p => ({ ...p, propertyCategory: 'rental' }));
         } else {
@@ -253,6 +257,30 @@ const updateProperty = async (req, res) => {
       }
     }
 
+    // Fetch existing property for cloudinaryAccountIndex
+    let existingPropertyForAccount = null;
+    try {
+      existingPropertyForAccount = (await RentalProperty.findById(id)) || (await SaleProperty.findById(id));
+    } catch (_) {}
+    let stickyAccountIndex = existingPropertyForAccount?.cloudinaryAccountIndex ?? null;
+
+    // Determine address argument for Cloudinary foldering
+    const addressArg = (req.body.address && String(req.body.address))
+      || (existingPropertyForAccount && existingPropertyForAccount.address && String(existingPropertyForAccount.address))
+      || null;
+
+    // Determine the target Cloudinary folder (prefer stored folder to keep images together)
+    let folderArg = (existingPropertyForAccount && existingPropertyForAccount.cloudinaryFolder) || null;
+    if (!folderArg) {
+      const sectorBase = (req.body.Sector && String(req.body.Sector))
+        || (existingPropertyForAccount && existingPropertyForAccount.Sector && String(existingPropertyForAccount.Sector))
+        || 'Uncategorized';
+      const addressBase = addressArg || null;
+      const sectorSan = sectorBase.toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80);
+      const addressSan = addressBase ? addressBase.toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80) : null;
+      folderArg = addressSan ? `${sectorSan}/${addressSan}` : sectorSan;
+    }
+
     // Upload new images to Cloudinary and append URLs (no deletion)
     let imageUrls = [];
 
@@ -260,10 +288,12 @@ const updateProperty = async (req, res) => {
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
           try {
-            const result = await cloudinary.uploader.upload(file.path, {
-              folder: "properties",
-            });
-            imageUrls.push(result.secure_url);
+            const { secure_url, accountIndex } = await uploadWithFallback(file.path, folderArg, stickyAccountIndex, null);
+            imageUrls.push(secure_url);
+            if (stickyAccountIndex === null && Number.isInteger(accountIndex)) {
+              stickyAccountIndex = accountIndex;
+            }
+            try { fs.unlinkSync(file.path); } catch (_) {}
           } catch (uploadError) {
             // Upload error suppressed
           }
@@ -290,6 +320,8 @@ const updateProperty = async (req, res) => {
     }
 
     const updateData = { ...req.body };
+    if (folderArg) updateData.cloudinaryFolder = folderArg;
+    if (stickyAccountIndex !== null) updateData.cloudinaryAccountIndex = stickyAccountIndex;
 
     // Normalize totalArea.configuration (e.g., 2 BHK, 3 BHK)
     if (updateData.totalArea && updateData.totalArea.configuration) {
@@ -357,6 +389,8 @@ const updateProperty = async (req, res) => {
       }
 
       const updateDataSale = { ...req.body };
+      if (folderArg) updateDataSale.cloudinaryFolder = folderArg;
+      if (stickyAccountIndex !== null) updateDataSale.cloudinaryAccountIndex = stickyAccountIndex;
 
       updatedProperty = await SaleProperty.findOneAndUpdate(
         { _id: id, ownerId: req.user._id },

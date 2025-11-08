@@ -1,10 +1,70 @@
 import React, { useEffect, useState } from 'react';
 import Similarproperties from './Similarproperties';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Home, Bed, Bath, Maximize, DollarSign, MapPin, Share2, Heart, Calendar, Phone, Mail } from 'lucide-react';
+import { Home, Bed, Bath, Maximize, MapPin, Share2, Heart, Calendar, Phone, Mail, X } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
 import MapIntegration from './mapsintegration';
 import { Button } from '@mui/material';
+
+// Local fallback for EnquiryPage (used if the shared component path isn't available)
+const EnquiryPage = ({ propertyId, onClose, context, defaultMessage }) => {
+  const [message, setMessage] = useState(defaultMessage || '');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await fetch(process.env.REACT_APP_SUPPORT_ENQUIRY_API || '/api/enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, message, context }),
+        credentials: 'include',
+      });
+      alert('Enquiry sent!');
+      onClose && onClose();
+    } catch (err) {
+      console.error('Failed to send enquiry', err);
+      alert('Failed to send enquiry');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ marginBottom: 8, color: '#003366', fontWeight: 600, fontSize: 16 }}>Send an enquiry</div>
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder={defaultMessage || 'Hi, I’d like to schedule a viewing...'}
+        style={{
+          width: '100%',
+          minHeight: 120,
+          padding: 12,
+          borderRadius: 8,
+          border: '1px solid #E5E7EB',
+          fontFamily: 'inherit',
+        }}
+      />
+      <button
+        type="submit"
+        disabled={submitting}
+        style={{
+          background: '#00A79D',
+          color: '#fff',
+          padding: '10px 16px',
+          border: 'none',
+          borderRadius: 8,
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+      >
+        {submitting ? 'Sending...' : 'Send Enquiry'}
+      </button>
+    </form>
+  );
+};
 
 const addEngagementTime = async (propertyId, seconds) => {
   try {
@@ -42,6 +102,10 @@ export default function SalePropertyPage() {
   const [userComment, setUserComment] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [openMapModal, setOpenMapModal] = useState(false);
+
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const openEnquiry = () => setShowEnquiryModal(true);
+  const closeEnquiry = () => setShowEnquiryModal(false);
 
   useEffect(() => {
     async function fetchProperty() {
@@ -86,6 +150,15 @@ export default function SalePropertyPage() {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (!showEnquiryModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') closeEnquiry();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showEnquiryModal]);
 
   useEffect(() => {
     if (!property) return;
@@ -220,7 +293,7 @@ export default function SalePropertyPage() {
         marginBottom: isMobile ? '16px' : undefined
       }}>
         <button
-          onClick={() => navigate(`/property-visit/${property._id}`)}
+          onClick={openEnquiry}
           style={{
             width: '100%',
             background: '#00A79D',
@@ -1020,7 +1093,89 @@ export default function SalePropertyPage() {
             type={property?.propertyType}
           />
         </>
+        
       )}
+       {/* Enquiry Modal */}
+    {showEnquiryModal && (
+      <div
+        onClick={closeEnquiry}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1200,
+          backdropFilter: 'blur(4px)'
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '600px',
+            position: 'relative',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+          }}
+          className="enquiry-modal"
+        >
+          <button
+            onClick={closeEnquiry}
+            aria-label="Close enquiry"
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: '#F4F7F9',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#4A6A8A'
+            }}
+          >
+            <X size={20} />
+          </button>
+
+          <EnquiryPage
+            propertyId={property?._id}
+            onClose={closeEnquiry}
+            context={{
+              title: property?.propertyType || 'Sale Property',
+              sector: property?.Sector,
+              address: property?.address,
+              price: property?.price,
+              bedrooms: property?.bedrooms,
+              bathrooms: property?.bathrooms,
+              sqft: property?.totalArea?.sqft,
+              configuration: property?.totalArea?.configuration,
+              url: typeof window !== 'undefined' ? window.location.href : undefined,
+              source: 'SalePropertyPageView',
+            }}
+            defaultMessage={`Hi, I’d like to schedule a viewing for ${
+              property?.propertyType || 'this property'
+            } in ${property?.Sector || 'your listed area'}.`}
+          />
+        </div>
+      </div>
+    )}
+
+    <style>{`
+      .enquiry-modal { animation: fadeInAnimation 0.3s ease-in-out; }
+      @keyframes fadeInAnimation {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+    `}</style>
     </div>
+   
   );
 }

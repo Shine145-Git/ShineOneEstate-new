@@ -112,15 +112,24 @@ export default function PropertyCards() {
       );
       const data = await response.json();
       const normalized = Array.isArray(data.properties)
-        ? data.properties.map((p) => ({
-            ...p,
-            // Normalize to a single canonical field used everywhere in UI
-            defaultPropertyType:
-              p.defaultPropertyType ||
-              p.defaultpropertytype ||
-              p.propertyCategory ||
-              (p.monthlyRent ? "rental" : p.price ? "sale" : undefined),
-          }))
+        ? data.properties.map((p) => {
+            const rawType =
+              p.defaultPropertyType ??
+              p.defaultpropertytype ??
+              p.propertyCategory ??
+              (p.monthlyRent ? "rental" : p.price ? "sale" : undefined);
+
+            let canonical = rawType ? String(rawType).toLowerCase().trim() : undefined;
+            if (canonical) {
+              if (["rent", "rental", "lease", "for rent"].includes(canonical)) canonical = "rental";
+              else if (["sale", "sell", "for sale"].includes(canonical)) canonical = "sale";
+            }
+
+            return {
+              ...p,
+              defaultPropertyType: canonical,
+            };
+          })
         : [];
       setProperties(normalized);
       setTotalProperties(data.total || 0);
@@ -211,10 +220,11 @@ export default function PropertyCards() {
       p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.address?.toLowerCase().includes(searchQuery.toLowerCase());
 
+    const pt = (p.defaultPropertyType || "").toLowerCase();
     const matchesType =
       propertyTypeFilter === "all" ||
-      (propertyTypeFilter === "rental" && p.defaultPropertyType === "rental") ||
-      (propertyTypeFilter === "sale" && p.defaultPropertyType === "sale");
+      (propertyTypeFilter === "rental" && pt === "rental") ||
+      (propertyTypeFilter === "sale" && pt === "sale");
 
     return statusMatch && matchesSearch && matchesType;
   });
@@ -238,13 +248,13 @@ export default function PropertyCards() {
       return bPrice - aPrice;
     }
     if (sortOption === "Rental First") {
-      const at = a.defaultPropertyType || "";
-      const bt = b.defaultPropertyType || "";
+      const at = (a.defaultPropertyType || "").toLowerCase();
+      const bt = (b.defaultPropertyType || "").toLowerCase();
       return at === "rental" && bt === "sale" ? -1 : at === "sale" && bt === "rental" ? 1 : 0;
     }
     if (sortOption === "Sale First") {
-      const at = a.defaultPropertyType || "";
-      const bt = b.defaultPropertyType || "";
+      const at = (a.defaultPropertyType || "").toLowerCase();
+      const bt = (b.defaultPropertyType || "").toLowerCase();
       return at === "sale" && bt === "rental" ? -1 : at === "rental" && bt === "sale" ? 1 : 0;
     }
     return 0;

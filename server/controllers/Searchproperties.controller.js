@@ -56,9 +56,7 @@ const normalizeUserQuery = (raw) => {
 const buildFilterObject = ({ normalizedQuery, normalizedType, extras = {} }) => {
   const filter = { isActive: true };
 
-  // Optional type enforcement (kept for main-search path)
-  if (normalizedType === 'rent') filter.defaultpropertytype = /rental/i;
-  if (normalizedType === 'sale') filter.defaultpropertytype = /sale/i;
+  // Optional type enforcement (removed for price-exact match refactor)
 
   if (normalizedQuery) {
     const sectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
@@ -73,6 +71,12 @@ const buildFilterObject = ({ normalizedQuery, normalizedType, extras = {} }) => 
 
     const orConditions = [];
     if (bhkRegex) orConditions.push({ 'totalArea.configuration': bhkRegex });
+
+    // Always allow a direct match on Sector with the raw text of the query.
+    // This ensures inputs like "dlf" or misspellings like "sehore" can still
+    // match the Sector field even when no explicit sector number or "BHK" is present.
+    orConditions.push({ Sector: fullQueryRegex });
+
     orConditions.push({ address: fullQueryRegex });
     orConditions.push({ description: fullQueryRegex });
     orConditions.push({ address: gurgaonRegex });
@@ -90,9 +94,20 @@ const buildFilterObject = ({ normalizedQuery, normalizedType, extras = {} }) => 
   }
 
   // Optional *non-mandatory* extra filters (do not break API)
-  const { minPrice, maxPrice, bedrooms, bathrooms, minArea, maxArea } = extras;
+  const { minPrice, maxPrice, bedrooms, bathrooms, minArea, maxArea, price } = extras;
   const rangeClauses = [];
-  if (minPrice || maxPrice) {
+  if (price) {
+    const eq = Number(price);
+    const eqStr = String(price);
+    rangeClauses.push({
+      $or: [
+        { monthlyRent: eq },
+        { price: eq },
+        { monthlyRent: eqStr },
+        { price: eqStr },
+      ],
+    });
+  } else if (minPrice || maxPrice) {
     // Match either monthlyRent or price depending on doc
     const priceOr = [];
     const priceCond = {};
@@ -190,6 +205,7 @@ exports.searchProperties = async (req, res) => {
         bathrooms: req.query.bathrooms,
         minArea: req.query.minArea,
         maxArea: req.query.maxArea,
+        price: req.query.price,
       },
     });
 
