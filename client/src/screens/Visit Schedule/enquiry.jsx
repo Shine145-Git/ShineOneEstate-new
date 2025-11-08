@@ -17,7 +17,13 @@ const EnquiryPage = ({ propertyId }) => {
   };
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    // Auto-resize textarea for better mobile UX
+    if (name === 'message') {
+      e.target.style.height = 'auto';
+      e.target.style.height = `${Math.min(Math.max(e.target.scrollHeight, 120), 320)}px`;
+    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -56,15 +62,17 @@ const EnquiryPage = ({ propertyId }) => {
   return (
     <>
       <ToastContainer />
-      <div style={styles.pageContainer}>
-        <h1 style={styles.header}>Contact & Enquiry</h1>
-        <div style={styles.card} className="fade-in">
+      <div style={styles.pageContainer} className="enquiry-page">
+        <h1 style={styles.header} className="enquiry-header">Contact & Enquiry</h1>
+        <div style={styles.card} className="fade-in enquiry-card">
           <form onSubmit={handleSubmit} noValidate>
             <div style={styles.field}>
               <label htmlFor="message" style={styles.label}>Message</label>
               <textarea
                 id="message"
                 name="message"
+                className="enquiry-textarea"
+                placeholder="Type your message (date/time preference, questions)…"
                 value={formData.message}
                 onChange={handleChange}
                 rows={7}
@@ -73,7 +81,7 @@ const EnquiryPage = ({ propertyId }) => {
               {errors.message && <span style={styles.error}>{errors.message}</span>}
             </div>
 
-            <button type="submit" style={styles.button} className="hover-fade">
+            <button type="submit" style={styles.button} className="hover-fade enquiry-submit">
               Submit Enquiry
             </button>
           </form>
@@ -96,6 +104,37 @@ const EnquiryPage = ({ propertyId }) => {
           box-shadow: 0 8px 15px rgba(0, 180, 216, 0.4);
           transform: translateY(-2px);
         }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+          .enquiry-page {
+            margin: 16px auto !important;
+            padding: 0 12px !important;
+            max-width: 100% !important;
+          }
+          .enquiry-header {
+            font-size: 1.1rem !important;
+            margin-bottom: 12px !important;
+          }
+          .enquiry-card {
+            padding: 16px !important;
+            border-radius: 10px !important;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08) !important;
+            max-width: 100% !important;
+          }
+          .enquiry-textarea {
+            height: 140px !important;
+            font-size: 14px !important;
+            padding: 10px 12px !important;
+          }
+          .enquiry-submit {
+            padding: 14px 0 !important;
+            font-size: 15px !important;
+            position: sticky;
+            bottom: env(safe-area-inset-bottom, 8px);
+            width: 100%;
+          }
+        }
       `}</style>
     </>
   );
@@ -111,12 +150,12 @@ const styles = {
   },
   header: {
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     fontWeight: '600',
   },
   card: {
     backgroundColor: '#fff',
-    padding: 28,
+    padding: 24,
     borderRadius: 8,
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     maxWidth: 500,
@@ -137,7 +176,7 @@ const styles = {
   textarea: {
     width: '100%',
     maxWidth: 480,
-    height: 120,
+    height: 140,
     padding: '12px 14px',
     fontSize: 14,
     borderRadius: 8,

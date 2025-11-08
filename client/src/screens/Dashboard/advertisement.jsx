@@ -268,9 +268,9 @@ export default function LandingPage() {
 
   // No API calls are present in this file, only UI elements.
   return (
-    <div style={styles.container}>
+    <div style={styles.container} className="landing-page">
       {/* Top Banner */}
-      <div style={styles.topBanner}>
+      <div style={styles.topBanner} className="top-banner">
         <div style={styles.bannerContent}>
           <h1 style={styles.bannerTitle}>
             Plan hassle-free{" "}
@@ -285,6 +285,7 @@ export default function LandingPage() {
           </p>
         </div>
         <button
+          className="cta-btn"
           style={styles.findOutButton}
           onMouseEnter={(e) => {
             e.target.style.backgroundColor = "#00A79D";
@@ -303,7 +304,7 @@ export default function LandingPage() {
       <div style={styles.mainSection}>
         <div style={styles.contentWrapper}>
           {/* Left Section */}
-          <div style={styles.leftSection}>
+          <div style={styles.leftSection} className="left-section">
             <div style={styles.leftBg}></div>
             <div style={styles.leftContent}>
               <h2
@@ -337,7 +338,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right Section */}
-          <div style={styles.rightSection}>
+          <div style={styles.rightSection} className="right-section">
             <div>
               <h3 style={styles.whyChoose}>Why choose us?</h3>
 
@@ -366,7 +367,7 @@ export default function LandingPage() {
 
               <div style={styles.brandsSection}>
                 <div style={styles.brandsLabel}>Top Real Estate Brands</div>
-                <div style={styles.brandsLogosContainer}>
+                <div style={styles.brandsLogosContainer} className="brands-logos">
                   {[
                     {
                       name: "Godrej Properties",
@@ -429,6 +430,7 @@ export default function LandingPage() {
                       src={`https://logo.clearbit.com/${brand.domain}`}
                       alt={brand.name}
                       style={styles.brandLogo}
+                      width="auto"
                       loading="lazy"
                     />
                   ))}
@@ -442,10 +444,31 @@ export default function LandingPage() {
                     }
                   `}
                 </style>
+                <style>
+                  {`
+                    /* Mobile overrides */
+                    @media (max-width: 768px) {
+                      .landing-page { padding: 1rem !important; }
+                      .top-banner { gap: 1rem !important; }
+                      .cta-btn { width: 100%; border-radius: 12px !important; }
+                      .buttons-row { flex-direction: column; }
+                      .buttons-row button { width: 100%; border-radius: 12px; }
+                      .right-section { margin-top: 12px !important; padding: 0.75rem !important; }
+                      .brands-logos {
+                        animation: none !important;
+                        overflow-x: auto !important;
+                        -webkit-overflow-scrolling: touch;
+                        justify-content: flex-start !important;
+                        gap: 0.75rem !important;
+                      }
+                      .brands-logos::-webkit-scrollbar { display: none; }
+                    }
+                  `}
+                </style>
               </div>
             </div>
 
-            <div style={styles.buttonsRow}>
+            <div style={styles.buttonsRow} className="buttons-row">
               <button
                 style={styles.exploreButton}
                 onMouseEnter={(e) => {

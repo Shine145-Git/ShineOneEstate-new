@@ -246,6 +246,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
             cursor: "pointer",
             transition: "all 0.2s ease",
             flexShrink: 0,
+            marginRight: "0.30rem",
           };
           return (
             <div

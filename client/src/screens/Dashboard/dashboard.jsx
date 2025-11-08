@@ -217,7 +217,7 @@ export default function RealEstateDashboard() {
             `${process.env.REACT_APP_Base_API}/api/activeproperties?limit=12`,
             {
               method: "GET",
-              credentials: "include",
+              
             }
           );
 

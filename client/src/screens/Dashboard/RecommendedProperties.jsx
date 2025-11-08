@@ -5,7 +5,20 @@ import { useNavigate } from 'react-router-dom';
 
 const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, hasMore, onLoadMore, locationQueryFields }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const itemsPerPage = 4;
+  // Responsive items per page (prevents collapse on mobile)
+  const [itemsPerPage, setItemsPerPage] = useState(4);
+  useEffect(() => {
+    const updateItems = () => {
+      const w = window.innerWidth;
+      if (w < 480) setItemsPerPage(1);       // phones
+      else if (w < 768) setItemsPerPage(2);  // small tablets
+      else if (w < 1200) setItemsPerPage(3); // tablets / small desktops
+      else setItemsPerPage(4);               // large screens
+    };
+    updateItems();
+    window.addEventListener('resize', updateItems);
+    return () => window.removeEventListener('resize', updateItems);
+  }, []);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -86,7 +99,7 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, 
   const cardsContainerStyle = {
     display: 'flex',
     gap: '24px',
-    transform: `translateX(-${currentIndex * (100 / itemsPerPage + 1.714)}%)`,
+    transform: `translateX(-${currentIndex * (100 / itemsPerPage + (itemsPerPage <= 2 ? 2 : 1.25))}%)`,
     transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
   };
 
@@ -95,7 +108,7 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, 
     borderRadius: '12px',
     overflow: 'hidden',
     boxShadow: '0 2px 12px rgba(0, 51, 102, 0.08)',
-    flex: '0 0 calc(25% - 18px)',
+    flex: `0 0 calc(${100 / itemsPerPage}% - 18px)`,
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     border: '1px solid rgba(74, 106, 138, 0.1)'
@@ -104,7 +117,7 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, 
   const imageContainerStyle = {
     position: 'relative',
     width: '100%',
-    height: '220px',
+    height: itemsPerPage <= 2 ? 180 : 220,
     overflow: 'hidden',
     backgroundColor: '#4A6A8A'
   };
@@ -481,6 +494,10 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, 
           100% {
             background-position: 150% 0;
           }
+        }
+        @media (max-width: 768px) {
+          .shimmer-cards-row { flex-wrap: nowrap; overflow-x: auto; }
+          .shimmer-card { flex: 0 0 70%; min-width: 70%; }
         }
       `}
       </style>

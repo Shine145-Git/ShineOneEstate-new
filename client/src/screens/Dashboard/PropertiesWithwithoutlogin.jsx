@@ -19,6 +19,8 @@ const PropertyDashboard = ({
   const [loading, setLoading] = useState(true);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const itemsPerPage = 4;
   const navigate = useNavigate();
 
@@ -26,6 +28,21 @@ const PropertyDashboard = ({
     const timer = setTimeout(() => setLoading(false), 7000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (isHovered) return; // pause on hover
+    if (!autoScrollEnabled) return;
+    if (!properties || properties.length <= itemsPerPage) return;
+
+    const id = setInterval(() => {
+      setCurrentIndex((prev) => {
+        const maxStart = Math.max(0, properties.length - itemsPerPage);
+        return prev < maxStart ? prev + 1 : 0;
+      });
+    }, 4000);
+    return () => clearInterval(id);
+  }, [loading, isHovered, autoScrollEnabled, properties, itemsPerPage]);
 
   const handleNext = () => {
     if (currentIndex + itemsPerPage < properties.length) {
@@ -52,6 +69,15 @@ const PropertyDashboard = ({
       } else if (distance < -50) {
         handlePrev();
       }
+    }
+  };
+
+  const handleWheel = (e) => {
+    // Horizontal navigation with vertical wheel
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      if (e.deltaY > 0) handleNext();
+      else handlePrev();
     }
   };
 
@@ -106,6 +132,7 @@ const PropertyDashboard = ({
     maxWidth: "1400px",
     margin: "0 auto",
     position: "relative",
+    paddingRight: "64px",
   };
 
   const carouselStyle = {
@@ -238,6 +265,25 @@ const PropertyDashboard = ({
     zIndex: 10,
   });
 
+  const seeRightButtonStyle = {
+    position: "absolute",
+    right: 0,
+    top: "50%",
+    transform: "translateY(-50%)",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "#003366",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: 12,
+  };
+
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
@@ -288,7 +334,14 @@ const PropertyDashboard = ({
           </button>
         )}
 
-        <div style={carouselStyle} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div
+          style={carouselStyle}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           {loading ? (
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
               {[...Array(4)].map((_, i) => (
@@ -376,7 +429,7 @@ const PropertyDashboard = ({
             </div>
           )}
         </div>
-
+        
         {currentIndex + itemsPerPage < properties.length && (
           <button
             onClick={handleNext}
@@ -419,10 +472,10 @@ const PropertyDashboard = ({
       <style>
       {`
         @media (max-width: 768px) {
-          /* Skeleton keeps fixed height */
+          /* Skeleton keeps fixed height and horizontal scroll */
           .skeleton-card {
-            flex: 0 0 95% !important;
-            max-width: 100% !important;
+            flex: 0 0 70% !important;
+            max-width: 70% !important;
             height: 220px !important;
             min-width: 0 !important;
           }
@@ -436,6 +489,11 @@ const PropertyDashboard = ({
           /* Reduce gaps and paddings */
           div[style*="display: flex"][style*="gap: 24px"] {
             gap: 12px !important;
+          }
+          /* Allow horizontal scroll for skeletons on mobile */
+          div[style*="display: flex"][style*="gap: 24px"] {
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
           }
           div[style*="padding: 18px"] {
             padding: 10px !important;
@@ -477,6 +535,12 @@ const PropertyDashboard = ({
           button[style*="position: absolute"] svg {
             width: 20px !important;
             height: 20px !important;
+          }
+          /* Right-side See Properties button */
+          button[style*="position: absolute"][style*="right: 0px"] {
+            top: auto !important;
+            bottom: -8px !important;
+            transform: none !important;
           }
         }
       `}
