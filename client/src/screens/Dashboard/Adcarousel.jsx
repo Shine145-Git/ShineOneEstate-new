@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const images = [
-  'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606793/Ad1_hkbhkl.jpg',
-  'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606793/Ad2_fxa7ty.jpg',
-  'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606793/ad3_q7p0ez.jpg',
-  'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606794/ad4_soaq99.jpg',
+  '/Ad/Ad1.jpg',
+  // '/Ad/Ad2.jpg',
+  '/Ad/ad3.jpg',
+  '/Ad/ad4.jpg'
 ];
 
-const FALLBACK_IMG = 'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606794/ad4_soaq99.jpg';
+const backgroundImage = "/Dashboard.jpg";
 
 function AdCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -19,26 +19,10 @@ function AdCarousel() {
  useEffect(() => {
   const interval = setInterval(() => {
     setCurrentIndex(prev => (prev + 1) % images.length);
-  }, 4000); // auto-advance every 4 seconds
+  }, 4000); // scroll every 1 second
 
   return () => clearInterval(interval);
 }, []); // empty dependency array
-
-useEffect(() => {
-  let cancelled = false;
-  const url = images[currentIndex];
-  // Preflight the image to catch any remote 404
-  const img = new Image();
-  img.onload = () => { /* ok */ };
-  img.onerror = () => {
-    if (!cancelled) {
-      // Replace the broken slot with a safe fallback
-      images[currentIndex] = FALLBACK_IMG;
-    }
-  };
-  img.src = url;
-  return () => { cancelled = true; };
-}, [currentIndex]);
 
   const handlePrev = () => {
     if (isTransitioning) return;
@@ -64,7 +48,7 @@ useEffect(() => {
   return (
     <div style={{
       width: '100%',
-      backgroundImage: `url(${images[currentIndex]})`,
+      backgroundImage: `url(${backgroundImage})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -73,7 +57,7 @@ useEffect(() => {
       padding: '0 10px 10px',
       marginTop: "0px",
       borderTop: 'none',
-      backgroundColor: '#0b1b2b',
+      backgroundColor: 'transparent',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',

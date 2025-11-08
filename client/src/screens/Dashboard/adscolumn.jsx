@@ -6,9 +6,10 @@ export default function AutoRotatingAds() {
   const [isPaused, setIsPaused] = useState(false);
 
   const images = [
-    '/Ad/Ad1.jpg',
-    '/Ad/ad3.jpg',
-    '/Ad/ad4.jpg'
+    'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606793/Ad1_hkbhkl.jpg',
+    'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606793/Ad2_fxa7ty.jpg',
+    'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606793/ad3_q7p0ez.jpg',
+    'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606794/ad4_soaq99.jpg',
   ];
 
   useEffect(() => {
