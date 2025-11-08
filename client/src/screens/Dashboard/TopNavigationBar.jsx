@@ -369,7 +369,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               </div>
               <div
                 className="user-menu-container"
-                style={{ position: "relative", flexShrink: 0 }}
+                style={{ position: "relative", flexShrink: 0, overflow: "visible" }}
               >
                 <div
                   style={iconButtonStyle}
@@ -391,11 +391,13 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                         style={{
                           position: "absolute",
                           top: "calc(100% + 12px)",
-                          right: 0,
+                          right: isSmallScreen ? 8 : 0,
+                          left: isSmallScreen ? 8 : "auto",
                           backgroundColor: "#FFFFFF",
                           borderRadius: "12px",
                           boxShadow: "0 8px 24px rgba(0,51,102,0.15)",
-                          minWidth: isSmallScreen ? "180px" : "220px",
+                          minWidth: isSmallScreen ? "auto" : "220px",
+                          maxWidth: isSmallScreen ? "calc(100vw - 16px)" : "420px",
                           overflow: "hidden",
                           border: "1px solid #F4F7F9",
                           zIndex: 1001,
@@ -673,11 +675,13 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                         style={{
                           position: "absolute",
                           top: "calc(100% + 12px)",
-                          right: 0,
+                          right: isSmallScreen ? 8 : 0,
+                          left: isSmallScreen ? 8 : "auto",
                           backgroundColor: "#FFFFFF",
                           borderRadius: "10px",
                           boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-                          minWidth: isSmallScreen ? "180px" : "200px",
+                          minWidth: isSmallScreen ? "auto" : "200px",
+                          maxWidth: isSmallScreen ? "calc(100vw - 16px)" : "420px",
                           padding: isSmallScreen ? "0.75rem" : "1rem",
                           zIndex: 1001,
                         }}
