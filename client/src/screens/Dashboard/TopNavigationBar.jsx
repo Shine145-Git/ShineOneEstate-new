@@ -140,11 +140,12 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
             >
               <span
                 style={{
-                  fontWeight: 1000,
+                  fontWeight: 900,
+                  fontVariationSettings: '"wght" 900',
                   fontSize: isSmallScreen ? "1.2rem" : "1.5rem",
-                  letterSpacing: "0.3px",
+                  letterSpacing: "0.2px",
                   color: "#FFFFFF",
-                  textShadow: "0 0 6px rgba(255,255,255,0.25)",
+                  textShadow: "0 0 8px rgba(255,255,255,0.28)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -152,16 +153,15 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               </span>
               <span
                 style={{
-                  fontSize: isSmallScreen ? "0.40rem" : (window.innerWidth > 1280 ? "0.70rem" : "0.65rem"),
+                  fontSize: isSmallScreen ? "0.55rem" : (window.innerWidth > 1280 ? "0.72rem" : "0.68rem"),
                   color: "#FFFFFF",
-                  opacity: 0.8,
-                  whiteSpace: "nowrap",
+                  opacity: 0.9,
+                  whiteSpace: "normal",
                   letterSpacing: "0.2px",
-                  maxWidth: isSmallScreen ? 100 : 220,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  maxWidth: isSmallScreen ? 160 : 260,
+                  overflow: "visible",
                   display: "block",
-                  lineHeight: 1.2,
+                  lineHeight: 1.25,
                 }}
               >
                 Find your perfect space & Get Rewarded
@@ -221,30 +221,30 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
         {(() => {
           // Define common styles once for use below
           const commonButtonStyle = {
-            height: isSmallScreen ? "29px" : "40px",
-            minWidth: isSmallScreen ? "70px" : "120px",
-            padding: isSmallScreen ? "0 2px" : "0 14px",
+            height: isSmallScreen ? "35px" : "36px",
+            minWidth: isSmallScreen ? "80px" : "110px",
+            padding: isSmallScreen ? "0 8px" : "0 12px",
             backgroundColor: "#00A79D",
             color: "#FFFFFF",
             border: "none",
-            borderRadius: isSmallScreen ? "5px" : "8px",
-            fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+            borderRadius: isSmallScreen ? "6px" : "8px",
+            fontSize: isSmallScreen ? "0.75rem" : "0.85rem",
             fontWeight: "600",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: isSmallScreen ? "0.3rem" : "0.4rem",
+            gap: isSmallScreen ? "0.7rem" : "0.4rem",
             transition: "all 0.2s ease",
             whiteSpace: "nowrap",
             outline: "none",
             flexShrink: 0,
           };
           const iconButtonStyle = {
-            height: isSmallScreen ? "30px" : "40px",
-            width: isSmallScreen ? "30px" : "40px",
+            height: isSmallScreen ? "28px" : "36px",
+            width: isSmallScreen ? "28px" : "36px",
             backgroundColor: "#4A6A8A",
-            borderRadius: isSmallScreen ? "5px" : "8px",
+            borderRadius: isSmallScreen ? "6px" : "8px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -392,339 +392,358 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                 {showMenu && (
                   <>
                     {user ? (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "calc(100% + 12px)",
-                          right: isSmallScreen ? 8 : 0,
-                          left: isSmallScreen ? 8 : "auto",
-                          backgroundColor: "#FFFFFF",
-                          borderRadius: "12px",
-                          boxShadow: "0 8px 24px rgba(0,51,102,0.15)",
-                          minWidth: isSmallScreen ? "auto" : "220px",
-                          maxWidth: isSmallScreen ? "calc(100vw - 16px)" : "420px",
-                          overflow: "hidden",
-                          border: "1px solid #F4F7F9",
-                          zIndex: 1001,
-                          maxHeight: isSmallScreen ? "70vh" : "80vh",
-                          overflowY: "auto",
-                        }}
-                      >
+                      <>
                         <div
-                          style={{
-                            padding: isSmallScreen
-                              ? "0.75rem 0.9rem"
-                              : "1rem 1.25rem",
-                            borderBottom: "1px solid #F4F7F9",
-                            backgroundColor: "#F4F7F9",
-                          }}
+                          style={
+                            isSmallScreen
+                              ? {
+                                  position: 'absolute',
+                                  top: 'calc(100% + 8px)',
+                                  right: 0,
+                                  backgroundColor: '#FFFFFF',
+                                  borderRadius: 12,
+                                  boxShadow: '0 8px 24px rgba(0,51,102,0.15)',
+                                  minWidth: 220,
+                                  maxWidth: 'calc(100vw - 16px)',
+                                  overflow: 'hidden',
+                                  border: '1px solid #F4F7F9',
+                                  zIndex: 1001,
+                                  maxHeight: '70vh',
+                                  overflowY: 'auto',
+                                }
+                              : {
+                                  position: 'absolute',
+                                  top: 'calc(100% + 12px)',
+                                  right: 0,
+                                  backgroundColor: '#FFFFFF',
+                                  borderRadius: 12,
+                                  boxShadow: '0 8px 24px rgba(0,51,102,0.15)',
+                                  minWidth: '220px',
+                                  overflow: 'hidden',
+                                  border: '1px solid #F4F7F9',
+                                  zIndex: 1001,
+                                  maxHeight: '80vh',
+                                  overflowY: 'auto',
+                                }
+                          }
                         >
                           <div
                             style={{
-                              fontWeight: "700",
-                              color: "#003366",
-                              fontSize: isSmallScreen ? "0.875rem" : "0.95rem",
-                              marginBottom: "0.25rem",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
+                              padding: isSmallScreen ? '0.75rem 0.9rem' : '1rem 1.25rem',
+                              borderBottom: '1px solid #F4F7F9',
+                              backgroundColor: '#F4F7F9',
                             }}
                           >
-                            {user.name || user.email}
+                            <div
+                              style={{
+                                fontWeight: '700',
+                                color: '#003366',
+                                fontSize: isSmallScreen ? '0.875rem' : '0.95rem',
+                                marginBottom: '0.25rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {user.name || user.email}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#4A6A8A' }}>Welcome back!</div>
                           </div>
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#4A6A8A",
-                            }}
-                          >
-                            Welcome back!
+
+                          <div style={{ padding: '0.5rem 0' }}>
+                            {/* keep existing buttons here unchanged */}
+                            <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#333333",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={() => navigate("/rewards")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#F4F7F9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Bot size={18} color="#4A6A8A" />
+                              <span>Rewards</span>
+                            </button>
+                            <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#333333",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={() => navigate("/savedproperties")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#F4F7F9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Bot size={18} color="#4A6A8A" />
+                              <span>Saved</span>
+                            </button>
+                             <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#333333",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={() => navigate("/servicesCreate")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#F4F7F9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Bot size={18} color="#4A6A8A" />
+                              <span>Create Service</span>
+                            </button>
+
+                            <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#333333",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={() => navigate("/my-properties")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#F4F7F9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Bot size={18} color="#4A6A8A" />
+                              <span>Manage Listings</span>
+                            </button>
+                            <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#333333",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={() => navigate("/services")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#F4F7F9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Bot size={18} color="#4A6A8A" />
+                              <span>Manage Services</span>
+                            </button>
+                            
+
+                            <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#333333",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "500",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={() => navigate("/support")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#F4F7F9")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Bot size={18} color="#4A6A8A" />
+                              <span>Customer Support</span>
+                            </button>
+
+                            <div
+                              style={{
+                                height: "1px",
+                                backgroundColor: "#F4F7F9",
+                                margin: "0.5rem 0",
+                              }}
+                            />
+
+                            <button
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.75rem",
+                                width: "100%",
+                                padding: isSmallScreen
+                                  ? "0.55rem 0.9rem"
+                                  : "0.75rem 1.25rem",
+                                backgroundColor: "transparent",
+                                color: "#00A79D",
+                                border: "none",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
+                                fontWeight: "600",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onClick={handleLogout}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#F4F7F9";
+                                e.currentTarget.style.color = "#22D3EE";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor =
+                                  "transparent";
+                                e.currentTarget.style.color = "#00A79D";
+                              }}
+                            >
+                              <LogOut size={18} color="currentColor" />
+                              <span>Log Out</span>
+                            </button>
                           </div>
                         </div>
-
-                        <div style={{ padding: "0.5rem 0" }}>
-                          <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#333333",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={() => navigate("/rewards")}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#F4F7F9")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "transparent")
-                            }
-                          >
-                            <Bot size={18} color="#4A6A8A" />
-                            <span>Rewards</span>
-                          </button>
-                          <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#333333",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={() => navigate("/savedproperties")}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#F4F7F9")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "transparent")
-                            }
-                          >
-                            <Bot size={18} color="#4A6A8A" />
-                            <span>Saved</span>
-                          </button>
-                           <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#333333",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={() => navigate("/servicesCreate")}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#F4F7F9")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "transparent")
-                            }
-                          >
-                            <Bot size={18} color="#4A6A8A" />
-                            <span>Create Service</span>
-                          </button>
-
-                          <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#333333",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={() => navigate("/my-properties")}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#F4F7F9")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "transparent")
-                            }
-                          >
-                            <Bot size={18} color="#4A6A8A" />
-                            <span>Manage Listings</span>
-                          </button>
-                          <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#333333",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={() => navigate("/services")}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#F4F7F9")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "transparent")
-                            }
-                          >
-                            <Bot size={18} color="#4A6A8A" />
-                            <span>Manage Services</span>
-                          </button>
-                          
-
-                          <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#333333",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "500",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={() => navigate("/support")}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "#F4F7F9")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.backgroundColor =
-                                "transparent")
-                            }
-                          >
-                            <Bot size={18} color="#4A6A8A" />
-                            <span>Customer Support</span>
-                          </button>
-
-                          <div
-                            style={{
-                              height: "1px",
-                              backgroundColor: "#F4F7F9",
-                              margin: "0.5rem 0",
-                            }}
-                          />
-
-                          <button
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                              width: "100%",
-                              padding: isSmallScreen
-                                ? "0.55rem 0.9rem"
-                                : "0.75rem 1.25rem",
-                              backgroundColor: "transparent",
-                              color: "#00A79D",
-                              border: "none",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
-                              fontWeight: "600",
-                              transition: "background-color 0.2s ease",
-                            }}
-                            onClick={handleLogout}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = "#F4F7F9";
-                              e.currentTarget.style.color = "#22D3EE";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                "transparent";
-                              e.currentTarget.style.color = "#00A79D";
-                            }}
-                          >
-                            <LogOut size={18} color="currentColor" />
-                            <span>Log Out</span>
-                          </button>
-                        </div>
-                      </div>
+                      </>
                     ) : (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "calc(100% + 12px)",
-                          right: isSmallScreen ? 8 : 0,
-                          left: isSmallScreen ? 8 : "auto",
-                          backgroundColor: "#FFFFFF",
-                          borderRadius: "10px",
-                          boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-                          minWidth: isSmallScreen ? "auto" : "200px",
-                          maxWidth: isSmallScreen ? "calc(100vw - 16px)" : "420px",
-                          padding: isSmallScreen ? "0.75rem" : "1rem",
-                          zIndex: 1001,
-                        }}
-                      >
+                      <>
                         <div
-                          style={{
-                            color: "#003366",
-                            marginBottom: "0.75rem",
-                            fontWeight: "500",
-                            textAlign: "center",
-                          }}
+                          style={
+                            isSmallScreen
+                              ? {
+                                  position: 'absolute',
+                                  top: 'calc(100% + 8px)',
+                                  right: 0,
+                                  backgroundColor: '#FFFFFF',
+                                  borderRadius: 10,
+                                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                                  minWidth: 200,
+                                  maxWidth: 'calc(100vw - 16px)',
+                                  padding: '0.9rem',
+                                  zIndex: 1001,
+                                }
+                              : {
+                                  position: 'absolute',
+                                  top: 'calc(100% + 12px)',
+                                  right: 0,
+                                  backgroundColor: '#FFFFFF',
+                                  borderRadius: 10,
+                                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                                  minWidth: '200px',
+                                  padding: '1rem',
+                                  zIndex: 1001,
+                                }
+                          }
                         >
-                          You are not logged in.
+                          <div
+                            style={{
+                              color: '#003366',
+                              marginBottom: '0.75rem',
+                              fontWeight: '500',
+                              textAlign: 'center',
+                            }}
+                          >
+                            You are not logged in.
+                          </div>
+                          <button
+                            onClick={() => navigate('/login')}
+                            style={{
+                              backgroundColor: '#00A79D',
+                              color: '#FFFFFF',
+                              padding: isSmallScreen ? '0.6rem 0.9rem' : '0.5rem 1rem',
+                              border: 'none',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                              width: '100%',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#22D3EE')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#00A79D')}
+                          >
+                            Login Now
+                          </button>
                         </div>
-                        <button
-                          onClick={() => navigate("/login")}
-                          style={{
-                            backgroundColor: "#00A79D",
-                            color: "#FFFFFF",
-                            padding: isSmallScreen
-                              ? "0.45rem 0.85rem"
-                              : "0.5rem 1rem",
-                            border: "none",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            width: "100%",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#22D3EE")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#00A79D")
-                          }
-                        >
-                          Login Now
-                        </button>
-                      </div>
+                      </>
                     )}
                   </>
                 )}
