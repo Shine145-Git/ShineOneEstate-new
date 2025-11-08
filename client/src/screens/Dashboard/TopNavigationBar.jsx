@@ -152,11 +152,16 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               </span>
               <span
                 style={{
-                  fontSize: isSmallScreen ? "0.45rem" : "0.75rem",
+                  fontSize: isSmallScreen ? "0.40rem" : (window.innerWidth > 1280 ? "0.70rem" : "0.65rem"),
                   color: "#FFFFFF",
                   opacity: 0.8,
                   whiteSpace: "nowrap",
                   letterSpacing: "0.2px",
+                  maxWidth: isSmallScreen ? 100 : 220,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "block",
+                  lineHeight: 1.2,
                 }}
               >
                 Find your perfect space & Get Rewarded
