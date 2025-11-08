@@ -8,7 +8,7 @@ const images = [
   'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606794/ad4_soaq99.jpg',
 ];
 
-const backgroundImage = "/Dashboard.jpg";
+const FALLBACK_IMG = 'https://res.cloudinary.com/dvapbd2xx/image/upload/v1762606794/ad4_soaq99.jpg';
 
 function AdCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -19,10 +19,26 @@ function AdCarousel() {
  useEffect(() => {
   const interval = setInterval(() => {
     setCurrentIndex(prev => (prev + 1) % images.length);
-  }, 4000); // scroll every 1 second
+  }, 4000); // auto-advance every 4 seconds
 
   return () => clearInterval(interval);
 }, []); // empty dependency array
+
+useEffect(() => {
+  let cancelled = false;
+  const url = images[currentIndex];
+  // Preflight the image to catch any remote 404
+  const img = new Image();
+  img.onload = () => { /* ok */ };
+  img.onerror = () => {
+    if (!cancelled) {
+      // Replace the broken slot with a safe fallback
+      images[currentIndex] = FALLBACK_IMG;
+    }
+  };
+  img.src = url;
+  return () => { cancelled = true; };
+}, [currentIndex]);
 
   const handlePrev = () => {
     if (isTransitioning) return;
@@ -48,7 +64,7 @@ function AdCarousel() {
   return (
     <div style={{
       width: '100%',
-      backgroundImage: `url(${backgroundImage})`,
+      backgroundImage: `url(${images[currentIndex]})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -57,7 +73,7 @@ function AdCarousel() {
       padding: '0 10px 10px',
       marginTop: "0px",
       borderTop: 'none',
-      backgroundColor: 'transparent',
+      backgroundColor: '#0b1b2b',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
