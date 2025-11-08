@@ -216,13 +216,13 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
         {(() => {
           // Define common styles once for use below
           const commonButtonStyle = {
-            height: isSmallScreen ? "34px" : "40px",
-            minWidth: isSmallScreen ? "100px" : "120px",
-            padding: isSmallScreen ? "0 10px" : "0 14px",
+            height: isSmallScreen ? "29px" : "40px",
+            minWidth: isSmallScreen ? "70px" : "120px",
+            padding: isSmallScreen ? "0 2px" : "0 14px",
             backgroundColor: "#00A79D",
             color: "#FFFFFF",
             border: "none",
-            borderRadius: isSmallScreen ? "7px" : "8px",
+            borderRadius: isSmallScreen ? "5px" : "8px",
             fontSize: isSmallScreen ? "0.8rem" : "0.875rem",
             fontWeight: "600",
             cursor: "pointer",
@@ -236,10 +236,10 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
             flexShrink: 0,
           };
           const iconButtonStyle = {
-            height: isSmallScreen ? "36px" : "40px",
-            width: isSmallScreen ? "36px" : "40px",
+            height: isSmallScreen ? "30px" : "40px",
+            width: isSmallScreen ? "30px" : "40px",
             backgroundColor: "#4A6A8A",
-            borderRadius: isSmallScreen ? "7px" : "8px",
+            borderRadius: isSmallScreen ? "5px" : "8px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -253,7 +253,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                 display: "flex",
                 alignItems: "center",
                 gap: isSmallScreen
-                  ? "0.25rem"
+                  ? "0.10rem"
                   : isMediumScreen
                   ? "0.75rem"
                   : "1rem",
