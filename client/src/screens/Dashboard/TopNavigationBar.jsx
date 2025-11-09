@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -40,31 +40,16 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   // 'icon'  : icons only
   const [density, setDensity] = useState('full');
 
-  // Refs to compute available width for right action cluster
-  const navRef = useRef(null);
-  const rightRef = useRef(null);
-
-  // Helper for extra-wide screens
-  const [isXLScreen, setIsXLScreen] = useState(window.innerWidth >= 1280);
-
   useEffect(() => {
-    const computeFromRightWidth = () => {
-      const w = rightRef.current?.clientWidth || 0;
-      if (w < 160) setDensity('icon');
-      else if (w < 280) setDensity('compact');
+    const computeDensity = () => {
+      const w = window.innerWidth;
+      if (w < 360) setDensity('icon');
+      else if (w < 520) setDensity('compact');
       else setDensity('full');
     };
-    computeFromRightWidth();
-    const ro = new ResizeObserver(computeFromRightWidth);
-    if (rightRef.current) ro.observe(rightRef.current);
-    if (navRef.current) ro.observe(navRef.current);
-    window.addEventListener('orientationchange', computeFromRightWidth);
-    window.addEventListener('resize', computeFromRightWidth);
-    return () => {
-      try { ro.disconnect(); } catch {}
-      window.removeEventListener('orientationchange', computeFromRightWidth);
-      window.removeEventListener('resize', computeFromRightWidth);
-    };
+    computeDensity();
+    window.addEventListener('resize', computeDensity);
+    return () => window.removeEventListener('resize', computeDensity);
   }, []);
 
   // --- Preference Popup State ---
@@ -75,7 +60,6 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth < 768);
       setIsMediumScreen(window.innerWidth < 1024);
-      setIsXLScreen(window.innerWidth >= 1280);
     };
 
     window.addEventListener("resize", handleResize);
@@ -104,7 +88,6 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   return (
     <>
       <nav
-        ref={navRef}
         style={{
           backgroundColor: "#003366",
           padding: isSmallScreen ? "0.4rem 2%" : "0.6rem 1%",
@@ -188,7 +171,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               </span>
               <span
                 style={{
-                  fontSize: isSmallScreen ? '0.55rem' : (isXLScreen ? '0.72rem' : '0.68rem'),
+                  fontSize: isSmallScreen ? "0.55rem" : (window.innerWidth > 1280 ? "0.72rem" : "0.68rem"),
                   color: "#FFFFFF",
                   opacity: 0.9,
                   whiteSpace: "normal",
@@ -209,7 +192,12 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
         <div
           style={{
             display: isMediumScreen ? "none" : "flex",
-            gap: isXLScreen ? '2rem' : (isSmallScreen ? '0.5rem' : '1rem'),
+            gap:
+              window.innerWidth > 1100
+                ? "2rem"
+                : isSmallScreen
+                ? "0.5rem"
+                : "1rem",
             alignItems: "center",
             flex: "1 1 auto",
             justifyContent: "center",
@@ -224,7 +212,11 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               style={{
                 color: "#FFFFFF",
                 textDecoration: "none",
-                fontSize: isSmallScreen ? '0.8rem' : (isXLScreen ? '0.9rem' : '0.85rem'),
+                fontSize: isSmallScreen
+                  ? "0.8rem"
+                  : window.innerWidth > 1200
+                  ? "0.9rem"
+                  : "0.85rem",
                 fontWeight: "500",
                 transition: "all 0.2s ease",
                 whiteSpace: "nowrap",
@@ -281,14 +273,12 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
           };
           return (
             <div
-              ref={rightRef}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: density === 'icon' ? '0.3rem' : (isSmallScreen ? '0.4rem' : (isMediumScreen ? '0.75rem' : '1rem')),
                 flex: '0 1 auto',
                 minWidth: 0,
-                maxWidth: density === 'icon' ? '50vw' : 'unset',
               }}
             >
               {/* AI Search Button */}
@@ -406,7 +396,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                   maxWidth: isSmallScreen ? "90px" : "120px",
                 }}
               >
-                {density === 'full' ? (user ? user.email : 'Guest') : ''}
+                {density === 'full' && window.innerWidth >= 800 ? (user ? user.email : 'Guest') : ''}
               </div>
               <div
                 className="user-menu-container"
