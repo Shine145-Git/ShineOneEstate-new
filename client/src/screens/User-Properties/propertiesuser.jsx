@@ -293,28 +293,22 @@ export default function PropertyCards() {
 
   return (
     <div style={{ backgroundColor: "#F1F5F9", minHeight: "100vh", paddingTop: 72 }}>
-      {/* Top Navigation Bar */}
+ {/* Top Navigation Bar */}
       <div
         style={{
           position: "fixed",
           top: 0,
           left: 0,
-          right: 0,
           width: "100%",
-          maxWidth: "100vw",
-          overflowX: "clip",
           zIndex: 999,
-          backgroundColor: "#FFFFFF",
-          boxSizing: "border-box"
+          backgroundColor: "#FFFFFF" // or match your navbar background
         }}
       >
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 12px", width: "100%" }}>
-          <TopNavigationBar
-            user={user}
-            handleLogout={handleLogout}
-            navItems={navItems}
-          />
-        </div>
+        <TopNavigationBar
+          user={user}
+          handleLogout={handleLogout}
+          navItems={navItems}
+        />
       </div>
 
       {/* Responsive Header and Filters */}
