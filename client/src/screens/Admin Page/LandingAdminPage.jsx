@@ -176,6 +176,15 @@ const AdminLandingPage = () => {
     color: '#f97316', // orange color similar to other cards
     gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
     },
+     {
+    id: 'Usage Tracker',
+    title: 'Usage Tracker',
+    description: 'Track usage and performance metrics',
+    icon: Home,
+    route: '/admin/usagetrack',
+    color: '#f97316', // orange color similar to other cards
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    },
     
 ];
 

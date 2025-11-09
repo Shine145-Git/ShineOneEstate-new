@@ -6,7 +6,11 @@ try { sharp = require("sharp"); } catch (_) {
   console.warn("⚠️ 'sharp' not installed — large images won't be auto-compressed. Run: npm i sharp");
 }
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB Cloudinary hard limit for images
+// Per-type upload targets (we will attempt to compress to these targets)
+const NORMAL_MAX_BYTES = 1.5 * 1024 * 1024; // target ~1.5 MB for normal images
+const PANORAMA_MAX_BYTES = 5 * 1024 * 1024;  // target ~5 MB for panorama images
+// Absolute hard limit that Cloudinary rejects (>10MB previously)
+const CLOUDINARY_HARD_LIMIT = 10 * 1024 * 1024; // 10 MB
 
 // ==============================
 // Cloudinary Configuration (Multi-Account with Round-Robin + Fallback)
@@ -82,17 +86,18 @@ const uploadoncloudinary = async (path, sectorOrFolder) => {
   return uploadWithFallback(path, sectorOrFolder);
 };
 
-// Compress oversized images to fit under Cloudinary's 10MB limit
-async function ensureUnderLimit(srcPath) {
+// Ensure file is under `maxBytesTarget` where possible. If `maxBytesTarget` exceeds
+// CLOUDINARY_HARD_LIMIT we still will not exceed CLOUDINARY_HARD_LIMIT.
+async function ensureUnderLimit(srcPath, maxBytesTarget = CLOUDINARY_HARD_LIMIT) {
   try {
     const stat = fs.statSync(srcPath);
-    if (stat.size <= MAX_UPLOAD_BYTES || !sharp) return { path: srcPath, temp: null };
+    const effectiveTarget = Math.min(maxBytesTarget, CLOUDINARY_HARD_LIMIT);
+    if (stat.size <= effectiveTarget || !sharp) return { path: srcPath, temp: null };
 
-    // Try progressively lower quality WebP encodes
-    const qualities = [80, 72, 65, 58, 50];
+    // Try progressively lower quality WebP encodes to reach effectiveTarget
+    const qualities = [80, 72, 65, 58, 50, 42, 36];
     let lastTemp = null;
     for (const q of qualities) {
-      // cleanup previous attempt
       if (lastTemp) { try { fs.unlinkSync(lastTemp); } catch (_) {} }
       const tempPath = srcPath.replace(/(\.[A-Za-z0-9]+)?$/, `-cmp-q${q}-${Date.now()}.webp`);
       await sharp(srcPath)
@@ -100,21 +105,24 @@ async function ensureUnderLimit(srcPath) {
         .webp({ quality: q })
         .toFile(tempPath);
       const s2 = fs.statSync(tempPath);
-      if (s2.size <= MAX_UPLOAD_BYTES) {
+      if (s2.size <= effectiveTarget) {
         return { path: tempPath, temp: tempPath };
       }
       lastTemp = tempPath;
     }
-    // As a last resort, also try resizing width down if still too big
+
+    // As a fallback, try resizing width down plus a medium quality
     const tempPath = srcPath.replace(/(\.[A-Za-z0-9]+)?$/, `-cmp-resized-${Date.now()}.webp`);
     await sharp(srcPath)
       .rotate()
-      .resize({ width: 8000, withoutEnlargement: true })
+      .resize({ width: 2000, withoutEnlargement: true })
       .webp({ quality: 60 })
       .toFile(tempPath);
     const s3 = fs.statSync(tempPath);
-    if (s3.size <= MAX_UPLOAD_BYTES) return { path: tempPath, temp: tempPath };
-    // If still too large, return the smallest attempt anyway
+    if (s3.size <= effectiveTarget) return { path: tempPath, temp: tempPath };
+
+    // If still too large, return the smallest attempt anyway (lastTemp or tempPath)
+    try { if (lastTemp && fs.existsSync(lastTemp)) return { path: lastTemp, temp: lastTemp }; } catch(_){}
     return { path: tempPath, temp: tempPath };
   } catch (e) {
     console.warn("ensureUnderLimit error:", e?.message || e);
@@ -131,14 +139,19 @@ const uploadWithFallback = async (path, sectorOrFolder, preferredIndex = null, a
     console.warn("[uploadWithFallback] No file path provided.");
     return null;
   }
-  // If needed, compress to stay under 10MB
-  const prepared = await ensureUnderLimit(path);
-  const uploadPath = prepared.path;
-  tempToUnlink = prepared.temp; // cleanup after upload
-
+  // Determine target sizes: panoramas get a higher target
   const baseFolder = (sectorOrFolder || 'Uncategorized').toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80);
   const addressFolder = address ? address.toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80) : null;
   const folderName = addressFolder ? `${baseFolder}/${addressFolder}` : baseFolder;
+
+  // If folderName mentions a 360 folder we treat as panorama
+  const isPanorama = String(folderName).toLowerCase().includes('/360') || String(folderName).toLowerCase().endsWith('360');
+  const targetMax = isPanorama ? PANORAMA_MAX_BYTES : NORMAL_MAX_BYTES;
+
+  const prepared = await ensureUnderLimit(path, targetMax);
+  const uploadPath = prepared.path;
+  tempToUnlink = prepared.temp; // cleanup after upload
+
   const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % cloudAccounts.length) : getNextStartIndex();
 
   for (let attempt = 0; attempt < cloudAccounts.length; attempt++) {
