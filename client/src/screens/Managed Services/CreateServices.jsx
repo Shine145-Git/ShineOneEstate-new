@@ -182,6 +182,7 @@ const ServiceRequestApp = () => {
       if (!response.ok) throw new Error('Failed to submit service request');
 
       setSuccess('Service request submitted successfully! 🎉');
+      navigate('/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setFormData({
         propertyId: '',
