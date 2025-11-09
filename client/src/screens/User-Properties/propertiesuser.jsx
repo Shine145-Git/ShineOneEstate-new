@@ -292,23 +292,29 @@ export default function PropertyCards() {
   };
 
   return (
-    <div style={{ backgroundColor: "#F1F5F9", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#F1F5F9", minHeight: "100vh", paddingTop: 72 }}>
       {/* Top Navigation Bar */}
       <div
         style={{
           position: "fixed",
           top: 0,
           left: 0,
+          right: 0,
           width: "100%",
+          maxWidth: "100vw",
+          overflowX: "clip",
           zIndex: 999,
-          backgroundColor: "#FFFFFF", // or match your navbar background
+          backgroundColor: "#FFFFFF",
+          boxSizing: "border-box"
         }}
       >
-        <TopNavigationBar
-          user={user}
-          handleLogout={handleLogout}
-          navItems={navItems}
-        />
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 12px", width: "100%" }}>
+          <TopNavigationBar
+            user={user}
+            handleLogout={handleLogout}
+            navItems={navItems}
+          />
+        </div>
       </div>
 
       {/* Responsive Header and Filters */}
@@ -592,12 +598,14 @@ export default function PropertyCards() {
             alignItems: "flex-start",
             marginTop: "0",
             minHeight: "calc(100vh - 340px)", // adjust based on header/footer height
+            maxWidth: "100%",
+            overflowX: "hidden"
           }}
         >
           {/* Left column: property cards list */}
           <div
             className="properties-col-left"
-            style={{ flex: "0 1 70%", maxWidth: "70%" }}
+            style={{ flex: "0 1 70%", maxWidth: "70%", minWidth: 0 }}
           >
             <div
               className="properties-main-card-list-container"
@@ -1295,10 +1303,12 @@ export default function PropertyCards() {
             style={{
               flex: "0 1 30%",
               maxWidth: "30%",
+              minWidth: 0,
+              overflow: "hidden",
               display: "flex",
               flexDirection: "column",
-              justifyContent: "space-between", // Spread items vertically
-              minHeight: "100vh", // make column full page
+              justifyContent: "space-between",
+              minHeight: "100vh"
             }}
           >
             <div
