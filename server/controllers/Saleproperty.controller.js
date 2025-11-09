@@ -78,11 +78,35 @@ const createSaleProperty = async (req, res) => {
       : null;
     const compositeFolder = addressSegment ? `${sectorFolder}/${addressSegment}` : sectorFolder;
 
-    // Step 2: Handle image uploads or accept image URLs (after sector normalization)
+    // Step 2: Handle image uploads (normal + 360°) or accept image URLs
+    // Normal photos -> properties/<sector>/<address>
+    // 360° photos   -> properties/<sector>/<address>/360
     let images = [];
+    let panoramas = [];
     let stickyAccountIndex = null; // ensure a single Cloudinary account per property
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
+
+    // Collect files from multer (.fields or .array), split normal vs pano
+    let normalFiles = [];
+    let panoFiles = [];
+
+    if (req.files) {
+      if (Array.isArray(req.files)) {
+        // Using multer.array with mixed fieldnames
+        normalFiles = req.files.filter((f) => f.fieldname === "images");
+        panoFiles = req.files.filter((f) => f.fieldname === "panoFiles");
+      } else {
+        // Using multer.fields
+        normalFiles = Array.isArray(req.files.images) ? req.files.images : [];
+        panoFiles = Array.isArray(req.files.panoFiles) ? req.files.panoFiles : [];
+      }
+    }
+    // Enforce caps: save only first 8 normal and first 6 pano images
+if (normalFiles && normalFiles.length > 8) normalFiles = normalFiles.slice(0, 8);
+if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
+
+    // Upload normal images
+    if (normalFiles.length > 0) {
+      for (const file of normalFiles) {
         try {
           const { secure_url, accountIndex } = await uploadWithFallback(
             file.path,
@@ -95,11 +119,50 @@ const createSaleProperty = async (req, res) => {
             stickyAccountIndex = accountIndex;
           }
         } catch (uploadError) {
-          console.error("❌ Cloudinary upload error:", uploadError);
+          console.error("❌ Cloudinary upload error (image):", uploadError);
         }
       }
     } else if (req.body.images && Array.isArray(req.body.images)) {
+      // Fallback: accept direct URLs if provided
       images = req.body.images;
+    }
+
+    // Parse pano metadata arrays from body (accept both with and without [] keys)
+    const toArray = (v) => (Array.isArray(v) ? v : v != null ? [v] : []);
+    const titles = toArray(req.body["panoTitles[]"] ?? req.body.panoTitles).map((t) =>
+      (t || "").toString().trim()
+    );
+    const yaws = toArray(req.body["panoYaw[]"] ?? req.body.panoYaw).map((n) => Number(n) || 0);
+    const pitches = toArray(req.body["panoPitch[]"] ?? req.body.panoPitch).map((n) => Number(n) || 0);
+    const notesArr = toArray(req.body["panoNotes[]"] ?? req.body.panoNotes).map((s) =>
+      (s || "").toString().trim()
+    );
+
+    // Upload 360° pano files into nested /360 folder and build panoramas[]
+    if (panoFiles.length > 0) {
+      const panoFolder = `${compositeFolder}/360`;
+      for (let i = 0; i < panoFiles.length; i++) {
+        const file = panoFiles[i];
+        const title = titles[i] || `Scene ${i + 1}`;
+        const yaw = yaws[i] ?? 0;
+        const pitch = pitches[i] ?? 0;
+        const note = notesArr[i] || "";
+        try {
+          const { secure_url, accountIndex } = await uploadWithFallback(
+            file.path,
+            panoFolder,
+            // Keep same account for the whole property if already chosen
+            stickyAccountIndex,
+            null
+          );
+          panoramas.push({ title, url: secure_url, yaw, pitch, notes: note });
+          if (stickyAccountIndex === null && Number.isInteger(accountIndex)) {
+            stickyAccountIndex = accountIndex;
+          }
+        } catch (uploadError) {
+          console.error("❌ Cloudinary upload error (pano):", uploadError);
+        }
+      }
     }
 
     // Step 4: Normalize totalArea configuration (e.g., "2 BHK", "3 BHK")
@@ -128,6 +191,7 @@ const createSaleProperty = async (req, res) => {
       bathrooms,
       location,
       images,
+      panoramas: panoramas.length ? panoramas : undefined,
       ownerId,
       Sector: normalizedSector,
       isActive: true,

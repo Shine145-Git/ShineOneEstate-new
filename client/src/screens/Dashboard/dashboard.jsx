@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   Mic,
@@ -86,6 +86,22 @@ export default function RealEstateDashboard() {
   const [areaLoading, setAreaLoading] = useState(false);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  // Ref to close search dropdowns (history / sector) when clicking outside
+  const searchBoxRef = useRef(null);
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!showRecentDropdown) return;
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setShowRecentDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('touchstart', onDocClick, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('touchstart', onDocClick);
+    };
+  }, [showRecentDropdown]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -688,6 +704,7 @@ export default function RealEstateDashboard() {
         <Adcarousel />
         {/* Search Box positioned below carousel */}
         <div
+          ref={searchBoxRef}
           className="search-box-container"
           style={{
             position: isMobile ? "unset" : "absolute",

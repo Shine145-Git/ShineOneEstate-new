@@ -118,9 +118,29 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
   const [submitting, setSubmitting] = useState(false);
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
+  // 360° panoramas
+  const [existingPanos, setExistingPanos] = useState([]); // [{title,url,yaw,pitch,notes}]
+  const [newPanos, setNewPanos] = useState([]); // [{ file, title, yaw, pitch, notes }]
+  const panoInputRef = useRef(null);
   const modalRef = useRef(null);
   const fileInputRef = useRef(null);
   const [uploadHover, setUploadHover] = useState(false);
+
+  // Responsive + pager (mobile turns the form into pages)
+  const [isMobile, setIsMobile] = useState(() =>
+    (typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  );
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    function onResize() {
+      if (typeof window === 'undefined') return;
+      const m = window.innerWidth < 768;
+      setIsMobile(m);
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -222,6 +242,20 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
           updated["Sector"] = cleanSector;
         }
         setFormData(updated);
+        // Load panoramas if present (Rental)
+        if (Array.isArray(data.panoramas)) {
+          setExistingPanos(
+            data.panoramas.map(p => ({
+              title: p.title || "",
+              url: p.url || "",
+              yaw: Number(p.yaw) || 0,
+              pitch: Number(p.pitch) || 0,
+              notes: p.notes || "",
+            }))
+          );
+        } else {
+          setExistingPanos([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -300,6 +334,20 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
                 updated["Sector"] = cleanSector;
               }
               setFormData(updated);
+              // Load panoramas if present (Sale)
+              if (Array.isArray(data.panoramas)) {
+                setExistingPanos(
+                  data.panoramas.map(p => ({
+                    title: p.title || "",
+                    url: p.url || "",
+                    yaw: Number(p.yaw) || 0,
+                    pitch: Number(p.pitch) || 0,
+                    notes: p.notes || "",
+                  }))
+                );
+              } else {
+                setExistingPanos([]);
+              }
               setLoading(false);
             })
             .catch((e) => {
@@ -331,6 +379,26 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
 
   function handleRemoveExistingImage(idx) {
     setExistingImages(imgs => imgs.filter((_, i) => i !== idx));
+  }
+
+  function handlePanoFilesSelected(files) {
+    // respect total cap 6 (existing + new)
+    const remaining = Math.max(0, 6 - existingPanos.length - newPanos.length);
+    const picked = Array.from(files).slice(0, remaining);
+    const mapped = picked.map((f) => ({ file: f, title: "", yaw: 0, pitch: 0, notes: "" }));
+    setNewPanos((prev) => [...prev, ...mapped]);
+  }
+
+  function updateNewPano(idx, patch) {
+    setNewPanos((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  }
+
+  function removeExistingPano(idx) {
+    setExistingPanos((list) => list.filter((_, i) => i !== idx));
+  }
+
+  function removeNewPano(idx) {
+    setNewPanos((list) => list.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e) {
@@ -365,7 +433,8 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
       }
       const groups = propertyType === "sale" ? GROUPS_SALE : GROUPS_RENTAL;
       const allFields = propertyType === "sale" ? ALL_FIELDS_SALE : ALL_FIELDS_RENTAL;
-      if (newImages.length > 0) {
+      // Use multipart when sending any new binary files (normal or pano)
+      if (newImages.length > 0 || newPanos.length > 0) {
         const form = new FormData();
         for (const key of allFields) {
           if (key === "images") continue;
@@ -384,6 +453,24 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
         }
         form.append("replaceImages", "true");
         newImages.forEach((img) => form.append("images", img));
+        // Append 360° pano files + parallel metadata arrays
+        if (newPanos.length > 0) {
+          newPanos.forEach((p) => {
+            if (p.file) form.append("panoFiles", p.file);
+            form.append("panoTitles[]", p.title || "");
+            form.append("panoYaw[]", String(Number(p.yaw) || 0));
+            form.append("panoPitch[]", String(Number(p.pitch) || 0));
+            form.append("panoNotes[]", p.notes || "");
+          });
+        }
+
+        // If user removed some existing panos and didn't add new ones for them,
+        // send current existing panos as JSON to preserve removals
+        if (newPanos.length === 0 && existingPanos) {
+          try {
+            form.append("existingPanos", JSON.stringify(existingPanos));
+          } catch (_) {}
+        }
         const res = await fetch(
           `${process.env.REACT_APP_Base_API}/api/user/update-property/${propertyId}`,
           {
@@ -428,6 +515,10 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
             payload.totalArea.configuration = payload.totalArea.configuration.toString().trim().toUpperCase();
           }
         }
+        // When not uploading files, include panoramas JSON so removals/edits persist
+        if (Array.isArray(existingPanos)) {
+          payload.panoramas = existingPanos;
+        }
         const res = await fetch(
           `${process.env.REACT_APP_Base_API}/api/user/update-property/${propertyId}`,
           {
@@ -449,6 +540,224 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
   }
 
   if (!isOpen) return null;
+
+  const groupsMain = (propertyType === 'sale' ? GROUPS_SALE : GROUPS_RENTAL)
+    .filter(g => g.name !== 'Images');
+
+  const renderGroupCard = (group) => (
+    <div
+      key={group.name}
+      style={{
+        background: '#fff',
+        borderRadius: 12,
+        padding: '20px 24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 600,
+          fontSize: 16,
+          marginBottom: 18,
+          color: '#495057',
+          paddingBottom: 12,
+          borderBottom: '2px solid #e9ecef',
+        }}
+      >
+        {group.name}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {group.fields.map((field) => (
+          <div key={field.key} style={{ gridColumn: field.type === 'textarea' ? '1 / -1' : 'auto' }}>
+            <label htmlFor={field.key} style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 6 }}>
+              {field.label}
+            </label>
+            {field.type === 'select' ? (
+              <select
+                id={field.key}
+                value={formData[field.key]}
+                onChange={(e) => handleInputChange(e, field)}
+                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057' }}
+              >
+                <option value=''>Select</option>
+                {field.options?.map((opt) => (
+                  <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+                ))}
+              </select>
+            ) : field.type === 'textarea' ? (
+              <textarea
+                id={field.key}
+                value={formData[field.key]}
+                onChange={(e) => handleInputChange(e, field)}
+                rows={4}
+                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057', resize: 'vertical' }}
+              />
+            ) : field.type === 'checkbox' ? (
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
+                <input id={field.key} type='checkbox' checked={!!formData[field.key]} onChange={(e) => handleInputChange(e, field)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+              </div>
+            ) : field.type === 'array' ? (
+              <input
+                id={field.key}
+                type='text'
+                value={formatArrayValue(formData[field.key])}
+                placeholder='Comma-separated values'
+                onChange={(e) => handleInputChange(e, field)}
+                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057' }}
+              />
+            ) : (
+              <input
+                id={field.key}
+                type={field.type}
+                value={formData[field.key]}
+                onChange={(e) => handleInputChange(e, field)}
+                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057' }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const ImagesCard = (
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: 12,
+        padding: '20px 24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        position: 'relative'
+      }}
+    >
+      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 18, color: '#495057', paddingBottom: 12, borderBottom: '2px solid #e9ecef' }}>
+        Property Images
+      </div>
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>Upload New Images</label>
+        <div
+          style={{ textAlign: 'center', border: uploadHover ? '2px dashed #007bff' : '2px dashed #ced4da', borderRadius: 12, padding: '40px 20px', cursor: 'pointer', background: uploadHover ? '#e9f5ff' : '#f8f9fa', transition: 'all 0.3s' }}
+          onMouseEnter={() => setUploadHover(true)}
+          onMouseLeave={() => setUploadHover(false)}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            type='file'
+            multiple
+            accept='image/*'
+            onChange={(e) => handleInputChange(e, { key: 'images', type: 'file', multiple: true })}
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <svg width='36' height='36' fill='#007bff' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 16a1 1 0 0 1-1-1V9.41l-1.3 1.3a1 1 0 0 1-1.4-1.42l3-3a1 1 0 0 1 1.4 0l3 3a1 1 0 1 1-1.4 1.42L13 9.41V15a1 1 0 0 1-1 1Zm8-4a1 1 0 0 1 0 2h-1v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-4H4a1 1 0 0 1 0-2h16ZM7 18h10v-4H7v4Z'/></svg>
+            <span style={{ fontSize: 14, color: '#6c757d' }}>Click or drag images to upload</span>
+          </div>
+        </div>
+      </div>
+
+      {(existingImages.length > 0 || newImages.length > 0) ? (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 12 }}>Current Images ({existingImages.length + newImages.length})</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, maxHeight: 400, overflowY: 'auto', padding: 4 }}>
+            {existingImages.map((img, idx) => (
+              <div key={img + idx} style={{ position: 'relative', paddingBottom: '100%', borderRadius: 8, overflow: 'hidden', border: '2px solid #e9ecef' }}>
+                <img src={typeof img === 'string' ? img : ''} alt={`Property ${idx + 1}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button type='button' onClick={() => handleRemoveExistingImage(idx)} style={{ position: 'absolute', top: 4, right: 4, border: 'none', background: 'rgba(255, 255, 255, 0.95)', borderRadius: '50%', width: 24, height: 24, fontSize: 16, color: '#dc3545', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }} aria-label='Remove image'>×</button>
+              </div>
+            ))}
+            {newImages.map((img, idx) => (
+              <div key={img.name + idx} style={{ position: 'relative', paddingBottom: '100%', borderRadius: 8, overflow: 'hidden', border: '2px solid #28a745' }}>
+                <img src={URL.createObjectURL(img)} alt={`New ${idx + 1}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', top: 4, left: 4, background: '#28a745', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>NEW</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#adb5bd', fontSize: 14 }}>No images uploaded yet</div>
+      )}
+    </div>
+  );
+
+  const PanoCard = (
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: 12,
+        padding: '20px 24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        marginTop: 16,
+      }}
+    >
+      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, color: '#495057', paddingBottom: 12, borderBottom: '2px solid #e9ecef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>360° Panoramic Scenes</span>
+        <span style={{ fontSize: 12, color: '#6c757d' }}>{existingPanos.length + newPanos.length}/6</span>
+      </div>
+
+      {existingPanos.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>Existing Scenes</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {existingPanos.map((p, idx) => (
+              <div key={idx} style={{ position: 'relative', border: '1px solid #e9ecef', borderRadius: 8, overflow: 'hidden' }}>
+                <img src={p.url} alt={p.title || `scene-${idx+1}`} style={{ width: '100%', height: 90, objectFit: 'cover' }} />
+                <div style={{ padding: 8, fontSize: 12, color: '#495057' }}>
+                  <div style={{ fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{p.title || `Scene ${idx+1}`}</div>
+                  <div style={{ opacity: .7 }}>Yaw {p.yaw || 0}°, Pitch {p.pitch || 0}°</div>
+                </div>
+                <button type='button' onClick={() => removeExistingPano(idx)} style={{ position: 'absolute', top: 6, right: 6, background: '#fff', border: '1px solid #e9ecef', borderRadius: 6, padding: '2px 8px', fontSize: 12, cursor: 'pointer', color: '#dc3545' }}>Remove</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>Upload New 360° Images</label>
+        <div
+          style={{ textAlign: 'center', border: uploadHover ? '2px dashed #0d6efd' : '2px dashed #ced4da', borderRadius: 12, padding: '24px 16px', cursor: 'pointer', background: uploadHover ? '#e9f5ff' : '#f8f9fa', transition: 'all 0.3s' }}
+          onMouseEnter={() => setUploadHover(true)}
+          onMouseLeave={() => setUploadHover(false)}
+          onClick={() => panoInputRef.current?.click()}
+        >
+          <input type='file' multiple accept='image/*' onChange={(e) => handlePanoFilesSelected(e.target.files)} style={{ display: 'none' }} ref={panoInputRef} />
+          <div style={{ fontSize: 13, color: '#6c757d' }}>Click or drag to add up to {Math.max(0, 6 - (existingPanos.length + newPanos.length))} scenes</div>
+        </div>
+      </div>
+
+      {newPanos.length > 0 && (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>New Scenes</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+            {newPanos.map((p, idx) => {
+              const url = p.file ? URL.createObjectURL(p.file) : null;
+              return (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 12, border: '1px solid #e9ecef', borderRadius: 8, padding: 10 }}>
+                  <div>
+                    {url ? (
+                      <img src={url} alt={`new-${idx}`} style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: 6 }} onLoad={() => URL.revokeObjectURL(url)} />
+                    ) : (
+                      <div style={{ width: 100, height: 70, background: '#e9ecef', borderRadius: 6 }} />
+                    )}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <input type='text' placeholder='Title (e.g., Living Room)' value={p.title} onChange={(e)=>updateNewPano(idx,{ title: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
+                    <input type='number' placeholder='Yaw' value={p.yaw} onChange={(e)=>updateNewPano(idx,{ yaw: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
+                    <input type='number' placeholder='Pitch' value={p.pitch} onChange={(e)=>updateNewPano(idx,{ pitch: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
+                    <input type='text' placeholder='Notes' value={p.notes} onChange={(e)=>updateNewPano(idx,{ notes: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gridColumn: '1 / -1' }}>
+                      <button type='button' onClick={()=>removeNewPano(idx)} style={{ background: '#fff', border: '1px solid #e9ecef', color: '#dc3545', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   const groupsToRender = propertyType === "sale" ? GROUPS_SALE : GROUPS_RENTAL;
 
@@ -544,347 +853,56 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ padding: "24px 32px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                {/* Left Column - Form Fields */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {groupsToRender.map((group, idx) => {
-                    if (group.name === "Images") return null;
-                    return (
-                      <div
-                        key={group.name}
-                        style={{
-                          background: "#fff",
-                          borderRadius: 12,
-                          padding: "20px 24px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            fontSize: 16,
-                            marginBottom: 18,
-                            color: "#495057",
-                            paddingBottom: 12,
-                            borderBottom: "2px solid #e9ecef",
-                          }}
-                        >
-                          {group.name}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                          {group.fields.map((field) => (
-                            <div
-                              key={field.key}
-                              style={{
-                                gridColumn: field.type === "textarea" ? "1 / -1" : "auto",
-                              }}
-                            >
-                              <label
-                                htmlFor={field.key}
-                                style={{
-                                  display: "block",
-                                  fontSize: 13,
-                                  fontWeight: 500,
-                                  color: "#495057",
-                                  marginBottom: 6,
-                                }}
-                              >
-                                {field.label}
-                              </label>
-                              {field.type === "select" ? (
-                                <select
-                                  id={field.key}
-                                  value={formData[field.key]}
-                                  onChange={(e) => handleInputChange(e, field)}
-                                  style={{
-                                    width: "100%",
-                                    border: "1px solid #ced4da",
-                                    borderRadius: 6,
-                                    padding: "9px 12px",
-                                    fontSize: 14,
-                                    background: "#fff",
-                                    color: "#495057",
-                                  }}
-                                >
-                                  <option value="">Select</option>
-                                  {field.options.map((opt) => (
-                                    <option key={opt} value={opt}>
-                                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : field.type === "textarea" ? (
-                                <textarea
-                                  id={field.key}
-                                  value={formData[field.key]}
-                                  onChange={(e) => handleInputChange(e, field)}
-                                  rows={4}
-                                  style={{
-                                    width: "100%",
-                                    border: "1px solid #ced4da",
-                                    borderRadius: 6,
-                                    padding: "9px 12px",
-                                    fontSize: 14,
-                                    background: "#fff",
-                                    color: "#495057",
-                                    resize: "vertical",
-                                  }}
-                                />
-                              ) : field.type === "checkbox" ? (
-                                <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
-                                  <input
-                                    id={field.key}
-                                    type="checkbox"
-                                    checked={!!formData[field.key]}
-                                    onChange={(e) => handleInputChange(e, field)}
-                                    style={{ width: 18, height: 18, cursor: "pointer" }}
-                                  />
-                                </div>
-                              ) : field.type === "array" ? (
-                                <input
-                                  id={field.key}
-                                  type="text"
-                                  value={formatArrayValue(formData[field.key])}
-                                  placeholder="Comma-separated values"
-                                  onChange={(e) => handleInputChange(e, field)}
-                                  style={{
-                                    width: "100%",
-                                    border: "1px solid #ced4da",
-                                    borderRadius: 6,
-                                    padding: "9px 12px",
-                                    fontSize: 14,
-                                    background: "#fff",
-                                    color: "#495057",
-                                  }}
-                                />
-                              ) : (
-                                <input
-                                  id={field.key}
-                                  type={field.type}
-                                  value={formData[field.key]}
-                                  onChange={(e) => handleInputChange(e, field)}
-                                  style={{
-                                    width: "100%",
-                                    border: "1px solid #ced4da",
-                                    borderRadius: 6,
-                                    padding: "9px 12px",
-                                    fontSize: 14,
-                                    background: "#fff",
-                                    color: "#495057",
-                                  }}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Right Column - Images */}
-                <div>
-                  <div
-                    style={{
-                      background: "#fff",
-                      borderRadius: 12,
-                      padding: "20px 24px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                      position: "sticky",
-                      top: 100,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: 16,
-                        marginBottom: 18,
-                        color: "#495057",
-                        paddingBottom: 12,
-                        borderBottom: "2px solid #e9ecef",
-                      }}
-                    >
-                      Property Images
-                    </div>
-                    
-                    <div style={{ marginBottom: 20 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#495057",
-                          marginBottom: 8,
-                        }}
-                      >
-                        Upload New Images
-                      </label>
-                      <div
-                        style={{
-                          textAlign: "center",
-                          border: uploadHover ? "2px dashed #007bff" : "2px dashed #ced4da",
-                          borderRadius: 12,
-                          padding: "40px 20px",
-                          cursor: "pointer",
-                          background: uploadHover ? "#e9f5ff" : "#f8f9fa",
-                          transition: "all 0.3s"
-                        }}
-                        onMouseEnter={() => setUploadHover(true)}
-                        onMouseLeave={() => setUploadHover(false)}
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) =>
-                            handleInputChange(e, {
-                              key: "images",
-                              type: "file",
-                              multiple: true,
-                            })
-                          }
-                          style={{ display: "none" }}
-                          ref={fileInputRef}
-                        />
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                          <svg width="36" height="36" fill="#007bff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 16a1 1 0 0 1-1-1V9.41l-1.3 1.3a1 1 0 0 1-1.4-1.42l3-3a1 1 0 0 1 1.4 0l3 3a1 1 0 1 1-1.4 1.42L13 9.41V15a1 1 0 0 1-1 1Zm8-4a1 1 0 0 1 0 2h-1v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-4H4a1 1 0 0 1 0-2h16ZM7 18h10v-4H7v4Z"/></svg>
-                          <span style={{ fontSize: 14, color: "#6c757d" }}>Click or drag images to upload</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {(existingImages.length > 0 || newImages.length > 0) && (
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                            color: "#495057",
-                            marginBottom: 12,
-                          }}
-                        >
-                          Current Images ({existingImages.length + newImages.length})
-                        </div>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(3, 1fr)",
-                            gap: 12,
-                            maxHeight: 400,
-                            overflowY: "auto",
-                            padding: 4,
-                          }}
-                        >
-                          {existingImages.map((img, idx) => (
-                            <div
-                              key={img + idx}
-                              style={{
-                                position: "relative",
-                                paddingBottom: "100%",
-                                borderRadius: 8,
-                                overflow: "hidden",
-                                border: "2px solid #e9ecef",
-                              }}
-                            >
-                              <img
-                                src={typeof img === "string" ? img : ""}
-                                alt={`Property ${idx + 1}`}
-                                style={{
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveExistingImage(idx)}
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  border: "none",
-                                  background: "rgba(255, 255, 255, 0.95)",
-                                  borderRadius: "50%",
-                                  width: 24,
-                                  height: 24,
-                                  fontSize: 16,
-                                  color: "#dc3545",
-                                  cursor: "pointer",
-                                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontWeight: 700,
-                                }}
-                                aria-label="Remove image"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                          {newImages.map((img, idx) => (
-                            <div
-                              key={img.name + idx}
-                              style={{
-                                position: "relative",
-                                paddingBottom: "100%",
-                                borderRadius: 8,
-                                overflow: "hidden",
-                                border: "2px solid #28a745",
-                              }}
-                            >
-                              <img
-                                src={URL.createObjectURL(img)}
-                                alt={`New ${idx + 1}`}
-                                style={{
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: 4,
-                                  left: 4,
-                                  background: "#28a745",
-                                  color: "#fff",
-                                  padding: "2px 8px",
-                                  borderRadius: 4,
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                }}
-                              >
-                                NEW
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {existingImages.length === 0 && newImages.length === 0 && (
-                      <div
-                        style={{
-                          textAlign: "center",
-                          padding: "40px 20px",
-                          color: "#adb5bd",
-                          fontSize: 14,
-                        }}
-                      >
-                        No images uploaded yet
-                      </div>
-                    )}
+              {!isMobile ? (
+                // Desktop: two-column layout, both Images and Pano in the right column
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {groupsMain.map(renderGroupCard)}
+                  </div>
+                  <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? undefined : 100, alignSelf: 'start' }}>
+                    {ImagesCard}
+                    {PanoCard}
                   </div>
                 </div>
-              </div>
+              ) : (
+                // Mobile: paginated pages
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+                    {Array.from({ length: groupsMain.length + 2 }).map((_, i) => (
+                      <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i === page ? '#007bff' : '#ced4da' }} />
+                    ))}
+                  </div>
+
+                  <div>
+                    {page < groupsMain.length ? (
+                      renderGroupCard(groupsMain[page])
+                    ) : page === groupsMain.length ? (
+                      ImagesCard
+                    ) : (
+                      PanoCard
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <button
+                      type='button'
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      style={{ background: '#f8f9fa', color: '#495057', border: '1px solid #ced4da', borderRadius: 8, padding: '10px 16px', fontSize: 14, fontWeight: 500, cursor: page === 0 ? 'not-allowed' : 'pointer' }}
+                    >
+                      Back
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setPage((p) => Math.min(groupsMain.length + 1, p + 1))}
+                      disabled={page === groupsMain.length + 1}
+                      style={{ background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 14, fontWeight: 500, cursor: page === groupsMain.length + 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </form>
           )}
         </div>

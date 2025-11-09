@@ -85,7 +85,15 @@ router.post("/api/user/save-details", verifyToken, saveUserDetails);
 router.get("/api/user/details", verifyToken, getUserDetails);
 router.get("/api/user/dashboard", verifyToken, getUserDashboard);
 router.get("/api/properties/my", verifyToken, getMyProperties);
-router.put("/api/user/update-property/:id", verifyToken, upload.array("images" , 8), updateProperty);
+router.put(
+  "/api/user/update-property/:id",
+  verifyToken,
+  upload.fields([
+    { name: "images", maxCount: 8 },
+    { name: "panoFiles", maxCount: 6 },
+  ]),
+  updateProperty
+);
 router.delete("/api/user/delete-property/:id", verifyToken, deleteProperty);
 
 // ================== PROPERTY ROUTES ==================
@@ -145,8 +153,24 @@ router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
 // ================== SALE & RENTAL PROPERTY ROUTES ==================
 router.get("/api/getSaleproperties/:id", verifyTokenOptional, getSalePropertyById);
-router.post("/api/addsaleproperties", verifyToken, upload.array("images", 8), createSaleProperty);
-router.post("/api/addrentproperties", verifyToken, upload.array("images", 8), createRentalProperty);
+router.post(
+  "/api/addsaleproperties",
+  verifyToken,
+  upload.fields([
+    { name: "images", maxCount: 8 },
+    { name: "panoFiles", maxCount: 6 },
+  ]),
+  createSaleProperty
+);
+router.post(
+  "/api/addrentproperties",
+  verifyToken,
+  upload.fields([
+    { name: "images", maxCount: 8 },
+    { name: "panoFiles", maxCount: 6 },
+  ]),
+  createRentalProperty
+);
 
 // ================== MAP INTEGRATION ROUTES ==================
 router.get("/api/locationqapi", getLocationIQApiKey);

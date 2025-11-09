@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -34,6 +34,39 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
     window.innerWidth < 1024
   );
 
+  // Density controls how much content we can show on the right cluster based on width
+  // 'full'  : full labels + badges
+  // 'compact': short labels (AI / Post)
+  // 'icon'  : icons only
+  const [density, setDensity] = useState('full');
+
+  // Refs to compute available width for right action cluster
+  const navRef = useRef(null);
+  const rightRef = useRef(null);
+
+  // Helper for extra-wide screens
+  const [isXLScreen, setIsXLScreen] = useState(window.innerWidth >= 1280);
+
+  useEffect(() => {
+    const computeFromRightWidth = () => {
+      const w = rightRef.current?.clientWidth || 0;
+      if (w < 160) setDensity('icon');
+      else if (w < 280) setDensity('compact');
+      else setDensity('full');
+    };
+    computeFromRightWidth();
+    const ro = new ResizeObserver(computeFromRightWidth);
+    if (rightRef.current) ro.observe(rightRef.current);
+    if (navRef.current) ro.observe(navRef.current);
+    window.addEventListener('orientationchange', computeFromRightWidth);
+    window.addEventListener('resize', computeFromRightWidth);
+    return () => {
+      try { ro.disconnect(); } catch {}
+      window.removeEventListener('orientationchange', computeFromRightWidth);
+      window.removeEventListener('resize', computeFromRightWidth);
+    };
+  }, []);
+
   // --- Preference Popup State ---
   const [showPreferencePopup, setShowPreferencePopup] = useState(false);
 
@@ -42,6 +75,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth < 768);
       setIsMediumScreen(window.innerWidth < 1024);
+      setIsXLScreen(window.innerWidth >= 1280);
     };
 
     window.addEventListener("resize", handleResize);
@@ -70,6 +104,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
   return (
     <>
       <nav
+        ref={navRef}
         style={{
           backgroundColor: "#003366",
           padding: isSmallScreen ? "0.4rem 2%" : "0.6rem 1%",
@@ -153,7 +188,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               </span>
               <span
                 style={{
-                  fontSize: isSmallScreen ? "0.55rem" : (window.innerWidth > 1280 ? "0.72rem" : "0.68rem"),
+                  fontSize: isSmallScreen ? '0.55rem' : (isXLScreen ? '0.72rem' : '0.68rem'),
                   color: "#FFFFFF",
                   opacity: 0.9,
                   whiteSpace: "normal",
@@ -164,7 +199,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                   lineHeight: 1.25,
                 }}
               >
-                Find your perfect space & Get Rewarded
+                Get Space & Get Rewarded
               </span>
             </div>
           </div>
@@ -174,12 +209,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
         <div
           style={{
             display: isMediumScreen ? "none" : "flex",
-            gap:
-              window.innerWidth > 1100
-                ? "2rem"
-                : isSmallScreen
-                ? "0.5rem"
-                : "1rem",
+            gap: isXLScreen ? '2rem' : (isSmallScreen ? '0.5rem' : '1rem'),
             alignItems: "center",
             flex: "1 1 auto",
             justifyContent: "center",
@@ -194,11 +224,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
               style={{
                 color: "#FFFFFF",
                 textDecoration: "none",
-                fontSize: isSmallScreen
-                  ? "0.8rem"
-                  : window.innerWidth > 1200
-                  ? "0.9rem"
-                  : "0.85rem",
+                fontSize: isSmallScreen ? '0.8rem' : (isXLScreen ? '0.9rem' : '0.85rem'),
                 fontWeight: "500",
                 transition: "all 0.2s ease",
                 whiteSpace: "nowrap",
@@ -221,50 +247,48 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
         {(() => {
           // Define common styles once for use below
           const commonButtonStyle = {
-            height: isSmallScreen ? "35px" : "36px",
-            minWidth: isSmallScreen ? "80px" : "110px",
-            padding: isSmallScreen ? "0 8px" : "0 12px",
-            backgroundColor: "#00A79D",
-            color: "#FFFFFF",
-            border: "none",
-            borderRadius: isSmallScreen ? "6px" : "8px",
-            fontSize: isSmallScreen ? "0.75rem" : "0.85rem",
-            fontWeight: "600",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: isSmallScreen ? "0.7rem" : "0.4rem",
-            transition: "all 0.2s ease",
-            whiteSpace: "nowrap",
-            outline: "none",
+            height: density === 'full' ? 36 : (density === 'compact' ? 30 : 28),
+            minWidth: density === 'full' ? 110 : (density === 'compact' ? 64 : 36),
+            padding: density === 'icon' ? '0' : (isSmallScreen ? '0 8px' : '0 12px'),
+            backgroundColor: '#00A79D',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: density === 'icon' ? '50%' : (isSmallScreen ? '6px' : '8px'),
+            fontSize: density === 'full' ? (isSmallScreen ? '0.72rem' : '0.85rem') : '0.72rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.4rem',
+            transition: 'all 0.2s ease',
+            whiteSpace: 'nowrap',
+            outline: 'none',
             flexShrink: 0,
           };
           const iconButtonStyle = {
-            height: isSmallScreen ? "28px" : "36px",
-            width: isSmallScreen ? "28px" : "36px",
-            backgroundColor: "#4A6A8A",
-            borderRadius: isSmallScreen ? "6px" : "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
+            height: isSmallScreen ? '30px' : '36px',
+            width: isSmallScreen ? '30px' : '36px',
+            backgroundColor: '#4A6A8A',
+            borderRadius: isSmallScreen ? '6px' : '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
             flexShrink: 0,
-            marginRight: "0.30rem",
+            marginRight: '0.25rem',
           };
           return (
             <div
+              ref={rightRef}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: isSmallScreen
-                  ? "0.10rem"
-                  : isMediumScreen
-                  ? "0.75rem"
-                  : "1rem",
-                flex: "0 1 auto",
+                display: 'flex',
+                alignItems: 'center',
+                gap: density === 'icon' ? '0.3rem' : (isSmallScreen ? '0.4rem' : (isMediumScreen ? '0.75rem' : '1rem')),
+                flex: '0 1 auto',
                 minWidth: 0,
+                maxWidth: density === 'icon' ? '50vw' : 'unset',
               }}
             >
               {/* AI Search Button */}
@@ -287,20 +311,26 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                   else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
                 }}
               >
-                <span>{isSmallScreen ? "AI Search" : "AI Search"}</span>
-                {!isSmallScreen && (
-                  <span
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      color: "#00A79D",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      fontSize: isSmallScreen ? "0.6rem" : "0.65rem",
-                      fontWeight: "700",
-                    }}
-                  >
-                    FREE
-                  </span>
+                {density === 'icon' ? (
+                  <Bot size={18} color="#FFFFFF" />
+                ) : (
+                  <>
+                    <span>{density === 'compact' ? 'AI' : 'AI Search'}</span>
+                    {density === 'full' && (
+                      <span
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          color: '#00A79D',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: isSmallScreen ? '0.6rem' : '0.65rem',
+                          fontWeight: '700',
+                        }}
+                      >
+                        FREE
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
 
@@ -324,25 +354,31 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                   else navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
                 }}
               >
-                <span>{"Post property"}</span>
-                {window.innerWidth > 800 && (
-                  <span
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      color: "#00A79D",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      fontSize: isSmallScreen ? "0.6rem" : "0.65rem",
-                      fontWeight: "700",
-                    }}
-                  >
-                    FREE
-                  </span>
+                {density === 'icon' ? (
+                  <Square size={18} color="#FFFFFF" />
+                ) : (
+                  <>
+                    <span>{density === 'compact' ? 'Post' : 'Post property'}</span>
+                    {density === 'full' && (
+                      <span
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          color: '#00A79D',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: isSmallScreen ? '0.6rem' : '0.65rem',
+                          fontWeight: '700',
+                        }}
+                      >
+                        FREE
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
 
               {/* Location Icon */}
-              {window.innerWidth > 840 && (
+              {density !== 'icon' && (
                 <div
                   style={iconButtonStyle}
                   onMouseEnter={(e) => {
@@ -370,7 +406,7 @@ const TopNavigationBar = ({ user, handleLogout, navItems = [] }) => {
                   maxWidth: isSmallScreen ? "90px" : "120px",
                 }}
               >
-                {window.innerWidth < 800 ? "" : user ? user.email : "Guest"}
+                {density === 'full' ? (user ? user.email : 'Guest') : ''}
               </div>
               <div
                 className="user-menu-container"

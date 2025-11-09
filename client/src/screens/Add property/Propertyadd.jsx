@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
+import PanoramicImagesModal from "../Add property/panaromicimagesadd.jsx";
 import "react-toastify/dist/ReactToastify.css";
 import {
   Home,
@@ -22,9 +23,15 @@ export default function PropertyListingForm() {
   // --- Hooks at the top ---
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  // 360° panorama modal state
+  const [showPanoModal, setShowPanoModal] = useState(false);
+  const [draftPanoramas, setDraftPanoramas] = useState([]); // [{ title, file, yaw, pitch, notes }]
   const [formData, setFormData] = useState({
+    // Shared fields
     purpose: "",
+    title: "",
     address: "",
+    location: "", // used for Sale, optional for Rent
     Sector: "",
     propertyType: "",
     bedrooms: "",
@@ -34,8 +41,8 @@ export default function PropertyListingForm() {
       configuration: "",
     },
     images: [],
+
     // Rental-specific fields
-    title: "",
     layoutFeatures: "",
     appliances: [],
     conditionAge: "",
@@ -57,13 +64,10 @@ export default function PropertyListingForm() {
     smokingPolicy: "",
     maintenance: "",
     insurance: "",
+
     // Sale-specific fields
-    title: "",
     description: "",
     price: "",
-    location: "",
-    Sector: "",
-    area: "",
   });
   const [images, setImages] = useState([]);
   const imageInputRef = useRef();
@@ -139,12 +143,19 @@ export default function PropertyListingForm() {
     // Reset form when purpose changes
     if (name === "purpose" && value !== formData.purpose) {
       setFormData({
+        // Shared fields
         purpose: value,
+        title: "",
         address: "",
+        location: "",
+        Sector: "",
         propertyType: "",
         bedrooms: "",
         bathrooms: "",
         totalArea: { sqft: "", configuration: "" },
+        images: [],
+
+        // Rental-specific fields
         layoutFeatures: "",
         appliances: [],
         conditionAge: "",
@@ -166,11 +177,10 @@ export default function PropertyListingForm() {
         smokingPolicy: "",
         maintenance: "",
         insurance: "",
-        title: "",
+
+        // Sale-specific fields
         description: "",
         price: "",
-        location: "",
-        area: "",
       });
       setImages([]);
       setCurrentStep(0);
@@ -210,12 +220,19 @@ export default function PropertyListingForm() {
     if (purpose === "Rent") {
       if (currentStep === 0) {
         if (!formData.title?.trim()) e.title = "Property title is required";
-        if (!formData.address?.trim()) e.address = "Property address is required";
+        if (!formData.address?.trim())
+          e.address = "Property address is required";
         if (!formData.Sector?.trim()) e.Sector = "Sector is required";
-        if (!String(formData.totalArea?.sqft || "").trim()) e.sqft = "Total area (sqft) is required";
-        if (!formData.totalArea?.configuration?.trim()) e.configuration = "Configuration (e.g., 3 BHK) is required";
+        if (!String(formData.totalArea?.sqft || "").trim())
+          e.sqft = "Total area (sqft) is required";
+        if (!formData.totalArea?.configuration?.trim())
+          e.configuration = "Configuration (e.g., 3 BHK) is required";
       } else if (currentStep === 1) {
-        if (formData.monthlyRent === "" || formData.monthlyRent === null || isNaN(Number(formData.monthlyRent))) {
+        if (
+          formData.monthlyRent === "" ||
+          formData.monthlyRent === null ||
+          isNaN(Number(formData.monthlyRent))
+        ) {
           e.monthlyRent = "Monthly rent is required";
         }
       }
@@ -224,12 +241,19 @@ export default function PropertyListingForm() {
     if (purpose === "Sale") {
       if (currentStep === 0) {
         if (!formData.title?.trim()) e.title = "Property title is required";
-        if (!formData.location?.trim()) e.location = "Location/Address is required";
+        if (!formData.location?.trim())
+          e.location = "Location/Address is required";
         if (!formData.Sector?.trim()) e.Sector = "Sector is required";
-        if (!String(formData.totalArea?.sqft || "").trim()) e.sqft = "Total area (sqft) is required";
-        if (!formData.totalArea?.configuration?.trim()) e.configuration = "Configuration (e.g., 3 BHK) is required";
+        if (!String(formData.totalArea?.sqft || "").trim())
+          e.sqft = "Total area (sqft) is required";
+        if (!formData.totalArea?.configuration?.trim())
+          e.configuration = "Configuration (e.g., 3 BHK) is required";
       } else if (currentStep === 1) {
-        if (formData.price === "" || formData.price === null || isNaN(Number(formData.price))) {
+        if (
+          formData.price === "" ||
+          formData.price === null ||
+          isNaN(Number(formData.price))
+        ) {
           e.price = "Sale price is required";
         }
       }
@@ -281,7 +305,11 @@ export default function PropertyListingForm() {
         const fieldErrors = {};
         const messages = [];
         Object.entries(payload.errors).forEach(([path, val]) => {
-          const msg = val?.message || (typeof val === "string" ? val : `Invalid value for ${prettyField(path)}`);
+          const msg =
+            val?.message ||
+            (typeof val === "string"
+              ? val
+              : `Invalid value for ${prettyField(path)}`);
           fieldErrors[path] = msg;
           messages.push(msg);
         });
@@ -345,7 +373,8 @@ export default function PropertyListingForm() {
           const num = formattedSector.replace("sec", "").trim();
           normalized = `Sector-${num}`;
         } else {
-          normalized = formattedSector.charAt(0).toUpperCase() + formattedSector.slice(1);
+          normalized =
+            formattedSector.charAt(0).toUpperCase() + formattedSector.slice(1);
         }
         setFormData((prev) => ({ ...prev, Sector: normalized }));
       }
@@ -363,7 +392,8 @@ export default function PropertyListingForm() {
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "totalArea" && value && typeof value === "object") {
           if (value.sqft) form.append("totalArea.sqft", value.sqft);
-          if (value.configuration) form.append("totalArea.configuration", value.configuration);
+          if (value.configuration)
+            form.append("totalArea.configuration", value.configuration);
         } else if (Array.isArray(value)) {
           value.forEach((v) => form.append(`${key}[]`, v));
         } else if (value !== undefined && value !== null && value !== "") {
@@ -373,6 +403,17 @@ export default function PropertyListingForm() {
       images.forEach((imgObj) => {
         if (imgObj.file) form.append("images", imgObj.file);
       });
+      // 360° panoramas — send as parallel arrays for easy backend parsing
+if (draftPanoramas && draftPanoramas.length) {
+  toast.info(`Uploading ${draftPanoramas.length} panoramic scene${draftPanoramas.length>1?'s':''}…`);
+  draftPanoramas.forEach((p) => {
+    if (p.file) form.append("panoFiles", p.file);         // files[]
+    if (p.title) form.append("panoTitles[]", p.title);    // titles[]
+    form.append("panoYaw[]", String(p.yaw ?? 0));         // numbers as strings
+    form.append("panoPitch[]", String(p.pitch ?? 0));
+    form.append("panoNotes[]", p.notes || "");
+  });
+}
 
       const url =
         formData.purpose === "Sale"
@@ -394,7 +435,9 @@ export default function PropertyListingForm() {
       // ---- Not OK: try to surface field-level errors from backend ----
       let errPayload = null;
       const rawText = await res.text();
-      try { errPayload = rawText ? JSON.parse(rawText) : null; } catch (_) {}
+      try {
+        errPayload = rawText ? JSON.parse(rawText) : null;
+      } catch (_) {}
 
       // 1) Try structured payload first
       let parsed = extractBackendErrors(errPayload || {});
@@ -425,7 +468,9 @@ export default function PropertyListingForm() {
       if (parsed) {
         // Highlight fields on the form + show toast with exact missing fields
         setErrors((prev) => ({ ...prev, ...(parsed.fieldErrors || {}) }));
-        toast.error(`❌ Please fix the following:\n${parsed.messages.join("\n")}`);
+        toast.error(
+          `❌ Please fix the following:\n${parsed.messages.join("\n")}`
+        );
       } else {
         // Fallback generic message
         const genericMsg =
@@ -722,6 +767,192 @@ export default function PropertyListingForm() {
             </div>
           </div>
         )}
+        {/* --- 360° Panoramic images (opens modal) --- */}
+        <div
+          style={{
+            marginTop: 24,
+            padding: 16,
+            border: "2px dashed #a9c7e6",
+            borderRadius: 12,
+            background: "#f7fbff",
+            transition: "all .2s ease-in-out",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#7fb3e3")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#a9c7e6")}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 800, color: "#003366" }}>
+                Add 360° Panoramic Scenes
+              </div>
+              <div style={{ color: "#4A6A8A", fontSize: 13 }}>
+                Optional: Upload equirectangular (2:1) images with room titles
+                for the 3D viewer. Saved locally until you submit.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                toast.info("Open panoramic editor");
+                setShowPanoModal(true);
+              }}
+              style={{
+                background: "#003366",
+                color: "#fff",
+                border: "none",
+                padding: "10px 14px",
+                borderRadius: 10,
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              }}
+            >
+              + Add 360° Scenes
+            </button>
+          </div>
+
+          {/* Summary chips if any panoramas saved */}
+          {draftPanoramas?.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    background: "#e6f4ff",
+                    color: "#0b3a60",
+                    border: "1px solid #cfe0ee",
+                    borderRadius: 999,
+                    padding: "6px 10px",
+                    fontWeight: 800,
+                    fontSize: 12,
+                    animation: "pulse 1.3s ease-in-out 2",
+                  }}
+                >
+                  {draftPanoramas.length} scene
+                  {draftPanoramas.length > 1 ? "s" : ""} saved
+                </span>
+                {draftPanoramas.map((p, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      border: "1px solid #cfe0ee",
+                      background: "#fff",
+                      color: "#0b3a60",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {i + 1}. {p.title}
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowPanoModal(true)}
+                  style={{
+                    marginLeft: "auto",
+                    background: "#ffffff",
+                    color: "#003366",
+                    border: "1px solid #a9c7e6",
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Edit scenes
+                </button>
+              </div>
+
+              {/* thumbnail strip */}
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {draftPanoramas.map((p, i) => {
+                  const url = p?.file ? URL.createObjectURL(p.file) : null;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        border: "1px solid #e1ebf5",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        background: "#fff",
+                      }}
+                    >
+                      {url ? (
+                        <img
+                          src={url}
+                          alt={p.title || `scene-${i + 1}`}
+                          style={{
+                            width: "100%",
+                            height: 80,
+                            objectFit: "cover",
+                          }}
+                          onLoad={(e) => URL.revokeObjectURL(url)}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            height: 80,
+                            display: "grid",
+                            placeItems: "center",
+                            color: "#99a9bb",
+                            fontSize: 12,
+                          }}
+                        >
+                          No preview
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          padding: 6,
+                          fontSize: 12,
+                          color: "#0b3a60",
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {p.title || `Scene ${i + 1}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* pulse keyframes */}
+              <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -842,12 +1073,27 @@ export default function PropertyListingForm() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g., Spacious 2BHK Apartment in Sector 46"
-                  style={{ ...inputStyle, borderColor: errors.title ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.title
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   required
                 />
-                {errors.title && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.title}</p>)}
+                {errors.title && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.title}
+                  </p>
+                )}
               </div>
 
               <div style={fieldStyle}>
@@ -871,11 +1117,26 @@ export default function PropertyListingForm() {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address"
-                  style={{ ...inputStyle, borderColor: errors.address ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.address
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
-                {errors.address && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.address}</p>)}
+                {errors.address && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.address}
+                  </p>
+                )}
               </div>
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Sector *</label>
@@ -885,12 +1146,27 @@ export default function PropertyListingForm() {
                   value={formData.Sector}
                   onChange={handleChange}
                   placeholder="e.g., Sector 46, Gurugram , Haryana"
-                  style={{ ...inputStyle, borderColor: errors.Sector ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.Sector
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   required
                 />
-                {errors.Sector && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.Sector}</p>)}
+                {errors.Sector && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.Sector}
+                  </p>
+                )}
               </div>
               <div style={gridStyle}>
                 <div>
@@ -920,18 +1196,50 @@ export default function PropertyListingForm() {
                       value={formData.totalArea.sqft}
                       onChange={handleChange}
                       placeholder="Area in sqft (e.g., 1200)"
-                      style={{ ...inputStyle, flex: 1, borderColor: errors.sqft ? "#ef4444" : inputStyle.borderColor }}
+                      style={{
+                        ...inputStyle,
+                        flex: 1,
+                        borderColor: errors.sqft
+                          ? "#ef4444"
+                          : inputStyle.borderColor,
+                      }}
                     />
-                    {errors.sqft && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.sqft}</p>)}
+                    {errors.sqft && (
+                      <p
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "6px",
+                        }}
+                      >
+                        {errors.sqft}
+                      </p>
+                    )}
                     <input
                       type="text"
                       name="totalArea.configuration"
                       value={formData.totalArea.configuration}
                       onChange={handleChange}
                       placeholder="Configuration (e.g., 3 BHK)"
-                      style={{ ...inputStyle, flex: 1, borderColor: errors.configuration ? "#ef4444" : inputStyle.borderColor }}
+                      style={{
+                        ...inputStyle,
+                        flex: 1,
+                        borderColor: errors.configuration
+                          ? "#ef4444"
+                          : inputStyle.borderColor,
+                      }}
                     />
-                    {errors.configuration && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.configuration}</p>)}
+                    {errors.configuration && (
+                      <p
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "6px",
+                        }}
+                      >
+                        {errors.configuration}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1062,11 +1370,26 @@ export default function PropertyListingForm() {
                     value={formData.monthlyRent}
                     onChange={handleChange}
                     placeholder="e.g., 50000"
-                    style={{ ...inputStyle, borderColor: errors.monthlyRent ? "#ef4444" : inputStyle.borderColor }}
+                    style={{
+                      ...inputStyle,
+                      borderColor: errors.monthlyRent
+                        ? "#ef4444"
+                        : inputStyle.borderColor,
+                    }}
                     onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                     onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   />
-                  {errors.monthlyRent && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.monthlyRent}</p>)}
+                  {errors.monthlyRent && (
+                    <p
+                      style={{
+                        color: "#ef4444",
+                        fontSize: "12px",
+                        marginTop: "6px",
+                      }}
+                    >
+                      {errors.monthlyRent}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label style={inputLabelStyle}>Security Deposit (₹) *</label>
@@ -1391,11 +1714,26 @@ export default function PropertyListingForm() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g., Luxurious 3BHK Villa in Prime Location"
-                  style={{ ...inputStyle, borderColor: errors.title ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.title
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
-                {errors.title && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.title}</p>)}
+                {errors.title && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.title}
+                  </p>
+                )}
               </div>
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Location/Address *</label>
@@ -1405,11 +1743,26 @@ export default function PropertyListingForm() {
                   value={formData.location}
                   onChange={handleChange}
                   placeholder="Enter complete address or location"
-                  style={{ ...inputStyle, borderColor: errors.location ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.location
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
-                {errors.location && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.location}</p>)}
+                {errors.location && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.location}
+                  </p>
+                )}
               </div>
               <div style={fieldStyle}>
                 <label style={inputLabelStyle}>Sector *</label>
@@ -1419,11 +1772,26 @@ export default function PropertyListingForm() {
                   value={formData.Sector}
                   onChange={handleChange}
                   placeholder="e.g., Sector 46"
-                  style={{ ...inputStyle, borderColor: errors.Sector ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.Sector
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
-                {errors.Sector && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.Sector}</p>)}
+                {errors.Sector && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.Sector}
+                  </p>
+                )}
               </div>
               <div style={gridStyle}>
                 <div>
@@ -1454,18 +1822,50 @@ export default function PropertyListingForm() {
                       value={formData.totalArea.sqft}
                       onChange={handleChange}
                       placeholder="Area in sqft (e.g., 1200)"
-                      style={{ ...inputStyle, flex: 1, borderColor: errors.sqft ? "#ef4444" : inputStyle.borderColor }}
+                      style={{
+                        ...inputStyle,
+                        flex: 1,
+                        borderColor: errors.sqft
+                          ? "#ef4444"
+                          : inputStyle.borderColor,
+                      }}
                     />
-                    {errors.sqft && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.sqft}</p>)}
+                    {errors.sqft && (
+                      <p
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "6px",
+                        }}
+                      >
+                        {errors.sqft}
+                      </p>
+                    )}
                     <input
                       type="text"
                       name="totalArea.configuration"
                       value={formData.totalArea.configuration}
                       onChange={handleChange}
                       placeholder="Configuration (e.g., 3 BHK)"
-                      style={{ ...inputStyle, flex: 1, borderColor: errors.configuration ? "#ef4444" : inputStyle.borderColor }}
+                      style={{
+                        ...inputStyle,
+                        flex: 1,
+                        borderColor: errors.configuration
+                          ? "#ef4444"
+                          : inputStyle.borderColor,
+                      }}
                     />
-                    {errors.configuration && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.configuration}</p>)}
+                    {errors.configuration && (
+                      <p
+                        style={{
+                          color: "#ef4444",
+                          fontSize: "12px",
+                          marginTop: "6px",
+                        }}
+                      >
+                        {errors.configuration}
+                      </p>
+                    )}
                   </div>
                   {/*
                   <input
@@ -1538,11 +1938,26 @@ export default function PropertyListingForm() {
                   value={formData.price}
                   onChange={handleChange}
                   placeholder="e.g., 5000000"
-                  style={{ ...inputStyle, borderColor: errors.price ? "#ef4444" : inputStyle.borderColor }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: errors.price
+                      ? "#ef4444"
+                      : inputStyle.borderColor,
+                  }}
                   onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
-                {errors.price && (<p style={{ color: "#ef4444", fontSize: "12px", marginTop: "6px" }}>{errors.price}</p>)}
+                {errors.price && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "6px",
+                    }}
+                  >
+                    {errors.price}
+                  </p>
+                )}
               </div>
               <div
                 style={{
@@ -1822,6 +2237,23 @@ export default function PropertyListingForm() {
             </div>
           )}
         </div>
+        <PanoramicImagesModal
+  open={showPanoModal}
+  onClose={() => {
+    setShowPanoModal(false);
+    toast.info("Panoramic editor closed.");
+  }}
+  initialItems={draftPanoramas}
+  onApply={(items) => {
+    setDraftPanoramas(items);
+    setShowPanoModal(false);
+    if (items?.length) {
+      toast.success(`✅ Saved ${items.length} panoramic scene${items.length>1?'s':''}`);
+    } else {
+      toast.warn("No panoramic scenes added.");
+    }
+  }}
+/>
       </div>
     </div>
   );

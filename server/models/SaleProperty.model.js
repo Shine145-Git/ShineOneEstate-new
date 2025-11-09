@@ -27,6 +27,16 @@ totalArea: {
   },
   Sector: { type: String , required: true},
   images: [String],
+  // 360° panoramic scenes for this property
+    panoramas: [
+      {
+        title: { type: String, required: true, trim: true, maxlength: 120 }, // e.g., "Living Room"
+        url: { type: String, required: true, trim: true }, // Cloudinary secure_url
+        yaw: { type: Number, default: 0 },
+        pitch: { type: Number, default: 0 },
+        notes: { type: String, trim: true, maxlength: 500 },
+      },
+    ],
   // Cloudinary metadata (sticky account + stable folder)
   cloudinaryAccountIndex: { type: Number, default: null },
   cloudinaryFolder: { type: String },

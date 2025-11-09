@@ -191,6 +191,8 @@ export default function RentalPropertyPage() {
   }
 
   const images = property.images && property.images.length > 0 ? property.images : ['https://via.placeholder.com/800x600?text=No+Image'];
+  const panoramas = Array.isArray(property.panoramas) ? property.panoramas : [];
+  const hasPanoramas = Array.isArray(panoramas) && panoramas.some(p => p && typeof p.url === 'string' && p.url.trim() !== '');
 
   return (
     <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
@@ -364,6 +366,33 @@ export default function RentalPropertyPage() {
                 }}>
                   {currentImageIndex + 1} / {images.length}
                 </div>
+                {hasPanoramas && (
+                  <button
+                    onClick={() => navigate(`/property/${property._id}/virtual-tour`, {
+                      state: {
+                        panoramas,
+                        propertyName: property?.propertyType || 'Property',
+                        propertyId: property?._id,
+                      },
+                    })}
+                    style={{
+                      position: 'absolute',
+                      top: '20px',
+                      right: '20px',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.35)',
+                      padding: '10px 14px',
+                      borderRadius: '22px',
+                      fontWeight: 700,
+                      letterSpacing: '0.4px',
+                      cursor: 'pointer'
+                    }}
+                    title="Open 360° Virtual Tour"
+                  >
+                    360° View
+                  </button>
+                )}
               </div>
               {images.length > 1 && (
                 <div className="thumbnail-row" style={{
@@ -788,6 +817,33 @@ export default function RentalPropertyPage() {
                   Save
                 </button>
               </div>
+              {hasPanoramas && (
+                <button
+                  onClick={() => navigate(`/property/${property._id}/virtual-tour`, {
+                    state: {
+                      panoramas,
+                      propertyName: property?.propertyType || 'Property',
+                      propertyId: property?._id,
+                    },
+                  })}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)',
+                    color: '#FFFFFF',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontWeight: '700',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    marginTop: '12px',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
+                    border: 'none'
+                  }}
+                  title="Open 360° Virtual Tour"
+                >
+                  Open 360° Tour
+                </button>
+              )}
             </div>
 
             {/* Contact & Enquiry */}

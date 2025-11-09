@@ -281,42 +281,95 @@ const updateProperty = async (req, res) => {
       folderArg = addressSan ? `${sectorSan}/${addressSan}` : sectorSan;
     }
 
-    // Upload new images to Cloudinary and append URLs (no deletion)
-    let imageUrls = [];
-
+    // Upload new images (normal + 360) to Cloudinary and merge with existing, enforcing caps
     try {
-      if (req.files && req.files.length > 0) {
-        for (const file of req.files) {
+      // Determine existing arrays to compute remaining slots
+      const existingImages = Array.isArray(existingPropertyForAccount?.images)
+        ? existingPropertyForAccount.images.slice(0, 8)
+        : [];
+      const existingPanos = Array.isArray(existingPropertyForAccount?.panoramas)
+        ? existingPropertyForAccount.panoramas.slice(0, 6)
+        : [];
+
+      // Split incoming files by fieldname (supports multer.fields or array)
+      let normalFiles = [];
+      let panoFiles = [];
+      if (req.files) {
+        if (Array.isArray(req.files)) {
+          normalFiles = req.files.filter((f) => f.fieldname === 'images');
+          panoFiles = req.files.filter((f) => f.fieldname === 'panoFiles');
+        } else {
+          normalFiles = Array.isArray(req.files.images) ? req.files.images : [];
+          panoFiles = Array.isArray(req.files.panoFiles) ? req.files.panoFiles : [];
+        }
+      }
+
+      // Enforce remaining slots (save only up to the cap total)
+      const remainingImages = Math.max(0, 8 - existingImages.length);
+      const remainingPanos = Math.max(0, 6 - existingPanos.length);
+      if (normalFiles.length > remainingImages) normalFiles = normalFiles.slice(0, remainingImages);
+      if (panoFiles.length > remainingPanos) panoFiles = panoFiles.slice(0, remainingPanos);
+
+      // Upload normal images into the existing folder
+      const newImageUrls = [];
+      if (normalFiles.length > 0) {
+        for (const file of normalFiles) {
           try {
-            const { secure_url, accountIndex } = await uploadWithFallback(file.path, folderArg, stickyAccountIndex, null);
-            imageUrls.push(secure_url);
+            const { secure_url, accountIndex } = await uploadWithFallback(
+              file.path,
+              folderArg,
+              stickyAccountIndex,
+              null
+            );
+            if (secure_url) newImageUrls.push(secure_url);
             if (stickyAccountIndex === null && Number.isInteger(accountIndex)) {
               stickyAccountIndex = accountIndex;
             }
-            try { fs.unlinkSync(file.path); } catch (_) {}
-          } catch (uploadError) {
-            // Upload error suppressed
-          }
+          } catch (_) {}
         }
       }
 
-      if (imageUrls.length > 0) {
-        // Fetch current property (rental or sale) to retain existing images
-        let existingProperty = null;
-        try {
-          existingProperty = (await RentalProperty.findById(id)) || (await SaleProperty.findById(id));
-        } catch (fetchErr) {
-          // Fetch error suppressed
-        }
+      // Parse pano metadata arrays (accept with or without [] keys)
+      const toArray = (v) => (Array.isArray(v) ? v : v != null ? [v] : []);
+      const titles = toArray(req.body['panoTitles[]'] ?? req.body.panoTitles).map((t) => (t || '').toString().trim());
+      const yaws = toArray(req.body['panoYaw[]'] ?? req.body.panoYaw).map((n) => Number(n) || 0);
+      const pitches = toArray(req.body['panoPitch[]'] ?? req.body.panoPitch).map((n) => Number(n) || 0);
+      const notesArr = toArray(req.body['panoNotes[]'] ?? req.body.panoNotes).map((s) => (s || '').toString().trim());
 
-        if (existingProperty && existingProperty.images) {
-          req.body.images = [...existingProperty.images, ...imageUrls];
-        } else {
-          req.body.images = imageUrls;
+      // Upload pano files into nested /360 folder
+      const newPanos = [];
+      if (panoFiles.length > 0) {
+        const panoFolder = `${folderArg}/360`;
+        for (let i = 0; i < panoFiles.length; i++) {
+          const file = panoFiles[i];
+          const title = titles[i] || `Scene ${i + 1}`;
+          const yaw = yaws[i] ?? 0;
+          const pitch = pitches[i] ?? 0;
+          const note = notesArr[i] || '';
+          try {
+            const { secure_url, accountIndex } = await uploadWithFallback(
+              file.path,
+              panoFolder,
+              stickyAccountIndex,
+              null
+            );
+            if (secure_url) newPanos.push({ title, url: secure_url, yaw, pitch, notes: note });
+            if (stickyAccountIndex === null && Number.isInteger(accountIndex)) {
+              stickyAccountIndex = accountIndex;
+            }
+          } catch (_) {}
         }
       }
+
+      // Merge with existing and enforce final caps
+      const mergedImages = [...existingImages, ...newImageUrls].slice(0, 8);
+      const mergedPanos = [...existingPanos, ...newPanos].slice(0, 6);
+
+      if (mergedImages.length) req.body.images = mergedImages;
+      if (mergedPanos.length) req.body.panoramas = mergedPanos;
+
     } catch (err) {
-      // Image handling error suppressed
+      // Upload handling error suppressed to avoid blocking property update
     }
 
     const updateData = { ...req.body };

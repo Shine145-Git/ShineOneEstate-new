@@ -54,6 +54,17 @@ const RentalpropertySchema = new mongoose.Schema(
 
     // Image upload
     images: [{ type: String }],
+    // 360° panoramic scenes for this property
+    panoramas: [
+      {
+        title: { type: String, required: true, trim: true, maxlength: 120 }, // e.g., "Living Room"
+        url: { type: String, required: true, trim: true }, // Cloudinary secure_url
+        yaw: { type: Number, default: 0 },
+        pitch: { type: Number, default: 0 },
+        notes: { type: String, trim: true, maxlength: 500 },
+      },
+    ],
+
     defaultpropertytype: { type: String, default: "rental", immutable: true },
 
     // Cloudinary metadata (sticky account + stable folder)

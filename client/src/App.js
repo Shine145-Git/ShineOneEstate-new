@@ -37,6 +37,7 @@ import InvestRealEstatePage from "./screens/Dashboard/InvestinRealEstateCardSect
 import ServiceRequestApp from "./screens/Managed Services/CreateServices";
 import ServiceTrackingSystem from "./screens/Managed Services/ManageServices";
 import AdminServiceTracking from "./screens/Admin Page/admin.servicesDashboard";
+import VoiceVirtualTourModal from "./screens/3D View Property/propview";
 
 function App() {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ function App() {
       <Route path="/enquiry-page/:id" element={<EnquiryPage />} />
       <Route path="/servicesCreate" element={<ServiceRequestApp />} />
       <Route path="/services" element={<ServiceTrackingSystem />} />
+       <Route path="/property/:id/virtual-tour" element={<VoiceVirtualTourModal />} />
     </Routes>
   );
 }

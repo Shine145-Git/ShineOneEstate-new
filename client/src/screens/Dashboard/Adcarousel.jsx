@@ -97,7 +97,7 @@ function AdCarousel() {
       onClick={(e) => { e.stopPropagation(); setShowOfferModal(true); }}
       style={{ cursor: 'pointer' }}
     >
-      Settle in your new place, with goodies up to ₹2,000 in grace!
+      Settle into your new place with grace, and get rewarded with goodies up to ₹2,000.
     </span>
   <span className="twinkle-star" aria-hidden>✨</span>
 </div>
