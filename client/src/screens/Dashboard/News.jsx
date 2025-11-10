@@ -12,12 +12,15 @@ const PropertyHeroSection = () => {
     Investment: [],
   });
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [forceFetchKey, setForceFetchKey] = useState(0); // bump to force re-fetch
 
   const tabs = ["News", "Tax & Legal", "Help Guides", "Investment"];
 
-  // GNews API base URL and key
-  const gnewsApiKey =  process.env.REACT_APP_Base_API;
-  const gnewsBaseUrl = "https://gnews.io/api/v4/search";
+  // Backend proxy base (should be set in .env as REACT_APP_Base_API). If not set, use relative path (dev proxy).
+  const apiBaseRaw = process.env.REACT_APP_Base_API || '';
+  const apiBase = apiBaseRaw ? apiBaseRaw.replace(/\/$/, '') : '';
+  // We'll call our backend proxy at `${apiBase}/api/news` which forwards to GNews (hides API key, avoids CORS)
 
   // Queries for each category
   const queries = {
@@ -31,60 +34,79 @@ const PropertyHeroSection = () => {
     const fetchArticles = async () => {
       try {
         setLoading(true);
+        setErrorMsg(null);
         const cachedData = localStorage.getItem("articlesByCategory");
         const cachedTimestamp = localStorage.getItem("articlesTimestamp");
         const now = Date.now();
 
-        if (cachedData && cachedTimestamp) {
-          setArticlesByCategory(JSON.parse(cachedData));
-        }
-
-        if (cachedTimestamp) {
-          const lastFetchDate = new Date(parseInt(cachedTimestamp, 10));
-          // Calculate midnight of the next day
-          const nextMidnight = new Date(lastFetchDate);
-          nextMidnight.setHours(24, 0, 0, 0); // set to midnight next day
-
-          if (now < nextMidnight.getTime()) {
-            // Current time is before next midnight, skip fetching
-            setLoading(false);
-            return;
+        // If cache exists, load it immediately into UI
+        if (cachedData) {
+          try {
+            setArticlesByCategory(JSON.parse(cachedData));
+          } catch (e) {
           }
         }
 
-        // Fetch new articles from API
+        // Use a TTL of 24 hours (in ms). If cache timestamp is present and fresh, skip network fetch.
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        if (cachedTimestamp) {
+          const lastFetchTime = Number(cachedTimestamp) || 0;
+          if (now - lastFetchTime < ONE_DAY_MS) {
+            setLoading(false);
+            return; // cache still valid => do not fetch
+          }
+        }
+
+        // If no cache present or cache expired, fetch fresh data from backend
         const newArticles = {};
         for (const tab of tabs) {
-          const url = `${gnewsBaseUrl}?q=${encodeURIComponent(
-            queries[tab]
-          )}&token=${gnewsApiKey}/api/news&lang=en&max=10`;
-          const res = await fetch(url);
-          const data = await res.json();
-          const articlesData = Array.isArray(data.articles)
-            ? data.articles
-            : [];
-          // Map API response to required fields with fallbacks and clickable title/image links
-          newArticles[tab] = articlesData.map((item, index) => {
-            const link = item.url || "#";
-            const title = item.title || "No Title";
-            const image =
-              item.image ||
-              "https://via.placeholder.com/150?text=No+Image";
-            const date = item.publishedAt
-              ? new Date(item.publishedAt).toDateString()
-              : "";
-            return {
-              id: item.url || index,
-              title,
-              date,
-              image,
-              category: tab,
-              link,
-              description: item.description || "",
-              // For clickable title and image, we can store the link here and handle in render
-            };
-          });
+          const url = `${apiBase || ''}/api/news?q=${encodeURIComponent(queries[tab])}&lang=en&max=10`;
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            let res;
+            try {
+              res = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+            } catch (fetchErr) {
+              newArticles[tab] = [];
+              clearTimeout(timeout);
+              continue;
+            }
+            clearTimeout(timeout);
+
+            if (!res.ok) {
+              const txt = await res.text().catch(() => null);
+              newArticles[tab] = [];
+              continue;
+            }
+
+            const data = await res.json().catch(async (e) => {
+              const raw = await res.text().catch(() => null);
+              return null;
+            });
+
+
+            const articlesData = Array.isArray(data?.articles) ? data.articles : [];
+            newArticles[tab] = articlesData.map((item, index) => {
+              const link = item.url || "#";
+              const title = item.title || "No Title";
+              const image = item.image || "https://via.placeholder.com/150?text=No+Image";
+              const date = item.publishedAt ? new Date(item.publishedAt).toDateString() : "";
+              return {
+                id: item.url || index,
+                title,
+                date,
+                image,
+                category: tab,
+                link,
+                description: item.description || "",
+              };
+            });
+          } catch (fetchErr) {
+            newArticles[tab] = [];
+          }
         }
+
         setArticlesByCategory(newArticles);
         localStorage.setItem("articlesByCategory", JSON.stringify(newArticles));
         localStorage.setItem("articlesTimestamp", now.toString());
@@ -92,16 +114,15 @@ const PropertyHeroSection = () => {
         const cachedData = localStorage.getItem("articlesByCategory");
         if (cachedData) {
           setArticlesByCategory(JSON.parse(cachedData));
-          console.warn("Failed to fetch new articles, loaded cached data instead.");
         } else {
-          console.error(err);
+          setErrorMsg('Failed to load news. Please try again later.');
         }
       } finally {
         setLoading(false);
       }
     };
     fetchArticles();
-  }, []);
+  }, [forceFetchKey]);
 
   const isMobile = window.innerWidth < 768;
 
@@ -322,6 +343,33 @@ const PropertyHeroSection = () => {
                 </div>
               ))}
             </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <button
+                onClick={() => {
+                  // clear cached data and force refetch
+                  localStorage.removeItem('articlesByCategory');
+                  localStorage.removeItem('articlesTimestamp');
+                  setForceFetchKey(Date.now());
+                }}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #dbeaf3',
+                  background: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  color: '#003366'
+                }}
+              >
+                Refresh
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div style={{ padding: 12, background: '#fff3f2', color: '#a13838', borderRadius: 8, margin: '12px 0' }}>
+                {errorMsg}
+              </div>
+            )}
 
             <div style={articlesGridStyle}>
               {loading ? (
