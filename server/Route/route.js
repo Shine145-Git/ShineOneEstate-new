@@ -35,7 +35,7 @@ const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllAct
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
-const {getAccountsUsage , getBrevoUsage , getLocationIQUsage} = require("../controllers/admin.Accountsusage.js");
+const {getAccountsUsage , getBrevoUsage , getLocationIQUsage , getMongoUsage , getGNewsUsage} = require("../controllers/admin.Accountsusage.js");
 const { getNews } = require("../controllers/news.controller");
 
 // Helper middleware to restrict access to admins only
@@ -128,6 +128,8 @@ router.patch("/api/admin/update-role", verifyToken, checkAdminEmail, updateUserR
 router.get("/api/properties", verifyToken, checkAdminEmail, getAllProperties);
 router.get('/api/admin/cloudinary/usage',  getAccountsUsage);
 router.get('/api/admin/brevo/usage', getBrevoUsage);
+router.get('/api/admin/mongo/usage', getMongoUsage);
+router.get('/api/admin/gnews/usage', getGNewsUsage);
 router.get('/api/admin/locationiq/usage', getLocationIQUsage);
 // Admin updates status of any request
 router.patch("/api/admin/services/:id/status", verifyToken, checkAdminEmail, updateServiceRequestDetails)
@@ -135,6 +137,7 @@ router.patch("/api/admin/services/:id/status", verifyToken, checkAdminEmail, upd
 // ================== PROPERTY STATUS ROUTES (ADMIN) ==================
 router.patch("/api/admin/property/:id/toggle-active", verifyToken, checkAdminEmail, toggleActiveStatus);
 router.patch("/api/admin/property/:id/toggle-review", verifyToken, checkAdminEmail, toggleReviewStatus);
+
 
 
 // ================== AI ROUTES ==================

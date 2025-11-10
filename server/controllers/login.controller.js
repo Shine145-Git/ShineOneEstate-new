@@ -6,7 +6,6 @@ const jwt = require("jsonwebtoken");
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
-
 // Request OTP
 exports.requestOtp = async (req, res) => {
   try {
@@ -34,16 +33,19 @@ exports.requestOtp = async (req, res) => {
       return res.status(200).json({ message: "OTP sent successfully (DEV mode)", otp }); // optional: send otp in response for dev testing
     }
 
+    // ================== THE FIX IS HERE ==================
     // Production mode: send via Brevo
     const emailParams = {
       to: email,
-      subject: "Your OTP Code for www.ggnHome.com",
-      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-      html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`
+      templateId: 1, // This is your Template ID
+      params: {
+        otp_code: otp // This passes your 'otp' variable to the '{{ params.otp_code }}' in your template
+      }
     };
+    // ================== END OF FIX ==================
 
     try {
-      await sendEmail(emailParams);
+      await sendEmail(emailParams); // Your sendEmail function will now use the template!
       return res.status(200).json({ message: "OTP sent successfully" });
     } catch (emailError) {
       return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
@@ -52,7 +54,6 @@ exports.requestOtp = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 // Verify OTP
 exports.verifyOtp = async (req, res) => {
   try {

@@ -1,5 +1,7 @@
 const { v2: cloudinary } = require('cloudinary');
 const https = require('https');
+const mongoose = require('mongoose');
+const axios = require('axios');
 
 /**
  * Admin – Cloudinary multi‑account usage controller
@@ -366,11 +368,86 @@ const getLocationIQUsage = async (req, res) => {
   }
 };
 
+// ----------------------
+// MongoDB usage helper
+// ----------------------
+async function getMongoUsage(req, res) {
+  try {
+    // Ensure mongoose is connected
+    const conn = mongoose.connection;
+    if (!conn || !conn.db) return res.status(500).json({ success: false, message: 'Mongoose not connected' });
+
+    // db.stats() provides storageSize, dataSize, indexSize, objects, collections
+    const stats = await conn.db.stats();
+
+    // Human-friendly bytes -> MB/GB helper
+    const toMB = (b) => Math.round((b / (1024 * 1024)) * 100) / 100;
+    const toGB = (b) => Math.round((b / (1024 * 1024 * 1024)) * 100) / 100;
+
+    const response = {
+      success: true,
+      db: conn.name || (conn.client && conn.client.s && conn.client.s.options && conn.client.s.options.dbName) || 'unknown',
+      storageSizeBytes: stats.storageSize || 0,
+      storageSizeMB: toMB(stats.storageSize || 0),
+      storageSizeGB: toGB(stats.storageSize || 0),
+      dataSizeBytes: stats.dataSize || 0,
+      dataSizeMB: toMB(stats.dataSize || 0),
+      indexSizeBytes: stats.indexSize || 0,
+      indexSizeMB: toMB(stats.indexSize || 0),
+      objects: stats.objects || 0,
+      collections: stats.collections || 0,
+      raw: stats,
+    };
+
+    return res.json(response);
+  } catch (err) {
+    console.error('[MongoUsage] error:', err?.message || err);
+    return res.status(500).json({ success: false, message: err?.message || 'Failed to fetch MongoDB stats' });
+  }
+}
+
+// ----------------------
+// GNews usage helper (best-effort)
+// ----------------------
+// Note: GNews does not expose an official quota endpoint. This performs a lightweight probe
+// against the search endpoint and returns any rate-limit headers or totalArticles if present.
+async function getGNewsUsage(req, res) {
+  try {
+    const apiKey = process.env.GNEWS_API_KEY || process.env.GNEWS_KEY || process.env.GNEWS_TOKEN;
+    if (!apiKey) return res.status(500).json({ success: false, message: 'GNEWS_API_KEY missing in env' });
+
+    // Probe with a small query (max=1) to observe headers and response shape
+    const probeUrl = 'https://gnews.io/api/v4/search';
+    const params = { q: (req.query.q || 'news').toString(), token: apiKey, lang: req.query.lang || 'en', max: 1 };
+
+    const resp = await axios.get(probeUrl, { params, timeout: 8000 });
+
+    // Look for common rate-limit headers
+    const headers = resp.headers || {};
+    const possibleRate = {
+      rateLimitLimit: headers['x-ratelimit-limit'] ?? headers['x-rate-limit-limit'] ?? null,
+      rateLimitRemaining: headers['x-ratelimit-remaining'] ?? headers['x-rate-limit-remaining'] ?? null,
+      rateLimitReset: headers['x-ratelimit-reset'] ?? headers['x-rate-limit-reset'] ?? null,
+    };
+
+    // GNews returns totalArticles in body for some responses
+    const totalArticles = resp.data?.totalArticles ?? null;
+
+    return res.json({ success: true, probe: { params, status: resp.status, totalArticles, headers: possibleRate }, rawHeaders: headers });
+  } catch (err) {
+    const message = err?.response?.data || err?.message || String(err);
+    console.error('[GNewsUsage] probe error:', message);
+    return res.status(500).json({ success: false, message });
+  }
+}
+
 module.exports = {
   getAccountsUsage,
   // Export helpers for tests or advanced use
   loadAccountsFromEnv,
   fetchAllAccountsUsage,
-    getBrevoUsage, 
-    getLocationIQUsage,
+  getBrevoUsage,
+  getLocationIQUsage,
+  getMongoUsage,
+  getGNewsUsage,
 };
