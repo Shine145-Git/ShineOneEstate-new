@@ -36,7 +36,7 @@ const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
 const {getAccountsUsage , getBrevoUsage , getLocationIQUsage} = require("../controllers/admin.Accountsusage.js");
-
+const { getNews } = require("../controllers/news.controller");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = async (req, res, next) => {
@@ -211,6 +211,10 @@ router.get("/api/services", verifyToken, getServiceRequests);
 
 // User updates status of their own request
 router.patch("/api/services/:id/status", verifyToken, updateServiceRequestStatus);
+
+
+// ================== News API ==================
+router.get('/api/news', getNews);
 
 
 

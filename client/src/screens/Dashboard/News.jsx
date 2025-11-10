@@ -16,7 +16,7 @@ const PropertyHeroSection = () => {
   const tabs = ["News", "Tax & Legal", "Help Guides", "Investment"];
 
   // GNews API base URL and key
-  const gnewsApiKey = process.env.REACT_APP_GNEWS_API_KEY;
+  const gnewsApiKey =  process.env.REACT_APP_Base_API;
   const gnewsBaseUrl = "https://gnews.io/api/v4/search";
 
   // Queries for each category
@@ -57,7 +57,7 @@ const PropertyHeroSection = () => {
         for (const tab of tabs) {
           const url = `${gnewsBaseUrl}?q=${encodeURIComponent(
             queries[tab]
-          )}&token=${gnewsApiKey}&lang=en&max=10`;
+          )}&token=${gnewsApiKey}/api/news&lang=en&max=10`;
           const res = await fetch(url);
           const data = await res.json();
           const articlesData = Array.isArray(data.articles)
