@@ -28,6 +28,10 @@ exports.requestOtp = async (req, res) => {
       user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
       await user.save();
     }
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Development mode: OTP for ${email} is ${otp}`);
+      return res.status(200).json({ message: "OTP sent successfully (check server logs in dev mode)" });
+    }
 
     
 

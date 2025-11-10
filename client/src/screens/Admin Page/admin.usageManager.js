@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cloud, HardDrive, TrendingUp, Image, RefreshCw, AlertCircle, CheckCircle, Mail, MapPin, BarChart3, Activity, Zap } from 'lucide-react';
-
+import { useNavigate } from 'react-router-dom';
 const CloudinaryDashboard = () => {
   const [accounts, setAccounts] = useState([]);
   const [brevoData, setBrevoData] = useState(null);
@@ -16,7 +16,8 @@ const CloudinaryDashboard = () => {
   const [locationiqLastRefresh, setLocationiqLastRefresh] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [brevoRefreshing, setBrevoRefreshing] = useState(false);
-  const [locationiqRefreshing, setLocationiqRefreshing] = useState(false);
+    const [locationiqRefreshing, setLocationiqRefreshing] = useState(false);
+    const navigate = useNavigate();
 
   const BASE_API = process.env.REACT_APP_Base_API || 'http://localhost:2000';
 
@@ -113,9 +114,9 @@ const CloudinaryDashboard = () => {
       gap: '12px',
       minWidth: '160px'
     }}>
-      <div style={{ 
-        padding: '10px', 
-        backgroundColor: bgColor, 
+      <div style={{
+        padding: '10px',
+        backgroundColor: bgColor,
         borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
@@ -197,8 +198,8 @@ const CloudinaryDashboard = () => {
     }
 
     const creditsPercentage = (account.credits.used / account.credits.limit) * 100;
-    const storagePercentage = account.storage.limit 
-      ? (account.storage.bytes / account.storage.limit) * 100 
+    const storagePercentage = account.storage.limit
+      ? (account.storage.bytes / account.storage.limit) * 100
       : 0;
 
     const getStatusColor = () => {
@@ -446,8 +447,8 @@ const CloudinaryDashboard = () => {
   const totalStorage = accounts.reduce((sum, acc) => sum + (acc.storage?.bytes || 0), 0);
   const totalBandwidth = accounts.reduce((sum, acc) => sum + (acc.bandwidth?.bytes || 0), 0);
   const totalTransformations = accounts.reduce((sum, acc) => sum + (acc.transformations?.count || 0), 0);
-  const avgCreditsUsage = accounts.length > 0 
-    ? accounts.reduce((sum, acc) => sum + ((acc.credits?.used || 0) / (acc.credits?.limit || 1) * 100), 0) / accounts.length 
+  const avgCreditsUsage = accounts.length > 0
+    ? accounts.reduce((sum, acc) => sum + ((acc.credits?.used || 0) / (acc.credits?.limit || 1) * 100), 0) / accounts.length
     : 0;
 
   return (
@@ -455,29 +456,30 @@ const CloudinaryDashboard = () => {
       minHeight: '100vh',
       backgroundColor: '#F9FAFB',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
+      }}>
+          <button onClick={() => navigate('/admin/usagetrack2')}>Page 2</button>
       <style>
         {`
           @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
           }
-          
+
           div::-webkit-scrollbar {
             height: 8px;
             width: 8px;
           }
-          
+
           div::-webkit-scrollbar-track {
             background: #F3F4F6;
             border-radius: 4px;
           }
-          
+
           div::-webkit-scrollbar-thumb {
             background: #9CA3AF;
             border-radius: 4px;
           }
-          
+
           div::-webkit-scrollbar-thumb:hover {
             background: #6B7280;
           }
@@ -557,7 +559,7 @@ const CloudinaryDashboard = () => {
               Executive Summary
             </h2>
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
             <MiniMetric
               label="Total Accounts"
@@ -637,7 +639,7 @@ const CloudinaryDashboard = () => {
               {accounts.length} Accounts
             </span>
           </div>
-          
+
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -663,7 +665,7 @@ const CloudinaryDashboard = () => {
                 Brevo Email Service
               </h2>
             </div>
-            
+
             {brevoError ? (
               <div style={{
                 backgroundColor: '#FEF2F2',
@@ -703,7 +705,7 @@ const CloudinaryDashboard = () => {
                 LocationIQ Geocoding
               </h2>
             </div>
-            
+
             {locationiqError ? (
               <div style={{
                 backgroundColor: '#FEF2F2',

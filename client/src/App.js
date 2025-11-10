@@ -39,6 +39,7 @@ import ServiceTrackingSystem from "./screens/Managed Services/ManageServices";
 import AdminServiceTracking from "./screens/Admin Page/admin.servicesDashboard";
 import VoiceVirtualTourModal from "./screens/3D View Property/propview";
 import CloudinaryDashboard from "./screens/Admin Page/admin.usageManager";
+import AdminUsageDashboard from "./screens/Admin Page/admin.usageManager2";
 
 
 function App() {
@@ -93,7 +94,8 @@ function App() {
       <Route path="/servicesCreate" element={<ServiceRequestApp />} />
       <Route path="/services" element={<ServiceTrackingSystem />} />
       <Route path="/property/:id/virtual-tour" element={<VoiceVirtualTourModal />} />
-      <Route path="/admin/usagetrack"  element={<CloudinaryDashboard />}  />
+      <Route path="/admin/usagetrack" element={<CloudinaryDashboard />} />
+      <Route path="/admin/usagetrack2" element={<AdminUsageDashboard />} />
     </Routes>
   );
 }
