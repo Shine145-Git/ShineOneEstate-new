@@ -40,6 +40,7 @@ import AdminServiceTracking from "./screens/Admin Page/admin.servicesDashboard";
 import VoiceVirtualTourModal from "./screens/3D View Property/propview";
 import CloudinaryDashboard from "./screens/Admin Page/admin.usageManager";
 import AdminUsageDashboard from "./screens/Admin Page/admin.usageManager2";
+import PropertyListingPage from "./screens/Admin Page/admin.allproperties";
 
 
 function App() {
@@ -79,7 +80,7 @@ function App() {
       <Route path="/admin/UserManagement" element={<AdminProtectedRoute element={<UserManagementSystem />} />} />
       <Route path="/admin/enquiries" element={<AdminProtectedRoute element={<PaymentsRewardsDashboard />} />} />
       <Route path="/admin/callback" element={<AdminProtectedRoute element={<CallbackRequestsDashboard />} />} />
-      <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<AdminProperties />} />} />
+      <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<PropertyListingPage />} />} />
       <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />
       <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
       <Route path="/admin/services" element={<AdminProtectedRoute element={<AdminServiceTracking />} />} />
