@@ -8,6 +8,7 @@ const EnquiryPage = ({ propertyId }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -33,6 +34,7 @@ const EnquiryPage = ({ propertyId }) => {
       toast.error("Property ID missing. Cannot submit enquiry.");
       return;
     }
+    setLoading(true);
     try {
       const res = await fetch(`${process.env.REACT_APP_CREATE_ENQUIRY_API}`, {
         method: 'POST',
@@ -56,12 +58,22 @@ const EnquiryPage = ({ propertyId }) => {
     } catch (error) {
       console.error('Error sending enquiry:', error);
       toast.error('Server error. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <>
       <ToastContainer />
+      {loading && (
+        <div style={styles.loaderOverlay}>
+          <div style={styles.loaderContainer}>
+            <div className="spinner"></div>
+            <p style={{ marginTop: 12, color: '#fff', fontWeight: '500' }}>Submitting Enquiry...</p>
+          </div>
+        </div>
+      )}
       <div style={styles.pageContainer} className="enquiry-page">
         <h1 style={styles.header} className="enquiry-header">Contact & Enquiry</h1>
         <div style={styles.card} className="fade-in enquiry-card">
@@ -103,6 +115,18 @@ const EnquiryPage = ({ propertyId }) => {
         .hover-fade:hover {
           box-shadow: 0 8px 15px rgba(0, 180, 216, 0.4);
           transform: translateY(-2px);
+        }
+        .spinner {
+          border: 4px solid rgba(255, 255, 255, 0.3);
+          border-top: 4px solid #fff;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
 
         /* Mobile responsiveness */
@@ -204,6 +228,24 @@ const styles = {
     letterSpacing: 0.5,
     boxShadow: 'none',
     transition: 'box-shadow 0.3s ease, transform 0.3s ease',
+  },
+  loaderOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    backdropFilter: 'blur(2px)',
+  },
+  loaderContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
 };
 
