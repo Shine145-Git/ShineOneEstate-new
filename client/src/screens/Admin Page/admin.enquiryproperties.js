@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Filter,
   Download,
+  User, // Added
 } from "lucide-react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
@@ -25,21 +26,26 @@ const AdminEnquiryProperties = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  const fetchEnquiries = async () => {
+  // Pagination state for enquiries
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize] = useState(10); // fixed page size
+  const [totalEnquiries, setTotalEnquiries] = useState(0);
+
+  const fetchEnquiries = async (page = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/enquiry`,
-        {
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/enquiry?page=${page}&limit=${pageSize}`, {
+        credentials: "include",
+      });
       if (!response.ok) {
         throw new Error(`Error fetching enquiries: ${response.statusText}`);
       }
       const data = await response.json();
       setEnquiries(data.enquiries || []);
+      setTotalEnquiries(data.totalEnquiries || (Array.isArray(data.enquiries) ? data.enquiries.length : 0));
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -95,8 +101,8 @@ const AdminEnquiryProperties = () => {
   };
 
   useEffect(() => {
-    fetchEnquiries();
-  }, []);
+    fetchEnquiries(currentPage);
+  }, [currentPage]);
 
   const styles = {
     pageWrapper: {
@@ -459,7 +465,7 @@ const AdminEnquiryProperties = () => {
             <div style={styles.headerActions}>
               <button
                 style={styles.refreshButton}
-                onClick={fetchEnquiries}
+                onClick={() => fetchEnquiries(currentPage)}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "#f8fafc";
                   e.currentTarget.style.borderColor = "#cbd5e1";
@@ -478,26 +484,18 @@ const AdminEnquiryProperties = () => {
           <div style={styles.statsBar}>
             <div style={styles.statCard}>
               <span style={styles.statLabel}>Total Enquiries</span>
-              <span style={styles.statValue}>{enquiries.length}</span>
+              <span style={styles.statValue}>{totalEnquiries}</span>
             </div>
             <div style={styles.statCard}>
               <span style={styles.statLabel}>This Month</span>
               <span style={styles.statValue}>
-                {enquiries.filter(e => {
-                  const date = new Date(e.createdAt);
-                  const now = new Date();
-                  return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-                }).length}
+                {enquiries.filter(e => { const date = new Date(e.createdAt); const now = new Date(); return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear(); }).length}
               </span>
             </div>
             <div style={styles.statCard}>
               <span style={styles.statLabel}>Today</span>
               <span style={styles.statValue}>
-                {enquiries.filter(e => {
-                  const date = new Date(e.createdAt);
-                  const now = new Date();
-                  return date.toDateString() === now.toDateString();
-                }).length}
+                {enquiries.filter(e => { const date = new Date(e.createdAt); const now = new Date(); return date.toDateString() === now.toDateString(); }).length}
               </span>
             </div>
           </div>
@@ -547,12 +545,34 @@ const AdminEnquiryProperties = () => {
             </div>
           )}
 
-          {!loading && !error && enquiries.length > 0 && (
+          {!loading && !error && enquiries.length > 0 && ( <React.Fragment>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
+              <div style={{ fontSize: 14, color: '#64748b' }}>Showing page {currentPage} of {totalPages} — {totalEnquiries} enquiries total</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E0E7EE', background: currentPage <= 1 ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
+                >
+                  Previous
+                </button>
+                <div style={{ fontWeight: 600, color: '#003366' }}>Page {currentPage} of {totalPages}</div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E0E7EE', background: currentPage >= totalPages ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead style={styles.thead}>
                   <tr>
                     <th style={styles.th}>Property</th>
+                    <th style={styles.th}>Owner</th>
                     <th style={styles.th}>Customer</th>
                     <th style={styles.th}>Message</th>
                     <th style={styles.th}>Date & Time</th>
@@ -591,6 +611,27 @@ const AdminEnquiryProperties = () => {
                           </div>
                         </div>
                       </td>
+                      {/* Owner column */}
+                      <td style={styles.td}>
+                        <div style={styles.userCard}>
+                          {enquiry.owner ? (
+                            <>
+                              
+                              <div style={styles.contactRow}>
+                                <Mail size={14} style={styles.contactIcon} />
+                                <span>{enquiry.owner.email || "N/A"}</span>
+                              </div>
+                              <div style={styles.contactRow}>
+                                <Phone size={14} style={styles.contactIcon} />
+                                <span>{enquiry.owner.mobileNumber || "N/A"}</span>
+                              </div>
+                            </>
+                          ) : (
+                            <span style={{ color: "#94a3b8", fontSize: "13px" }}>No owner found</span>
+                          )}
+                        </div>
+                      </td>
+                      {/* Customer column */}
                       <td style={styles.td}>
                         <div style={styles.userCard}>
                           <div style={styles.contactRow}>
@@ -670,8 +711,25 @@ const AdminEnquiryProperties = () => {
                   ))}
                 </tbody>
               </table>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px', gap: 8 }}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: currentPage <= 1 ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
+                >
+                  Previous
+                </button>
+                <div style={{ alignSelf: 'center', color: '#64748b' }}>Page {currentPage} of {totalPages}</div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: currentPage >= totalPages ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          )}
+          </React.Fragment>)}
         </div>
       </div>
     </div>

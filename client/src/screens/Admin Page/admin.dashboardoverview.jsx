@@ -17,9 +17,15 @@ const AdminDashboard = () => {
     rewards: false
   });
 
+  // Pagination state for dashboard paginated sections
+  const [approvedPage, setApprovedPage] = useState(1);
+  const [recentPage, setRecentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // default page size coming from backend
+
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [approvedPage, recentPage, pageSize]);
 
   const handleLogout = async () => {
     await fetch(process.env.REACT_APP_LOGOUT_API, {
@@ -51,22 +57,23 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Fetch admin overview data
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/overview`, {
+      // Fetch admin overview data with pagination params for approved payments and recent activity
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/overview?approvedPage=${approvedPage}&recentPage=${recentPage}&limit=${pageSize}`, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      const data = await response.json();
-      console.log("✅ Admin Overview Data:", data);
-      setData(data);
+      const json = await response.json();
+      console.log('✅ Admin Overview Data:', json);
+      setData(json);
       setLoading(false);
+      setError(null);
     } catch (err) {
       setError(err.message);
       setLoading(false);
-      console.error("❌ Error fetching admin overview:", err);
+      console.error('❌ Error fetching admin overview:', err);
     }
   };
 
@@ -317,7 +324,33 @@ const AdminDashboard = () => {
 
   if (!data) return null;
 
-  const { summary, charts, recentActivity, approvedPayments } = data;
+  // Normalize incoming data and provide strong safe defaults
+  const raw = data || {};
+  const recentActivity = Array.isArray(raw.recentActivity) ? raw.recentActivity : [];
+  const approvedPayments = Array.isArray(raw.approvedPayments) ? raw.approvedPayments : [];
+
+  const summaryDefaults = {
+    totalUsers: 0, renters: 0, owners: 0, admins: 0,
+    totalProperties: 0, rentalCount: 0, saleCount: 0,
+    pendingPayments: 0, approvedPayments: 0, approvedPaymentsThisMonth: 0,
+    completedPayments: 0, totalRevenue: 0, totalPreferences: 0, totalSearches: 0,
+    averagePropertyRating: 0, aiUsersCount: 0, activeUsersCount: 0, inactiveUsersCount: 0,
+    totalRewardsDistributed: 0, totalRevenuePending: 0, totalRevenueCompleted: 0, totalRevenueApproved: 0,
+    avgTransactionAmount: 0
+  };
+
+  const chartsDefaults = {
+    engagement: { totalViews: 0, totalSaves: 0, totalRatings: 0, avgEngagementTime: 0 },
+    rewards: { totalRewards: 0, unclaimedRewards: 0, recentRewards: [] },
+    searchInsights: { topSearches: [], mostSearchedLocations: [], avgSearchesPerUser: 0 },
+    propertyStats: { topViewedRental: [], topSavedRental: [], topRatedRental: [], topViewedSale: [], topSavedSale: [], topRatedSale: [] },
+    revenueByMethod: {},
+    userGrowth: []
+  };
+
+  // Merge provided values with defaults
+  const summary = Object.assign({}, summaryDefaults, (raw.summary && typeof raw.summary === 'object') ? raw.summary : {});
+  const charts = Object.assign({}, chartsDefaults, (raw.charts && typeof raw.charts === 'object') ? raw.charts : {});
 
   const StatCard = ({ title, value, subtitle, icon: Icon, color, gradient }) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -632,39 +665,60 @@ const AdminDashboard = () => {
           </div>
           
           {expandedSections.recentActivity && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>Type</th>
-                    <th style={styles.th}>User</th>
-                    <th style={styles.th}>Action</th>
-                    <th style={styles.th}>Details</th>
-                    <th style={styles.th}>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentActivity.slice(0, 15).map((activity, index) => (
-                    <tr key={index}>
-                      <td style={styles.td}>
-                        <span style={{
-                          ...styles.badge,
-                          backgroundColor: activity.type === 'user' ? '#003366' : 
-                                         activity.type === 'property' ? '#00A79D' : '#22D3EE',
-                          color: '#FFFFFF'
-                        }}>
-                          {activity.type}
-                        </span>
-                      </td>
-                      <td style={styles.td}>{activity.user}</td>
-                      <td style={styles.td}>{activity.action}</td>
-                      <td style={styles.td}>{activity.location}</td>
-                      <td style={styles.td}>{formatDate(activity.time)}</td>
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 14, color: '#64748b' }}>Showing page {recentPage}</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => setRecentPage(p => Math.max(1, p - 1))}
+                    disabled={recentPage <= 1}
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: recentPage <= 1 ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: recentPage <= 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setRecentPage(p => p + 1)}
+                    disabled={!(data && data.recentActivity && data.recentActivity.length === pageSize)}
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: (data && data.recentActivity && data.recentActivity.length === pageSize) ? '#003366' : '#F4F7F9', color: '#FFFFFF', cursor: (data && data.recentActivity && data.recentActivity.length === pageSize) ? 'pointer' : 'not-allowed' }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Type</th>
+                      <th style={styles.th}>User</th>
+                      <th style={styles.th}>Action</th>
+                      <th style={styles.th}>Details</th>
+                      <th style={styles.th}>Time</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {recentActivity.slice(0, 15).map((activity, index) => (
+                      <tr key={index}>
+                        <td style={styles.td}>
+                          <span style={{
+                            ...styles.badge,
+                            backgroundColor: activity.type === 'user' ? '#003366' : 
+                                           activity.type === 'property' ? '#00A79D' : '#22D3EE',
+                            color: '#FFFFFF'
+                          }}>
+                            {activity.type}
+                          </span>
+                        </td>
+                        <td style={styles.td}>{activity.user}</td>
+                        <td style={styles.td}>{activity.action}</td>
+                        <td style={styles.td}>{activity.location}</td>
+                        <td style={styles.td}>{formatDate(activity.time)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 
@@ -683,36 +737,57 @@ const AdminDashboard = () => {
             </div>
             
             {expandedSections.approvedPayments && (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Resident</th>
-                      <th style={styles.th}>Property</th>
-                      <th style={styles.th}>Amount</th>
-                      <th style={styles.th}>Method</th>
-                      <th style={styles.th}>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {approvedPayments.map((payment, index) => (
-                      <tr key={index}>
-                        <td style={styles.td}>{payment.resident?.email || 'N/A'}</td>
-                        <td style={styles.td}>
-                          {payment.property ? 
-                            `${payment.property.propertyType || 'Property'} - ${payment.property.Sector || payment.property.address || 'N/A'}` 
-                            : 'N/A'}
-                        </td>
-                        <td style={styles.td}>
-                          <strong style={{ color: '#00A79D' }}>{formatCurrency(payment.amount)}</strong>
-                        </td>
-                        <td style={styles.td}>{payment.paymentMethod || 'N/A'}</td>
-                        <td style={styles.td}>{formatDate(payment.paymentDate)}</td>
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 14, color: '#64748b' }}>Showing page {approvedPage}</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => setApprovedPage(p => Math.max(1, p - 1))}
+                      disabled={approvedPage <= 1}
+                      style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: approvedPage <= 1 ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: approvedPage <= 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setApprovedPage(p => p + 1)}
+                      disabled={!(data && data.approvedPayments && data.approvedPayments.length === pageSize)}
+                      style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: (data && data.approvedPayments && data.approvedPayments.length === pageSize) ? '#003366' : '#F4F7F9', color: '#FFFFFF', cursor: (data && data.approvedPayments && data.approvedPayments.length === pageSize) ? 'pointer' : 'not-allowed' }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>Resident</th>
+                        <th style={styles.th}>Property</th>
+                        <th style={styles.th}>Amount</th>
+                        <th style={styles.th}>Method</th>
+                        <th style={styles.th}>Date</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {approvedPayments.map((payment, index) => (
+                        <tr key={index}>
+                          <td style={styles.td}>{payment.resident?.email || 'N/A'}</td>
+                          <td style={styles.td}>
+                            {payment.property ? 
+                              `${payment.property.propertyType || 'Property'} - ${payment.property.Sector || payment.property.address || 'N/A'}` 
+                              : 'N/A'}
+                          </td>
+                          <td style={styles.td}>
+                            <strong style={{ color: '#00A79D' }}>{formatCurrency(payment.amount)}</strong>
+                          </td>
+                          <td style={styles.td}>{payment.paymentMethod || 'N/A'}</td>
+                          <td style={styles.td}>{formatDate(payment.paymentDate)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}

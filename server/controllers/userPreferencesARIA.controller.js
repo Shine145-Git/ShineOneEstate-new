@@ -16,10 +16,49 @@ exports.saveUserPreferencesARIA = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and assistantType are required." });
     }
 
-    // Sanitize preferences safely
+    // Sanitize preferences safely — only copy known fields, preserve arrays, and avoid writing invalid enum values
+    const allowedFields = [
+      'location',
+      'sector',
+      'budget',
+      'size',
+      'furnishing',
+      'propertyType',
+      'amenities',
+      'purchasePurpose',
+      'timeline'
+    ];
+
     const safePreferences = {};
-    Object.keys(preferences || {}).forEach((key) => {
-      safePreferences[key] = preferences[key] == null ? "" : preferences[key];
+
+    (Object.keys(preferences || {})).forEach((key) => {
+      if (!allowedFields.includes(key)) return; // ignore unexpected fields
+
+      const value = preferences[key];
+
+      // Preserve arrays for amenities; accept comma-separated string and convert to array
+      if (key === 'amenities') {
+        if (Array.isArray(value)) {
+          safePreferences.amenities = value.map((v) => (v == null ? '' : String(v).trim())).filter((v) => v !== '');
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          safePreferences.amenities = value.split(',').map((v) => v.trim()).filter((v) => v !== '');
+        }
+        return;
+      }
+
+      // Validate purchasePurpose enum — only accept known values
+      if (key === 'purchasePurpose') {
+        const allowedPurchase = ['personal', 'investment'];
+        if (typeof value === 'string' && allowedPurchase.includes(value)) {
+          safePreferences.purchasePurpose = value;
+        }
+        return;
+      }
+
+      // For everything else, only set the value if it's not null/undefined
+      if (value !== null && value !== undefined) {
+        safePreferences[key] = value;
+      }
     });
 
     // Check if a preference record exists for this email + assistantType

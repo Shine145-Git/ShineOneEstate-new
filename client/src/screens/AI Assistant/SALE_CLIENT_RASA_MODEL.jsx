@@ -26,15 +26,15 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
     const waveIntervalRef = useRef(null);
 
   const [user, setUser] = useState(null);
-  // Conversation questions for rental preferences
+  // Conversation questions for sale preferences
   const questions = [
     "Hello! I'm Aria, your AI Sale assistant. Let's find your ideal Sale property. First, which sector are you looking to buy property in?",
     "What is your budget range for the property purchase?",
-    "What type of property are you interested in? (e.g., apartment, villa, plot, commercial space)",
-    "What size or configuration are you looking for? (e.g., 2BHK, 3BHK, 2000 sq ft, etc.)",
+    "What type of property are you interested in? ",
+    "What size or configuration are you looking for? ",
     "Are you buying for personal use or as an investment?",
-    "Do you have any special preferences or amenities in mind? (e.g., parking, garden, gated community, swimming pool)",
-    "When are you planning to make the property purchase? (e.g., immediately, within 3 months, later this year)",
+    "Do you have any special preferences or amenities in mind? ",
+    "When are you planning to make the property purchase? ",
     "Thank you for sharing all the details. I'll save your preferences now."
   ];
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -200,15 +200,16 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
           if (nextIdx === questions.length - 1) {
             // user just answered the last main question (before thank-you)
             const orderedPrefs = {
-              location: collectedPrefsRef.current[0] || "",
+              sector: collectedPrefsRef.current[0] || "",
               budget: collectedPrefsRef.current[1] || "",
-              size: collectedPrefsRef.current[2] || "",
-              amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
-              furnishing: "",
-              propertyType: ""
+              propertyType: collectedPrefsRef.current[2] || "",
+              size: collectedPrefsRef.current[3] || "",
+              purchasePurpose: (collectedPrefsRef.current[4] || "").toLowerCase().includes('invest') ? 'investment' : 'personal',
+              amenities: collectedPrefsRef.current[5] ? [collectedPrefsRef.current[5]] : [],
+              timeline: collectedPrefsRef.current[6] || ""
             };
             const searchQuery = encodeURIComponent(
-              `${orderedPrefs.size || ""} in ${orderedPrefs.location}`
+              `${orderedPrefs.size || ""} in ${orderedPrefs.sector}`
                 .trim()
             );
             try {
@@ -217,7 +218,7 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   email: user?.email || null,
-                  assistantType: "rental",
+                  assistantType: "sale",
                   preferences: orderedPrefs,
                 }),
                 credentials: "include",
@@ -235,24 +236,25 @@ const readySound = useRef(new Audio("/MicSound.mp3"));
           } else {
             // All questions done, preferences to backend (fallback, rarely triggered)
             const orderedPrefs = {
-              location: collectedPrefsRef.current[0] || "",
+              sector: collectedPrefsRef.current[0] || "",
               budget: collectedPrefsRef.current[1] || "",
-              size: collectedPrefsRef.current[2] || "",
-              amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
-              furnishing: "",
-              propertyType: ""
+              propertyType: collectedPrefsRef.current[2] || "",
+              size: collectedPrefsRef.current[3] || "",
+              purchasePurpose: (collectedPrefsRef.current[4] || "").toLowerCase().includes('invest') ? 'investment' : 'personal',
+              amenities: collectedPrefsRef.current[5] ? [collectedPrefsRef.current[5]] : [],
+              timeline: collectedPrefsRef.current[6] || ""
             };
             console.log("🧾 Final orderedPrefs before sending (from ref):", orderedPrefs);
             const payload = {
               email: user?.email || null,
-              assistantType: "rental",
+              assistantType: "sale",
               preferences: orderedPrefs,
             };
             setMessages(prev => [...prev, { type: "bot", text: questions[questions.length - 1] }]);
             speak(questions[questions.length - 1]);
             // Build query string from preferences
             const searchQuery = encodeURIComponent(
-              `${orderedPrefs.size || ""} in ${orderedPrefs.location}`
+              `${orderedPrefs.size || ""} in ${orderedPrefs.sector}`
                 .trim()
             );
             // Save to backend

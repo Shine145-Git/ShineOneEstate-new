@@ -92,90 +92,92 @@ const toggleReviewStatus = async (req, res) => {
 
 const getCallbackRequests = async (req, res) => {
   try {
-    const {
-      status,
-      dateRange,
-      sortBy = "createdAt",
-      order = "desc",
-      search,
-      limit = 50,
-      page = 1
-    } = req.query;
+    // Parse and normalize query params for pagination, filtering, and sorting
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const skip = (page - 1) * limit;
+
+    const { status, dateRange, sortBy = 'createdAt', order = 'desc', search } = req.query;
 
     const filter = {};
 
     // Filter by status (e.g., pending, resolved, in-progress)
-    if (status) {
-      filter.status = status;
-    }
+    if (status) filter.status = status;
 
     // Filter by date range
     if (dateRange) {
-      const [start, end] = dateRange.split(",");
+      const [start, end] = dateRange.split(',');
       filter.createdAt = {
         $gte: new Date(start),
         $lte: end ? new Date(end) : new Date()
       };
     }
 
-    // Search across name, phone, and email fields
+    // Search across name, phone, email and issue
     if (search) {
       filter.$or = [
-        { name: new RegExp(search, "i") },
-        { phone: new RegExp(search, "i") },
-        { email: new RegExp(search, "i") },
-        { issue: new RegExp(search, "i") }
+        { name: new RegExp(search, 'i') },
+        { phone: new RegExp(search, 'i') },
+        { email: new RegExp(search, 'i') },
+        { issue: new RegExp(search, 'i') }
       ];
     }
 
-    // Pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const total = await CustomerSupport.countDocuments(filter);
+    // Total matching documents for pagination
+    const totalMatched = await CustomerSupport.countDocuments(filter);
 
-    // Fetch records
+    // Fetch paginated records with sorting
+    const sortOrder = order === 'asc' ? 1 : -1;
     const requests = await CustomerSupport.find(filter)
-      .sort({ [sortBy]: order === "asc" ? 1 : -1 })
+      .sort({ [sortBy]: sortOrder })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limit)
+      .lean();
 
-    // Analytics
+    // Analytics (global counts)
     const totalRequests = await CustomerSupport.countDocuments();
-    const pendingCount = await CustomerSupport.countDocuments({ status: "pending" });
-    const resolvedCount = await CustomerSupport.countDocuments({ status: "resolved" });
-    const inProgressCount = await CustomerSupport.countDocuments({ status: "in-progress" });
+    const pendingCount = await CustomerSupport.countDocuments({ status: 'pending' });
+    const resolvedCount = await CustomerSupport.countDocuments({ status: 'resolved' });
+    const inProgressCount = await CustomerSupport.countDocuments({ status: 'in-progress' });
 
-    // Group by date for activity trends
-    const trendData = await CustomerSupport.aggregate([
+    // Group by date for activity trends (limited to matched filter range for relevance)
+    const trendMatch = filter.createdAt ? { createdAt: filter.createdAt } : {};
+    const trendPipeline = [
+      { $match: trendMatch },
       {
         $group: {
           _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" },
-            day: { $dayOfMonth: "$createdAt" }
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' }
           },
           count: { $sum: 1 }
         }
       },
-      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
-    ]);
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ];
+    const trendData = await CustomerSupport.aggregate(trendPipeline);
 
     res.status(200).json({
       metadata: {
-        total,
+        total: totalMatched,
         totalRequests,
         pendingCount,
         resolvedCount,
         inProgressCount,
-        page: parseInt(page),
-        pages: Math.ceil(total / limit),
-        trendData
+        page,
+        limit,
+        totalPages: Math.ceil(totalMatched / limit),
+        sortBy,
+        order
       },
-      data: requests
+      data: requests,
+      trendData
     });
   } catch (error) {
-    console.error("Error fetching callback requests:", error);
+    console.error('Error fetching callback requests:', error);
     res.status(500).json({
-      message: "Server error while fetching callback requests",
+      message: 'Server error while fetching callback requests',
       error: error.message
     });
   }
@@ -663,13 +665,26 @@ const activeUsersPropertiesSale = await SaleProperty.distinct('ownerId', { creat
 
 const getAllUsersDetailed = async (req, res) => {
   try {
-    const users = await User.find();
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 10);
+    const skip = (page - 1) * limit;
+    const totalUsers = await User.countDocuments();
+    const users = await User.find().skip(skip).limit(limit);
 
     const detailedUsers = await Promise.all(users.map(async (user) => {
       const userId = user._id;
 
       // AI Assistant usage
-      const aiUsage = await UserPreferencesARIA.findOne({ email: user.email });
+      const rawAiUsage = await UserPreferencesARIA.findOne({ email: user.email }).lean();
+      // Normalize AI usage shape so frontend always receives a predictable object
+      const aiUsage = rawAiUsage
+        ? {
+            assistantType: rawAiUsage.assistantType || null,
+            preferences: rawAiUsage.preferences || {},
+            createdAt: rawAiUsage.createdAt || null,
+            updatedAt: rawAiUsage.updatedAt || null,
+          }
+        : null;
 
       // Rewards info (count and latest message)
       const rewards = await PropertyAnalysis.find({ user: userId, rewardMessage: { $exists: true, $ne: null } })
@@ -759,7 +774,13 @@ const getAllUsersDetailed = async (req, res) => {
       };
     }));
 
-    res.status(200).json({ users: detailedUsers });
+    res.status(200).json({
+      page,
+      limit,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      users: detailedUsers
+    });
   } catch (error) {
     console.error("Error fetching detailed user info:", error);
     res.status(500).json({ message: "Error fetching detailed user info", error: error.message });
@@ -827,56 +848,62 @@ const updateUserRole = async (req, res) => {
 };
 const getAllProperties = async (req, res) => {
   try {
-    const { limit } = req.query;
-    // Fetch all properties
-    const rentalProperties = await RentalProperty.find().populate("owner", "name email");
-    const saleProperties = await SaleProperty.find().populate("ownerId", "name email");
+    // Pagination params (default to page=1, limit=10)
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const skip = (page - 1) * limit;
 
-    const rentalLimit = limit && !isNaN(Number(limit)) ? Number(limit) : rentalProperties.length;
-    const saleLimit = limit && !isNaN(Number(limit)) ? Number(limit) : saleProperties.length;
-    const limitedRental = rentalProperties.slice(0, rentalLimit);
-    const limitedSale = saleProperties.slice(0, saleLimit);
+    // Fetch rental and sale properties (only required fields for admin listing)
+    const [rentalProperties, saleProperties, reviewStatuses] = await Promise.all([
+      RentalProperty.find().populate('owner', 'name email').lean(),
+      SaleProperty.find().populate('ownerId', 'name email').lean(),
+      PropertyReviewStatus.find().lean()
+    ]);
 
-    // Fetch review statuses
-    const reviewStatuses = await PropertyReviewStatus.find();
-
-    // Merge review statuses into property data
+    // Merge and normalize properties with review info and a unified owner field
     let allProperties = [
-      ...limitedRental.map((prop) => {
-        const review = reviewStatuses.find(
-          (r) => r.propertyId.toString() === prop._id.toString()
-        );
+      ...rentalProperties.map((prop) => {
+        const review = reviewStatuses.find(r => r.propertyId.toString() === prop._id.toString());
         return {
-          ...prop.toObject(),
-          defaultpropertytype: "rental",
+          ...prop,
+          owner: prop.owner || null,
+          defaultpropertytype: 'rental',
           isReviewed: review ? review.isReviewed : false,
+          createdAt: prop.createdAt || null
         };
       }),
-      ...limitedSale.map((prop) => {
-        const review = reviewStatuses.find(
-          (r) => r.propertyId.toString() === prop._id.toString()
-        );
+      ...saleProperties.map((prop) => {
+        const review = reviewStatuses.find(r => r.propertyId.toString() === prop._id.toString());
         return {
-          ...prop.toObject(),
-          defaultpropertytype: "sale",
+          ...prop,
+          owner: prop.ownerId || null,
+          defaultpropertytype: 'sale',
           isReviewed: review ? review.isReviewed : false,
+          createdAt: prop.createdAt || null
         };
-      }),
+      })
     ];
 
-    const numericLimit = limit && !isNaN(Number(limit)) ? Number(limit) : null;
-    if (numericLimit) {
-      // Shuffle and take only the requested number of properties
-      allProperties = allProperties
-        .sort(() => 0.5 - Math.random()) // randomize order
-        .slice(0, numericLimit);
-    }
+    // Sort by createdAt descending (newest first)
+    allProperties.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    res.status(200).json(allProperties);
+    const total = allProperties.length;
+    const totalPages = Math.ceil(total / limit);
+
+    // Paginate the merged array
+    const paginated = allProperties.slice(skip, skip + limit);
+
+    res.status(200).json({
+      page,
+      limit,
+      total,
+      totalPages,
+      properties: paginated
+    });
   } catch (error) {
-    console.error("Error fetching all properties:", error);
+    console.error('Error fetching all properties:', error);
     res.status(500).json({
-      message: "Server error while fetching all properties",
+      message: 'Server error while fetching all properties',
       error: error.message,
     });
   }

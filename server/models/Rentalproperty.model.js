@@ -77,6 +77,7 @@ const RentalpropertySchema = new mongoose.Schema(
       ref: "User",
     },
     ownernumber: { type: String },
+    ownerType: { type: String, enum: ["Owner", "Agent"], default: "Owner" },
 
     isActive: { type: Boolean, default: true }
   },

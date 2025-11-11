@@ -36,6 +36,29 @@ const Searchproperty = () => {
   const [areaSuggestions, setAreaSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsTimeout = useRef(null);
+    const [filteredPayments, setFilteredPayments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
+  const [viewMode, setViewMode] = useState("list");
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("relevance");
+  // Additional filters
+  const [bedroomsFilter, setBedroomsFilter] = useState("");
+  const [bathroomsFilter, setBathroomsFilter] = useState("");
+  const [minPriceFilter, setMinPriceFilter] = useState("");
+  const [maxPriceFilter, setMaxPriceFilter] = useState("");
+  const [minAreaFilter, setMinAreaFilter] = useState("");
+  const [maxAreaFilter, setMaxAreaFilter] = useState("");
+  const [moveInDateFilter, setMoveInDateFilter] = useState("");
+  const [parkingFilter, setParkingFilter] = useState("");
+  const [petPolicyFilter, setPetPolicyFilter] = useState("");
+  const [smokingPolicyFilter, setSmokingPolicyFilter] = useState("");
+  const [amenitiesFilter, setAmenitiesFilter] = useState([]);
+
+  // Pagination (server-driven)
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [hasMore, setHasMore] = useState(true);
 
   // Debounced fetch for sector/area suggestions
   useEffect(() => {
@@ -74,29 +97,7 @@ const Searchproperty = () => {
     }
   };
 
-  const [filteredPayments, setFilteredPayments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
-  const [viewMode, setViewMode] = useState("list");
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState("relevance");
-  // Additional filters
-  const [bedroomsFilter, setBedroomsFilter] = useState("");
-  const [bathroomsFilter, setBathroomsFilter] = useState("");
-  const [minPriceFilter, setMinPriceFilter] = useState("");
-  const [maxPriceFilter, setMaxPriceFilter] = useState("");
-  const [minAreaFilter, setMinAreaFilter] = useState("");
-  const [maxAreaFilter, setMaxAreaFilter] = useState("");
-  const [moveInDateFilter, setMoveInDateFilter] = useState("");
-  const [parkingFilter, setParkingFilter] = useState("");
-  const [petPolicyFilter, setPetPolicyFilter] = useState("");
-  const [smokingPolicyFilter, setSmokingPolicyFilter] = useState("");
-  const [amenitiesFilter, setAmenitiesFilter] = useState([]);
 
-  // Pagination (server-driven)
-  const [page, setPage] = useState(1);
-  const limit = 10;
-  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     if (location.state?.type === "sale") setPropertyTypeFilter("sale");

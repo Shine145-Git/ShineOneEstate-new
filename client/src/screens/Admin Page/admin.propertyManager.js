@@ -12,28 +12,35 @@ const AdminPropertyManager = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [stats, setStats] = useState({ total: 0, reviewed: 0, notReviewed: 0, active: 0 });
   const [currentPage, setCurrentPage] = useState(1);
-  const PROPERTIES_PER_PAGE = 20;
+  const PROPERTIES_PER_PAGE = 10;
   const [user, setUser] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
-  const fetchAllProperties = async () => {
+  const fetchAllProperties = async (page = currentPage) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_Base_API}/api/properties`, {
+      const response = await axios.get(`${process.env.REACT_APP_Base_API}/api/properties?page=${page}&limit=${PROPERTIES_PER_PAGE}`, {
         withCredentials: true,
       });
-      const allProps = response.data || [];
-      setProperties(allProps);
-      // Calculate stats
-      const reviewed = allProps.filter(p => p.isReviewed);
-      const notReviewed = allProps.filter(p => !p.isReviewed);
+
+      const data = response.data || {};
+      const pageProperties = Array.isArray(data.properties) ? data.properties : [];
+      const total = typeof data.total === 'number' ? data.total : pageProperties.length;
+
+      setProperties(pageProperties);
+      setTotalPages(data.totalPages || 1);
+      setCurrentPage(data.page || page);
+
+      // Calculate stats from the current page + global total where available
+      const reviewed = pageProperties.filter(p => p.isReviewed);
+      const notReviewed = pageProperties.filter(p => !p.isReviewed);
       setStats({
-        total: allProps.length,
+        total: total,
         reviewed: reviewed.length,
         notReviewed: notReviewed.length,
-        active: allProps.filter(p => p.isActive).length
+        active: pageProperties.filter(p => p.isActive).length
       });
-      setCurrentPage(1);
     } catch (err) {
       console.error("Error loading properties:", err);
       setError("Failed to load properties");
@@ -43,8 +50,8 @@ const AdminPropertyManager = () => {
   };
 
   useEffect(() => {
-    fetchAllProperties();
-  }, []);
+    fetchAllProperties(currentPage);
+  }, [currentPage]);
 
   const handleLogout = async () => {
     await fetch(process.env.REACT_APP_LOGOUT_API, {
@@ -149,25 +156,8 @@ const AdminPropertyManager = () => {
   const reviewedList = properties.filter(p => p.isReviewed);
   const notReviewedTotal = notReviewedList.length;
   const reviewedTotal = reviewedList.length;
-
-  // Pagination logic
-  const notReviewedPageCount = Math.max(1, Math.ceil(notReviewedTotal / PROPERTIES_PER_PAGE));
-  const reviewedPageCount = Math.max(1, Math.ceil(reviewedTotal / PROPERTIES_PER_PAGE));
-
-  // For this implementation, one pagination bar for both columns, synced page
-  const paginatedNotReviewed = notReviewedList.slice(
-    (currentPage - 1) * PROPERTIES_PER_PAGE,
-    currentPage * PROPERTIES_PER_PAGE
-  );
-  const paginatedReviewed = reviewedList.slice(
-    (currentPage - 1) * PROPERTIES_PER_PAGE,
-    currentPage * PROPERTIES_PER_PAGE
-  );
-  const totalPages = Math.max(
-    Math.ceil(notReviewedTotal / PROPERTIES_PER_PAGE),
-    Math.ceil(reviewedTotal / PROPERTIES_PER_PAGE),
-    1
-  );
+  const paginatedNotReviewed = notReviewedList;
+  const paginatedReviewed = reviewedList;
 
   return (
     <div style={styles.container}>
@@ -484,6 +474,7 @@ const CompactPropertyCard = ({ property, onToggleActive, onToggleReview, onEdit,
             {property.address || "N/A"}
           </span>
           <span style={styles.compactText}>• {property.purpose}</span>
+          <span style={styles.compactText}>• Listing: {property.ownerType || 'N.A'}</span>
         </div>
       </div>
 

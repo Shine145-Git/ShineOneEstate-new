@@ -13,6 +13,11 @@ const UserManagementDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
+  // Pagination state for admin user listing
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize] = useState(10); // fixed page size
+
   // Toggle state for expanded AI Assistant preferences per user
   const [expandedAIUsers, setExpandedAIUsers] = useState({});
 
@@ -22,8 +27,8 @@ const UserManagementDashboard = () => {
   const [visiblePropertyCounts, setVisiblePropertyCounts] = useState({});
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(currentPage);
+  }, [currentPage]);
   const handleLogout = async () => {
     await fetch(process.env.REACT_APP_LOGOUT_API, {
       method: "POST",
@@ -51,31 +56,56 @@ const UserManagementDashboard = () => {
 
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(process.env.REACT_APP_ADMIN_GET_USERS_API, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+const fetchUsers = async (page = 1) => {
+  try {
+    setLoading(true);
+    const response = await fetch(`${process.env.REACT_APP_ADMIN_GET_USERS_API}?page=${page}&limit=${pageSize}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-
-      const data = await response.json();
-      setUsers(data.users || []);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching users:', err);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      const text = await response.text().catch(() => 'Unable to read response body');
+      console.error('fetchUsers: non-OK response', response.status, text);
+      throw new Error('Failed to fetch users');
     }
-  };
+
+    const data = await response.json().catch(() => null);
+    if (!data || !Array.isArray(data.users)) {
+      console.warn('fetchUsers: unexpected response shape', data);
+      setUsers([]);
+      setError(null);
+      setTotalPages(1);
+      return;
+    }
+
+    // Normalize aiAssistantUsage to always be an object or null
+    const normalized = data.users.map(u => ({
+      ...u,
+      aiAssistantUsage: u.aiAssistantUsage || null,
+    }));
+
+    setUsers(normalized);
+    setTotalPages(data.totalPages || 1);
+
+    // If backend returned page, update currentPage (keeps client/server in sync)
+    if (typeof data.page === 'number' && data.page !== currentPage) setCurrentPage(data.page);
+
+    // Log summary for debugging: number of users and first user's aiUsage
+    console.log('fetched users count:', normalized.length);
+    if (normalized.length > 0) console.log('first user aiAssistantUsage:', normalized[0].aiAssistantUsage);
+
+    setError(null);
+  } catch (err) {
+    setError(err.message);
+    console.error('Error fetching users:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Fetch reward activity summary for a specific user
   const fetchUserRewards = async (userId) => {
@@ -437,6 +467,27 @@ const UserManagementDashboard = () => {
         <p style={styles.subtitle}>Comprehensive overview of all registered users and their activities</p>
       </div>
 
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1400px', margin: '0 auto 12px' }}>
+        <div />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E0E7EE', background: currentPage <=1 ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: currentPage <=1 ? 'not-allowed' : 'pointer' }}
+          >
+            Previous
+          </button>
+          <div style={{ fontWeight: 600, color: '#003366' }}>Page {currentPage} of {totalPages}</div>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E0E7EE', background: currentPage >= totalPages ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       <div style={styles.userGrid}>
         {users.length === 0 ? (
           <div style={styles.emptyState}>No users found</div>
@@ -495,114 +546,119 @@ const UserManagementDashboard = () => {
                   </div>
                 </div>
 
-                {/* AI Assistant Usage */}
-                {user.aiAssistantUsage && (
-                  <div style={styles.section}>
-                    <h3 style={styles.sectionTitle}>
-                      🤖 AI Assistant Usage
-                    </h3>
-                    <div style={styles.infoGrid}>
-                      <div style={styles.infoItem}>
-                        <div style={styles.infoLabel}>Email</div>
-                        <div style={styles.infoValue}>{user.aiAssistantUsage.email || 'N/A'}</div>
-                      </div>
-                      <div style={styles.infoItem}>
-                        <div style={styles.infoLabel}>Last Used</div>
-                        <div style={styles.infoValue}>
-                          {user.aiAssistantUsage.updatedAt
-                            ? formatDate(user.aiAssistantUsage.updatedAt)
-                            : user.aiAssistantUsage.createdAt
-                            ? formatDate(user.aiAssistantUsage.createdAt)
-                            : 'N/A'}
-                        </div>
-                      </div>
+                          {/* AI Assistant Usage */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>
+              🤖 AI Assistant Usage
+            </h3>
+
+            {/* Top-level info: Email + Last Used */}
+            <div style={styles.infoGrid}>
+              <div style={styles.infoItem}>
+                <div style={styles.infoLabel}>Email</div>
+                <div style={styles.infoValue}>
+                  {(user.aiAssistantUsage && user.aiAssistantUsage.email) || user.email || 'N/A'}
+                </div>
+              </div>
+              <div style={styles.infoItem}>
+                <div style={styles.infoLabel}>Last Used</div>
+                <div style={styles.infoValue}>
+                  {user.aiAssistantUsage && (user.aiAssistantUsage.updatedAt
+                    ? formatDate(user.aiAssistantUsage.updatedAt)
+                    : user.aiAssistantUsage.createdAt
+                    ? formatDate(user.aiAssistantUsage.createdAt)
+                    : 'N/A')}
+                </div>
+              </div>
+            </div>
+
+            {/* Preferences dropdown - show even when preferences object is empty */}
+            <div style={{
+              marginTop: '10px',
+              background: '#FFFFFF',
+              borderRadius: '10px',
+              border: '1px solid #E0E7EE',
+              overflow: 'hidden',
+            }}>
+              <div
+                style={{
+                  padding: '10px 16px',
+                  background: '#F4F7F9',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+                onClick={() =>
+                  setExpandedAIUsers((prev) => ({
+                    ...prev,
+                    [user._id]: !prev[user._id],
+                  }))
+                }
+              >
+                <div style={{ fontWeight: '600', color: '#003366' }}>User Preferences</div>
+                {expandedAIUsers[user._id] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </div>
+
+              <div
+                style={{
+                  maxHeight: expandedAIUsers[user._id] ? '500px' : '0',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                  padding: expandedAIUsers[user._id] ? '10px 16px' : '0 16px',
+                  background: '#FFFFFF',
+                }}
+              >
+                {/* If aiAssistantUsage exists and either rental or sale preferences exist, show them. Otherwise show friendly fallback. */}
+                {user.aiAssistantUsage && (Object.keys(user.aiAssistantUsage.rentalPreferences || {}).length > 0 || Object.keys(user.aiAssistantUsage.salePreferences || {}).length > 0) ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                    {/* Rental Preferences */}
+                    <div style={{ background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E0E7EE', padding: '12px' }}>
+                      <h4 style={{ color: '#003366', fontSize: '16px', fontWeight: '700', marginBottom: '10px' }}>Rental Preferences</h4>
+                      {(user.aiAssistantUsage.rentalPreferences && Object.keys(user.aiAssistantUsage.rentalPreferences).length > 0) ? (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                          <tbody>
+                            {Object.entries(user.aiAssistantUsage.rentalPreferences).map(([key, value], idx) => (
+                              <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
+                                <td style={{ padding: '8px', fontWeight: '600', color: '#003366', textTransform: 'capitalize' }}>{key}</td>
+                                <td style={{ padding: '8px', color: '#4A6A8A' }}>{Array.isArray(value) ? value.join(', ') : value || 'N/A'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No rental preferences available</div>
+                      )}
                     </div>
-                    {/* Preferences dropdown */}
-                    {user.aiAssistantUsage.preferences && (
-                      <div style={{
-                        marginTop: '10px',
-                        background: '#FFFFFF',
-                        borderRadius: '10px',
-                        border: '1px solid #E0E7EE',
-                        overflow: 'hidden',
-                      }}>
-                        <div
-                          style={{
-                            padding: '10px 16px',
-                            background: '#F4F7F9',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                          onClick={() =>
-                            setExpandedAIUsers((prev) => ({
-                              ...prev,
-                              [user._id]: !prev[user._id],
-                            }))
-                          }
-                        >
-                          <div style={{ fontWeight: '600', color: '#003366' }}>User Preferences</div>
-                          {expandedAIUsers[user._id] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                        </div>
 
-                        <div
-                          style={{
-                            maxHeight: expandedAIUsers[user._id] ? '500px' : '0',
-                            overflow: 'hidden',
-                            transition: 'all 0.3s ease',
-                            padding: expandedAIUsers[user._id] ? '10px 16px' : '0 16px',
-                            background: '#FFFFFF',
-                          }}
-                        >
-                          {(user.aiAssistantUsage.preferences) ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                              {/* Rental Preferences */}
-                              <div style={{ background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E0E7EE', padding: '12px' }}>
-                                <h4 style={{ color: '#003366', fontSize: '16px', fontWeight: '700', marginBottom: '10px' }}>Rental Preferences</h4>
-                                {user.aiAssistantUsage.assistantType === 'rental' ? (
-                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                                    <tbody>
-                                      {Object.entries(user.aiAssistantUsage.preferences).map(([key, value], idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
-                                          <td style={{ padding: '8px', fontWeight: '600', color: '#003366', textTransform: 'capitalize' }}>{key}</td>
-                                          <td style={{ padding: '8px', color: '#4A6A8A' }}>{Array.isArray(value) ? value.join(', ') : value || 'N/A'}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                ) : (
-                                  <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No rental preferences available</div>
-                                )}
-                              </div>
-
-                              {/* Sale Preferences */}
-                              <div style={{ background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E0E7EE', padding: '12px' }}>
-                                <h4 style={{ color: '#003366', fontSize: '16px', fontWeight: '700', marginBottom: '10px' }}>Sale Preferences</h4>
-                                {user.aiAssistantUsage.assistantType === 'sale' ? (
-                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                                    <tbody>
-                                      {Object.entries(user.aiAssistantUsage.preferences).map(([key, value], idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
-                                          <td style={{ padding: '8px', fontWeight: '600', color: '#003366', textTransform: 'capitalize' }}>{key}</td>
-                                          <td style={{ padding: '8px', color: '#4A6A8A' }}>{Array.isArray(value) ? value.join(', ') : value || 'N/A'}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                ) : (
-                                  <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No sale preferences available</div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No preferences available</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    {/* Sale Preferences */}
+                    <div style={{ background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E0E7EE', padding: '12px' }}>
+                      <h4 style={{ color: '#003366', fontSize: '16px', fontWeight: '700', marginBottom: '10px' }}>Sale Preferences</h4>
+                      {(user.aiAssistantUsage.salePreferences && Object.keys(user.aiAssistantUsage.salePreferences).length > 0) ? (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                          <tbody>
+                            {Object.entries(user.aiAssistantUsage.salePreferences).map(([key, value], idx) => (
+                              <tr key={idx} style={{ borderBottom: '1px solid #E0E7EE' }}>
+                                <td style={{ padding: '8px', fontWeight: '600', color: '#003366', textTransform: 'capitalize' }}>{key}</td>
+                                <td style={{ padding: '8px', color: '#4A6A8A' }}>{Array.isArray(value) ? value.join(', ') : value || 'N/A'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div style={{ color: '#4A6A8A', fontSize: '14px' }}>No sale preferences available</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px', color: '#4A6A8A' }}>
+                    <div style={{ fontWeight: 600, color: '#003366', marginBottom: 8 }}>No preferences available</div>
+                    <div style={{ fontSize: 13 }}>This user has not saved any AI assistant preferences yet.</div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
 
                 {/* Rewards */}
                 <div style={styles.section}>

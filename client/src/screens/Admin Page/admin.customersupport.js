@@ -18,7 +18,7 @@ const CallbackRequestsDashboard = () => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [order, setOrder] = useState('desc');
   const [page, setPage] = useState(1);
-  const [limit] = useState(50);
+  const [limit] = useState(10);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
@@ -67,8 +67,8 @@ const CallbackRequestsDashboard = () => {
   };
 
   const handleSearch = () => {
+    // Reset to first page and let the effect fetch results
     setPage(1);
-    fetchCallbackRequests();
   };
 
   const toggleRequestExpansion = (id) => {
@@ -615,7 +615,7 @@ const CallbackRequestsDashboard = () => {
             <Search size={18} />
             Search
           </button>
-          <button style={styles.refreshButton} onClick={fetchCallbackRequests}>
+          <button style={styles.refreshButton} onClick={() => fetchCallbackRequests()}>
             <RefreshCw size={18} />
             Refresh
           </button>
@@ -730,22 +730,22 @@ const CallbackRequestsDashboard = () => {
       </div>
 
       {/* Pagination */}
-      {metadata && metadata.pages > 1 && (
+      {metadata && metadata.totalPages > 1 && (
         <div style={styles.pagination}>
           <button
-            style={styles.paginationButton}
-            onClick={() => setPage(page - 1)}
+            style={{ ...styles.paginationButton, ...(page === 1 ? {} : {}) }}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
             Previous
           </button>
           <span style={styles.paginationInfo}>
-            Page {metadata.page} of {metadata.pages}
+            Page {metadata.page} of {metadata.totalPages}
           </span>
           <button
             style={styles.paginationButton}
-            onClick={() => setPage(page + 1)}
-            disabled={page === metadata.pages}
+            onClick={() => setPage((p) => Math.min(metadata.totalPages, p + 1))}
+            disabled={page === metadata.totalPages}
           >
             Next
           </button>

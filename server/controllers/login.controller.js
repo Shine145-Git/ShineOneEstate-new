@@ -28,6 +28,11 @@ exports.requestOtp = async (req, res) => {
       user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
       await user.save();
     }
+    if (process.env.NODE_ENV == 'development')
+    {
+      console.log(`OTP for ${email}: ${otp}`); // Log OTP in development mode
+      return res.status(200).json({ message: "OTP sent successfully (check server log in development mode)" });
+    }
     
 
     // Production mode: send via Brevo

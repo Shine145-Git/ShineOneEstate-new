@@ -34,6 +34,7 @@ export default function PropertyListingForm() {
     location: "", // used for Sale, optional for Rent
     Sector: "",
     propertyType: "",
+    ownerType: "Owner",
     bedrooms: "",
     bathrooms: "",
     totalArea: {
@@ -1168,6 +1169,20 @@ if (draftPanoramas && draftPanoramas.length) {
                   </p>
                 )}
               </div>
+              <div style={fieldStyle}>
+                <label style={inputLabelStyle}>Listing By</label>
+                <select
+                  name="ownerType"
+                  value={formData.ownerType}
+                  onChange={handleChange}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                >
+                  <option value="Owner">Owner</option>
+                  <option value="Agent">Agent</option>
+                </select>
+              </div>
               <div style={gridStyle}>
                 <div>
                   <label style={inputLabelStyle}>Property Type *</label>
@@ -1792,6 +1807,20 @@ if (draftPanoramas && draftPanoramas.length) {
                     {errors.Sector}
                   </p>
                 )}
+              </div>
+              <div style={fieldStyle}>
+                <label style={inputLabelStyle}>Listing By</label>
+                <select
+                  name="ownerType"
+                  value={formData.ownerType}
+                  onChange={handleChange}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                >
+                  <option value="Owner">Owner</option>
+                  <option value="Agent">Agent</option>
+                </select>
               </div>
               <div style={gridStyle}>
                 <div>

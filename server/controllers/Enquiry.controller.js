@@ -6,6 +6,7 @@
 const Enquiry = require("../models/EnquirySchema.model.js");
 const RentalProperty = require("../models/Rentalproperty.model.js");
 const SaleProperty = require("../models/SaleProperty.model.js");
+const User = require("../models/user.model.js");
 
 
 // ------------------------------
@@ -71,14 +72,77 @@ const createEnquiry = async (req, res) => {
 // ------------------------------
 const getEnquiries = async (req, res) => {
   try {
-    // Step 1: Fetch all enquiries sorted by creation date descending
-    const enquiries = await Enquiry.find().sort({ createdAt: -1 });
+    // Pagination params
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 10);
+    const skip = (page - 1) * limit;
 
-    // Step 2: Send success response with enquiries data
-    return res.status(200).json({ success: true, enquiries });
+    // 1) Count total enquiries for pagination metadata
+    const totalEnquiries = await Enquiry.countDocuments();
+    if (totalEnquiries === 0) {
+      return res.status(200).json({ success: true, page, limit, totalEnquiries, totalPages: 0, enquiries: [] });
+    }
+
+    // 2) Fetch paginated enquiries (most recent first)
+    const enquiries = await Enquiry.find().sort({ createdAt: -1 }).skip(skip).limit(limit);
+
+    // 3) Collect property IDs by type from the current page
+    const rentalIds = [];
+    const saleIds = [];
+    for (const e of enquiries) {
+      if (!e.propertyId) continue;
+      if (e.propertyType === 'rental') rentalIds.push(e.propertyId);
+      else if (e.propertyType === 'sale') saleIds.push(e.propertyId);
+    }
+
+    // 4) Fetch property documents in two batched queries
+    const [rentalProps, saleProps] = await Promise.all([
+      rentalIds.length ? RentalProperty.find({ _id: { $in: rentalIds } }).lean() : Promise.resolve([]),
+      saleIds.length ? SaleProperty.find({ _id: { $in: saleIds } }).lean() : Promise.resolve([]),
+    ]);
+
+    // 5) Map properties by id for O(1) lookup
+    const rentalMap = new Map(rentalProps.map(p => [p._id.toString(), p]));
+    const saleMap = new Map(saleProps.map(p => [p._id.toString(), p]));
+
+    // 6) Collect all unique owner ids from properties
+    const ownerIdSet = new Set();
+    for (const p of rentalProps) if (p && p.owner) ownerIdSet.add(p.owner.toString());
+    for (const p of saleProps) if (p && (p.ownerId || p.owner)) ownerIdSet.add((p.ownerId || p.owner).toString());
+
+    // 7) Fetch owners in a single query (if any)
+    let ownerMap = new Map();
+    if (ownerIdSet.size) {
+      const owners = await User.find({ _id: { $in: [...ownerIdSet] } }).select('_id name email mobileNumber').lean();
+      ownerMap = new Map(owners.map(o => [o._id.toString(), o]));
+    }
+
+    // 8) Build enriched enquiries array by mapping properties & owners back to enquiries
+    const enriched = enquiries.map(enq => {
+      const pid = enq.propertyId ? enq.propertyId.toString() : null;
+      const prop = enq.propertyType === 'rental' ? rentalMap.get(pid) : saleMap.get(pid);
+      const ownerId = prop ? (prop.owner || prop.ownerId || null) : null;
+      const owner = ownerId ? ownerMap.get(ownerId.toString()) : null;
+
+      return {
+        ...enq.toObject(),
+        property: prop || null,
+        owner: owner || null,
+      };
+    });
+
+    // 9) Return enriched results with pagination metadata
+    return res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalEnquiries,
+      totalPages: Math.ceil(totalEnquiries / limit),
+      enquiries: enriched
+    });
   } catch (err) {
-    // Handle any unexpected errors
-    return res.status(500).json({ success: false, message: "Failed to fetch enquiries" });
+    console.error('❌ Fetching Enquiries Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
   }
 };
 
