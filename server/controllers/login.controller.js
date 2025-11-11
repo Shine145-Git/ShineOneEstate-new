@@ -28,26 +28,45 @@ exports.requestOtp = async (req, res) => {
       user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
       await user.save();
     }
-    if (process.env.NODE_ENV === "development") {
-      console.log(`Development mode: OTP for ${email} is ${otp}`);
-      return res.status(200).json({ message: "OTP sent successfully (check server logs in dev mode)" });
-    }
-
     
 
     // Production mode: send via Brevo
-    const emailParams = {
-      to: email,
-      subject: "Your OTP Code for www.ggnHome.com",
-      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-      html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`
-    };
+    // Prefer using a Brevo template. Set BREVO_OTP_TEMPLATE_ID in env (numeric id).
+    if (process.env.BREVO_OTP_TEMPLATE_ID) {
+      const emailParams = {
+        to: email,
+        templateId: Number(process.env.BREVO_OTP_TEMPLATE_ID), // Brevo expects a numeric template id
+        params: {
+          otp_code: otp
+        },
+        // optional: templates may use their own subject; this will act as an override if needed
+        subject: "Your OTP Code for www.ggnHome.com"
+      };
 
-    try {
-      await sendEmail(emailParams);
-      return res.status(200).json({ message: "OTP sent successfully" });
-    } catch (emailError) {
-      return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
+      try {
+        await sendEmail(emailParams);
+        return res.status(200).json({ message: "OTP sent successfully" });
+      } catch (emailError) {
+        return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
+      }
+    } else {
+      // Fallback: no template configured — send raw HTML/text
+      const emailParams = {
+        to: email,
+        params: {
+          otp_code: otp
+        },
+        subject: "Your OTP Code for www.ggnHome.com",
+        text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+        html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`
+      };
+
+      try {
+        await sendEmail(emailParams);
+        return res.status(200).json({ message: "OTP sent successfully" });
+      } catch (emailError) {
+        return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
+      }
     }
   } catch (error) {
     res.status(500).json({ message: "Server error" });
