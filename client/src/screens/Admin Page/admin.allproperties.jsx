@@ -932,7 +932,11 @@ const PropertyCard = ({ property, viewMode, styles }) => {
         </div>
         <div style={styles.propertyDate}>
           📅 Move-in: {formatDate(property.moveInDate)}
-        </div>
+              </div>
+                <div style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '8px' }}>
+    <strong>Contact:</strong>{' '}
+    {property .ownernumber ? property.ownernumber : (property.owner && (property.owner.mobileNumber || property.owner.mobile) ? (property.owner.mobileNumber || property.owner.mobile) : 'N/A')}
+  </div>
         <button
           style={buttonStyle}
           onClick={handleViewProperty}
