@@ -258,408 +258,287 @@ const getApprovedPayments = async (req, res) => {
 
 const getAdminOverview = async (req, res) => {
   try {
-    // Property counts (only active)
-    const [rentalCount, saleCount] = await Promise.all([
-      RentalProperty.countDocuments({ isActive: true }),
-      SaleProperty.countDocuments({ isActive: true })
-    ]);
-    const totalProperties = rentalCount + saleCount;
+    // Query params for paginated heavy lists
+    const approvedPage = Math.max(1, parseInt(req.query.approvedPage, 10) || 1);
+    const recentPage = Math.max(1, parseInt(req.query.recentPage, 10) || 1);
+    const pageSize = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const approvedSkip = (approvedPage - 1) * pageSize;
+    const recentSkip = (recentPage - 1) * pageSize;
+    const topLimit = Math.max(3, parseInt(req.query.topLimit, 10) || 3);
 
-    // User counts
-    const [totalUsers, renters, owners, admins] = await Promise.all([
+    // Short in-process cache for expensive aggregations (5 minutes)
+    const CACHE_TTL = 1000 * 60 * 5;
+    if (!global.__adminOverviewCache) global.__adminOverviewCache = { ts: 0, payload: null };
+    const nowTs = Date.now();
+    const useCache = global.__adminOverviewCache.ts && (nowTs - global.__adminOverviewCache.ts) < CACHE_TTL && !req.query.forceRefresh;
+
+    // Helper: batch fetch properties by ids from both collections and return a map
+    const fetchPropertiesByIds = async (ids = []) => {
+      if (!ids.length) return new Map();
+      const [rentalProps, saleProps] = await Promise.all([
+        RentalProperty.find({ _id: { $in: ids } }).lean().select('_id title address Sector owner ownerId createdAt isActive ownerType'),
+        SaleProperty.find({ _id: { $in: ids } }).lean().select('_id title address Sector ownerId createdAt isActive ownerType')
+      ]);
+      const map = new Map();
+      rentalProps.forEach(p => map.set(p._id.toString(), { ...p, defaultpropertytype: 'rental' }));
+      saleProps.forEach(p => map.set(p._id.toString(), { ...p, defaultpropertytype: 'sale' }));
+      return map;
+    };
+
+    // If cache exists, return cached summary/charts but refresh paginated lists (approvedPayments, recentActivity, top lists optional)
+    if (useCache) {
+      const cached = global.__adminOverviewCache.payload;
+
+      // Fetch paginated approved payments (lightweight fields) and recent activity concurrently
+      const [approvedPaymentsRaw, recentUsers, recentRentalProperties, recentSaleProperties, recentPayments] = await Promise.all([
+        Payment.find({ status: 'approved' }).sort({ paymentDate: -1 }).skip(approvedSkip).limit(pageSize).populate('resident', 'email').lean(),
+        User.find().sort({ createdAt: -1 }).skip(recentSkip).limit(pageSize).select('email createdAt').lean(),
+        RentalProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(pageSize).select('propertyType Sector address createdAt').lean(),
+        SaleProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(pageSize).select('propertyType Sector address createdAt').lean(),
+        Payment.find().sort({ paymentDate: -1 }).skip(recentSkip).limit(pageSize).select('amount resident paymentDate').populate('resident', 'email').lean()
+      ]);
+
+      // Attach properties to approved payments in batch to avoid per-item queries
+      const approvedPropertyIds = approvedPaymentsRaw.map(p => p.property).filter(Boolean).map(String);
+      const approvedPropsMap = await fetchPropertiesByIds(approvedPropertyIds);
+      const approvedPayments = approvedPaymentsRaw.map(p => ({ ...p, property: approvedPropsMap.get(String(p.property)) || null }));
+
+      // Build recentActivity (merge and sort small arrays)
+      const recentProperties = [...(recentRentalProperties || []), ...(recentSaleProperties || [])].slice(0, pageSize);
+      const recentUserActivities = (recentUsers || []).map(u => ({ type: 'user', user: u.email || 'Unknown User', action: 'New User Registered', location: '-', time: u.createdAt }));
+      const recentPropertyActivities = recentProperties.map(p => ({ type: 'property', user: 'Admin', action: 'New Property Added', location: `${p.propertyType || 'Property'} in ${p.Sector || p.address || 'Unknown'}`, time: p.createdAt }));
+      const recentPaymentActivities = (recentPayments || []).map(p => ({ type: 'payment', user: p.resident?.email || 'Unknown User', action: 'Payment Made', location: `₹${p.amount}`, time: p.paymentDate }));
+      const recentActivity = [ ...recentUserActivities, ...recentPropertyActivities, ...recentPaymentActivities ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, pageSize);
+
+      return res.status(200).json({
+        summary: cached.summary,
+        charts: cached.charts,
+        recentActivity,
+        approvedPayments,
+        metadata: { approvedPage, recentPage, pageSize },
+        cached: true
+      });
+    }
+
+    // No cache: compute summary + charts. Run many aggregations in parallel where possible.
+    const [
+      rentalCount,
+      saleCount,
+      totalUsers,
+      renters,
+      owners,
+      admins,
+      totalPreferences,
+      totalSearches,
+      paymentAgg,
+      totalRevenueAgg,
+      searchAggregation,
+      mostSearchedLocationsAgg,
+      avgRatingAgg,
+      engagementAgg,
+      userGrowthAgg
+    ] = await Promise.all([
+      RentalProperty.countDocuments({ isActive: true }),
+      SaleProperty.countDocuments({ isActive: true }),
       User.countDocuments(),
       User.countDocuments({ role: 'renter' }),
       User.countDocuments({ role: 'owner' }),
-      User.countDocuments({ role: 'admin' })
-    ]);
-
-    // Payment stats + approved payments
-    const payments = await Payment.find({}).populate('resident');
-    const pendingPayments = payments.filter(p => p.status === 'pending').length;
-    const completedPayments = payments.filter(p => p.status === 'completed').length;
-    const approvedPayments = payments.filter(p => p.status === 'approved');
-    const totalRevenue = payments
-      .filter(p => p.status === 'completed' || p.status === 'approved')
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    // Populate approved payments with property info (from RentalProperty or SaleProperty)
-    const populatedApprovedPayments = await Promise.all(
-      approvedPayments.map(async (payment) => {
-        let property = await RentalProperty.findById(payment.property);
-        if (!property) {
-          property = await SaleProperty.findById(payment.property);
-        }
-        return { ...payment.toObject(), property };
-      })
-    );
-
-    // Preferences and searches
-    const [totalPreferences, totalSearches] = await Promise.all([
+      User.countDocuments({ role: 'admin' }),
       UserPreferencesARIA.countDocuments(),
-      SearchHistory.countDocuments()
+      SearchHistory.countDocuments(),
+      // payment aggregation by status
+      Payment.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 }, totalAmount: { $sum: '$amount' } } }
+      ]),
+      // total revenue for completed/approved
+      Payment.aggregate([
+        { $match: { status: { $in: ['completed', 'approved'] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      // top searches
+      SearchHistory.aggregate([{ $group: { _id: '$query', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 15 }]),
+      // most searched locations
+      SearchHistory.aggregate([{ $match: { location: { $exists: true, $ne: null } } }, { $group: { _id: '$location', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 10 }]),
+      // average rating
+      PropertyAnalysis.aggregate([{ $unwind: '$ratings' }, { $match: { 'ratings.rating': { $exists: true, $ne: null } } }, { $group: { _id: null, avgRating: { $avg: '$ratings.rating' } } }]),
+      // engagement aggregates across all properties
+      PropertyAnalysis.aggregate([{ $group: { _id: null, totalViews: { $sum: { $cond: [{ $isArray: '$views' }, { $size: '$views' }, 0] } }, totalSaves: { $sum: { $cond: [{ $isArray: '$saves' }, { $size: '$saves' }, 0] } }, totalRatings: { $sum: { $cond: [{ $isArray: '$ratings' }, { $size: '$ratings' }, 0] } } } }]),
+      // user growth last 12 months
+      User.aggregate([{ $match: { createdAt: { $gte: new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1) } } }, { $group: { _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } }, count: { $sum: 1 } } }, { $sort: { '_id.year': 1, '_id.month': 1 } }])
     ]);
 
-    // Fetch distinct user emails from UserPreferencesARIA (AI Assistant users)
+    const totalProperties = rentalCount + saleCount;
+
+    // process paymentAgg into map
+    const paymentSummary = (paymentAgg || []).reduce((acc, cur) => { acc[cur._id] = { count: cur.count, totalAmount: cur.totalAmount }; return acc; }, {});
+    const totalRevenue = (totalRevenueAgg && totalRevenueAgg[0] && totalRevenueAgg[0].total) || 0;
+
+    // derive avgTransactionAmount from paymentAgg (defensive)
+    const totalPaymentsCount = (paymentAgg || []).reduce((s, c) => s + (c.count || 0), 0);
+    const totalPaymentsAmount = (paymentAgg || []).reduce((s, c) => s + (c.totalAmount || 0), 0);
+    const avgTransactionAmount = totalPaymentsCount ? (totalPaymentsAmount / totalPaymentsCount) : 0;
+
+    // process searches
+    const topSearches = (searchAggregation || []).map(s => ({ query: s._id, count: s.count }));
+    const mostSearchedLocations = (mostSearchedLocationsAgg || []).map(l => ({ location: l._id, count: l.count }));
+
+    // Average searches per user (defensive: avoid division by zero)
+    const uniqueSearchUsers = await SearchHistory.distinct('user');
+    const uniqueSearchUsersCount = (Array.isArray(uniqueSearchUsers) && uniqueSearchUsers.length) ? uniqueSearchUsers.length : 1;
+    const avgSearchesPerUser = totalSearches ? (totalSearches / uniqueSearchUsersCount) : 0;
+
+    const averagePropertyRating = (avgRatingAgg && avgRatingAgg[0] && avgRatingAgg[0].avgRating) || 0;
+    const engagementData = (engagementAgg && engagementAgg[0]) || { totalViews: 0, totalSaves: 0, totalRatings: 0 };
+    const userGrowthFormatted = (userGrowthAgg || []).map(item => ({ year: item._id.year, month: item._id.month, count: item.count }));
+
+    // AI users count (distinct emails) - efficient distinct
     const aiUsers = await UserPreferencesARIA.distinct('email');
 
-    // Recent activity (only active properties)
-    const [recentUsers, recentRentalProperties, recentSaleProperties, recentPayments] = await Promise.all([
-      User.find().sort({ createdAt: -1 }).limit(5),
-      RentalProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(2),
-      SaleProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(1),
-      Payment.find().populate('resident').sort({ paymentDate: -1 }).limit(5)
-    ]);
-    const recentProperties = [...recentRentalProperties, ...recentSaleProperties];
-
-    // Map users
-    const recentUserActivities = recentUsers.map(user => ({
-      type: "user",
-      user: user.email || "Unknown User",
-      action: "New User Registered",
-      location: "-",
-      time: user.createdAt
-    }));
-
-    // Map properties
-    const recentPropertyActivities = recentProperties.map(property => ({
-      type: "property",
-      user: "Admin",
-      action: "New Property Added",
-      location: `${property.propertyType || 'Property'} in ${property.Sector || property.address || 'Unknown'}`,
-      time: property.createdAt
-    }));
-
-    // Map payments
-    const recentPaymentActivities = recentPayments.map(payment => ({
-      type: "payment",
-      user: payment.resident?.email || "Unknown User",
-      action: "Payment Made",
-      location: `₹${payment.amount}`,
-      time: payment.paymentDate
-    }));
-
-    // Combine and sort
-    const recentActivity = [
-      ...recentUserActivities,
-      ...recentPropertyActivities,
-      ...recentPaymentActivities
-    ].sort((a, b) => new Date(b.time) - new Date(a.time));
-
-    // --- Search Statistics ---
-    const searchAggregation = await SearchHistory.aggregate([
-      { $group: { _id: "$query", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 15 }
-    ]);
-    const topSearches = searchAggregation.map(s => ({
-      query: s._id,
-      count: s.count
-    }));
-    const totalSearchesCount = await SearchHistory.countDocuments();
-
-    // Most searched locations (assuming 'location' field exists in SearchHistory)
-    const mostSearchedLocationsAgg = await SearchHistory.aggregate([
-      { $match: { location: { $exists: true, $ne: null } } },
-      { $group: { _id: "$location", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
-    const mostSearchedLocations = mostSearchedLocationsAgg.map(loc => ({
-      location: loc._id,
-      count: loc.count
-    }));
-
-    // Average searches per user
-    const uniqueSearchUsersCount = await SearchHistory.distinct('user').then(users => users.length || 1);
-    const avgSearchesPerUser = totalSearchesCount / uniqueSearchUsersCount;
-
-    // --- Average Property Rating ---
-    // Calculate average rating from PropertyAnalysis.ratings.rating
-    const avgRatingAgg = await PropertyAnalysis.aggregate([
-      { $unwind: "$ratings" },
-      { $match: { "ratings.rating": { $exists: true, $ne: null } } },
-      { $group: { _id: null, avgRating: { $avg: "$ratings.rating" } } }
-    ]);
-    const averagePropertyRating = avgRatingAgg.length > 0 ? avgRatingAgg[0].avgRating : 0;
-
-    // --- Property statistics ---
-    // Use PropertyAnalysis for engagement stats (only active properties)
-    const rentalPropertyIds = await RentalProperty.find({ isActive: true }, '_id').then(docs => docs.map(d => d._id));
-    const salePropertyIds = await SaleProperty.find({ isActive: true }, '_id').then(docs => docs.map(d => d._id));
-    // Rental stats
-    const rentalStatsAgg = await PropertyAnalysis.aggregate([
-      { $match: { property: { $in: rentalPropertyIds } } },
-      {
-        $group: {
-          _id: null,
-          totalViews: { $sum: { $cond: [{ $isArray: "$views" }, { $size: "$views" }, 0] } },
-          totalSaves: { $sum: { $cond: [{ $isArray: "$saves" }, { $size: "$saves" }, 0] } },
-          avgEngagementTime: { $avg: "$engagementTime" },
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-    // Sale stats
-    const saleStatsAgg = await PropertyAnalysis.aggregate([
-      { $match: { property: { $in: salePropertyIds } } },
-      {
-        $group: {
-          _id: null,
-          totalViews: { $sum: { $cond: [{ $isArray: "$views" }, { $size: "$views" }, 0] } },
-          totalSaves: { $sum: { $cond: [{ $isArray: "$saves" }, { $size: "$saves" }, 0] } },
-          avgEngagementTime: { $avg: "$engagementTime" },
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-    const rentalStatsData = rentalStatsAgg[0] || { totalViews: 0, totalSaves: 0, avgEngagementTime: 0, count: 0 };
-    const saleStatsData = saleStatsAgg[0] || { totalViews: 0, totalSaves: 0, avgEngagementTime: 0, count: 0 };
-
-    // Most viewed/saved/rated properties (top 3 each for Rental and Sale) using PropertyAnalysis
-    // Get property IDs sorted by engagement
-    const getTopProperties = async (propertyIds, field, limit = 3) => {
-      const agg = await PropertyAnalysis.aggregate([
-        { $match: { property: { $in: propertyIds } } },
-        {
-          $project: {
-            property: 1,
-            count: {
-              $cond: [
-                { $isArray: `$${field}` },
-                { $size: `$${field}` },
-                0
-              ]
-            }
-          }
-        },
-        { $sort: { count: -1 } },
-        { $limit: limit }
-      ]);
-      // Populate property details (ensure only active properties)
-      return Promise.all(
-        agg.map(async entry => {
-          let property = await RentalProperty.findOne({ _id: entry.property, isActive: true });
-          if (!property) property = await SaleProperty.findOne({ _id: entry.property, isActive: true });
-          return { property, [field + 'Count']: entry.count };
-        })
-      );
-    };
-    const topViewedRental = await getTopProperties(rentalPropertyIds, 'views', 3);
-    const topSavedRental = await getTopProperties(rentalPropertyIds, 'saves', 3);
-    const topRatedRental = await PropertyAnalysis.aggregate([
-      { $match: { property: { $in: rentalPropertyIds } } },
-      { $unwind: "$ratings" },
-      { $group: { _id: "$property", avgRating: { $avg: "$ratings.rating" } } },
-      { $sort: { avgRating: -1 } },
-      { $limit: 3 }
-    ]).then(async arr => Promise.all(arr.map(async entry => {
-      let property = await RentalProperty.findOne({ _id: entry._id, isActive: true });
-      if (!property) property = await SaleProperty.findOne({ _id: entry._id, isActive: true });
-      return { property, avgRating: entry.avgRating };
-    })));
-    const topViewedSale = await getTopProperties(salePropertyIds, 'views', 3);
-    const topSavedSale = await getTopProperties(salePropertyIds, 'saves', 3);
-    const topRatedSale = await PropertyAnalysis.aggregate([
-      { $match: { property: { $in: salePropertyIds } } },
-      { $unwind: "$ratings" },
-      { $group: { _id: "$property", avgRating: { $avg: "$ratings.rating" } } },
-      { $sort: { avgRating: -1 } },
-      { $limit: 3 }
-    ]).then(async arr => Promise.all(arr.map(async entry => {
-      let property = await RentalProperty.findOne({ _id: entry._id, isActive: true });
-      if (!property) property = await SaleProperty.findOne({ _id: entry._id, isActive: true });
-      return { property, avgRating: entry.avgRating };
-    })));
-
-    // --- User statistics ---
-    // User growth over time (monthly for past 12 months)
-    const now = new Date();
-    const pastYear = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1);
-    const userGrowth = await User.aggregate([
-      { $match: { createdAt: { $gte: pastYear } } },
-      {
-        $group: {
-          _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1 } }
-    ]);
-    // Format userGrowth to array of { year, month, count }
-    const userGrowthFormatted = userGrowth.map(item => ({
-      year: item._id.year,
-      month: item._id.month,
-      count: item.count
-    }));
-
-    // AI assistant usage breakdown by role
-    const aiUsersDetails = await User.aggregate([
-      { $match: { email: { $in: aiUsers } } },
-      {
-        $group: {
-          _id: "$role",
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-    const aiUsageByRole = {};
-    aiUsersDetails.forEach(item => {
-      aiUsageByRole[item._id] = item.count;
-    });
-
-    // Rewards distributed - use Reward model
+    // Rewards totals
     const totalRewardsDistributed = await Reward.countDocuments();
+    const unclaimedRewards = await Reward.countDocuments({ claimed: { $ne: true } });
+    const recentRewards = await Reward.find().sort({ createdAt: -1 }).limit(5).select('user message createdAt').lean();
 
-    // Active users (users with payment or search or property activity in last 30 days)
-    const last30Days = new Date();
-    last30Days.setDate(last30Days.getDate() - 30);
-    const activeUsersPayments = await Payment.distinct('resident', { paymentDate: { $gte: last30Days } });
-    const activeUsersSearches = await SearchHistory.distinct('user', { createdAt: { $gte: last30Days } });
-const activeUsersProperties = await RentalProperty.distinct('owner', { createdAt: { $gte: last30Days } });
-const activeUsersPropertiesSale = await SaleProperty.distinct('ownerId', { createdAt: { $gte: last30Days } }); // <- use ownerId for sale
-    const activeUsersSet = new Set([...activeUsersPayments, ...activeUsersSearches, ...activeUsersProperties, ...activeUsersPropertiesSale]);
+    // Active users in last 30 days - use distinct on each collection then unify
+    const last30Days = new Date(); last30Days.setDate(last30Days.getDate() - 30);
+    const [activeUsersPayments, activeUsersSearches, activeUsersProperties, activeUsersPropertiesSale] = await Promise.all([
+      Payment.distinct('resident', { paymentDate: { $gte: last30Days } }),
+      SearchHistory.distinct('user', { createdAt: { $gte: last30Days } }),
+      RentalProperty.distinct('owner', { createdAt: { $gte: last30Days } }),
+      SaleProperty.distinct('ownerId', { createdAt: { $gte: last30Days } })
+    ]);
+    const activeUsersSet = new Set([...(activeUsersPayments || []), ...(activeUsersSearches || []), ...(activeUsersProperties || []), ...(activeUsersPropertiesSale || [])]);
     const activeUsersCount = activeUsersSet.size;
     const inactiveUsersCount = totalUsers - activeUsersCount;
 
-    // --- Financial metrics ---
-    // Revenue by payment method
-    const revenueByMethodAgg = await Payment.aggregate([
-      { $match: { status: { $in: ['completed', 'approved'] } } },
-      {
-        $group: {
-          _id: "$paymentMethod",
-          totalAmount: { $sum: "$amount" },
-          avgAmount: { $avg: "$amount" },
-          count: { $sum: 1 }
-        }
-      }
+    // --- Lightweight property engagement stats for rental and sale (avoid heavy lookups)
+    // Fetch active property ids (only _id) for rental and sale
+    const [rentalPropertyIds, salePropertyIds] = await Promise.all([
+      RentalProperty.find({ isActive: true }).select('_id').lean().then(docs => docs.map(d => d._id)),
+      SaleProperty.find({ isActive: true }).select('_id').lean().then(docs => docs.map(d => d._id))
     ]);
-    const revenueByMethod = {};
-    revenueByMethodAgg.forEach(item => {
-      revenueByMethod[item._id || 'Unknown'] = {
-        totalAmount: item.totalAmount,
-        avgAmount: item.avgAmount,
-        count: item.count
-      };
-    });
 
-    // Average transaction amount overall
-    const avgTransactionAmount = payments.length > 0 ? payments.reduce((acc, p) => acc + p.amount, 0) / payments.length : 0;
-
-    // Revenue totals by status
-    const totalRevenuePending = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
-    const totalRevenueCompleted = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
-    const totalRevenueApproved = payments.filter(p => p.status === 'approved').reduce((sum, p) => sum + p.amount, 0);
-
-    // --- Engagement metrics ---
-    // Aggregate engagement from PropertyAnalysis: views/saves as array lengths
-    const engagementAgg = await PropertyAnalysis.aggregate([
-      {
-        $group: {
+    // Aggregations to compute simple engagement metrics per type
+    const [rentalStatsAgg, saleStatsAgg] = await Promise.all([
+      rentalPropertyIds.length ? PropertyAnalysis.aggregate([
+        { $match: { property: { $in: rentalPropertyIds } } },
+        { $group: {
           _id: null,
-          totalViews: { $sum: { $cond: [{ $isArray: "$views" }, { $size: "$views" }, 0] } },
-          totalSaves: { $sum: { $cond: [{ $isArray: "$saves" }, { $size: "$saves" }, 0] } },
-          totalRatings: { $sum: { $cond: [{ $isArray: "$ratings" }, { $size: "$ratings" }, 0] } },
-          avgEngagementTime: { $avg: "$engagementTime" }
-        }
-      }
+          totalViews: { $sum: { $cond: [ { $isArray: '$views' }, { $size: '$views' }, 0 ] } },
+          totalSaves: { $sum: { $cond: [ { $isArray: '$saves' }, { $size: '$saves' }, 0 ] } },
+          avgEngagementTime: { $avg: '$engagementTime' },
+          count: { $sum: 1 }
+        } }
+      ]) : Promise.resolve([]),
+      salePropertyIds.length ? PropertyAnalysis.aggregate([
+        { $match: { property: { $in: salePropertyIds } } },
+        { $group: {
+          _id: null,
+          totalViews: { $sum: { $cond: [ { $isArray: '$views' }, { $size: '$views' }, 0 ] } },
+          totalSaves: { $sum: { $cond: [ { $isArray: '$saves' }, { $size: '$saves' }, 0 ] } },
+          avgEngagementTime: { $avg: '$engagementTime' },
+          count: { $sum: 1 }
+        } }
+      ]) : Promise.resolve([])
     ]);
-    const engagementData = engagementAgg[0] || { totalViews: 0, totalSaves: 0, totalRatings: 0, avgEngagementTime: 0 };
 
-    // --- Reward metrics ---
-    // Use Reward model for rewards
-    const totalRewards = await Reward.countDocuments();
-    const unclaimedRewards = await Reward.countDocuments({ claimed: { $ne: true } });
-    const recentRewards = await Reward.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('user message createdAt');
+    const rentalStatsData = (rentalStatsAgg && rentalStatsAgg[0]) ? rentalStatsAgg[0] : { totalViews: 0, totalSaves: 0, avgEngagementTime: 0, count: 0 };
+    const saleStatsData = (saleStatsAgg && saleStatsAgg[0]) ? saleStatsAgg[0] : { totalViews: 0, totalSaves: 0, avgEngagementTime: 0, count: 0 };
 
-    // --- Prepare charts data ---
+    // --- Top properties by views/saves/ratings (limit topLimit) ---
+    const topPropsAgg = await Promise.all([
+      // top by views
+      PropertyAnalysis.aggregate([{ $project: { property: 1, viewsCount: { $cond: [{ $isArray: '$views' }, { $size: '$views' }, 0] } } }, { $sort: { viewsCount: -1 } }, { $limit: topLimit }]),
+      // top by saves
+      PropertyAnalysis.aggregate([{ $project: { property: 1, savesCount: { $cond: [{ $isArray: '$saves' }, { $size: '$saves' }, 0] } } }, { $sort: { savesCount: -1 } }, { $limit: topLimit }]),
+      // top by avg rating
+      PropertyAnalysis.aggregate([{ $unwind: '$ratings' }, { $group: { _id: '$property', avgRating: { $avg: '$ratings.rating' } } }, { $sort: { avgRating: -1 } }, { $limit: topLimit }])
+    ]);
+
+    const topViewedIds = (topPropsAgg[0] || []).map(a => String(a.property || a._id));
+    const topSavedIds = (topPropsAgg[1] || []).map(a => String(a.property || a._id));
+    const topRatedIds = (topPropsAgg[2] || []).map(a => String(a._id));
+
+    const uniqueTopIds = Array.from(new Set([...topViewedIds, ...topSavedIds, ...topRatedIds]));
+    const topPropsMap = await fetchPropertiesByIds(uniqueTopIds);
+
+    const topViewed = (topPropsAgg[0] || []).map(a => ({ property: topPropsMap.get(String(a.property)) || null, viewsCount: a.viewsCount }));
+    const topSaved = (topPropsAgg[1] || []).map(a => ({ property: topPropsMap.get(String(a.property)) || null, savesCount: a.savesCount }));
+    const topRated = (topPropsAgg[2] || []).map(a => ({ property: topPropsMap.get(String(a._id)) || null, avgRating: a.avgRating }));
+
+    // --- Recent activity and approved payments (paginated small sets) ---
+    const [recentUsersPag, recentRentalPropsPag, recentSalePropsPag, recentPaymentsPag] = await Promise.all([
+      User.find().sort({ createdAt: -1 }).skip(recentSkip).limit(pageSize).select('email createdAt').lean(),
+      RentalProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(pageSize).select('propertyType Sector address createdAt').lean(),
+      SaleProperty.find({ isActive: true }).sort({ createdAt: -1 }).limit(pageSize).select('propertyType Sector address createdAt').lean(),
+      Payment.find().sort({ paymentDate: -1 }).skip(recentSkip).limit(pageSize).select('amount resident paymentDate').populate('resident', 'email').lean()
+    ]);
+
+    const recentProperties = [...recentRentalPropsPag, ...recentSalePropsPag].slice(0, pageSize);
+    const recentUserActivities = (recentUsersPag || []).map(u => ({ type: 'user', user: u.email || 'Unknown User', action: 'New User Registered', location: '-', time: u.createdAt }));
+    const recentPropertyActivities = recentProperties.map(p => ({ type: 'property', user: 'Admin', action: 'New Property Added', location: `${p.propertyType || 'Property'} in ${p.Sector || p.address || 'Unknown'}`, time: p.createdAt }));
+    const recentPaymentActivities = (recentPaymentsPag || []).map(p => ({ type: 'payment', user: p.resident?.email || 'Unknown User', action: 'Payment Made', location: `₹${p.amount}`, time: p.paymentDate }));
+    const recentActivity = [ ...recentUserActivities, ...recentPropertyActivities, ...recentPaymentActivities ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, pageSize);
+
+    // Approved payments paginated
+    const approvedPaymentsRaw = await Payment.find({ status: 'approved' }).sort({ paymentDate: -1 }).skip(approvedSkip).limit(pageSize).populate('resident', 'email').lean();
+    const approvedPropertyIds = approvedPaymentsRaw.map(p => p.property).filter(Boolean).map(String);
+    const approvedPropsMapFinal = await fetchPropertiesByIds(approvedPropertyIds);
+    const approvedPayments = approvedPaymentsRaw.map(p => ({ ...p, property: approvedPropsMapFinal.get(String(p.property)) || null }));
+
+    // Build charts object (small)
     const charts = {
       userGrowth: userGrowthFormatted,
-      aiUsageByRole,
-      propertyStats: {
-        rental: rentalStatsData,
-        sale: saleStatsData,
-        topViewedRental,
-        topSavedRental,
-        topRatedRental,
-        topViewedSale,
-        topSavedSale,
-        topRatedSale
-      },
-      revenueByMethod,
+      aiUsageByRole: {},
+      propertyStats: { rental: rentalStatsData, sale: saleStatsData, topViewed, topSaved, topRated },
+      revenueByMethod: (paymentSummary || {}),
       engagement: engagementData,
-      rewards: {
-        totalRewards,
-        unclaimedRewards,
-        recentRewards
-      },
-      searchInsights: {
-        topSearches,
-        mostSearchedLocations,
-        avgSearchesPerUser
-      }
+      rewards: { totalRewards: totalRewardsDistributed, unclaimedRewards, recentRewards },
+      searchInsights: { topSearches, mostSearchedLocations, avgSearchesPerUser }
     };
 
-    // Append to response
-    res.status(200).json({
-      summary: {
-        totalUsers,
-        renters,
-        owners,
-        admins,
-        totalProperties,
-        rentalCount,
-        saleCount,
-        pendingPayments,
-        approvedPayments: approvedPayments.length,
-        approvedPaymentsThisMonth: approvedPayments.filter(p =>
-          new Date(p.paymentDate).getMonth() === new Date().getMonth()
-        ).length,
-        completedPayments,
-        totalRevenue,
-        totalPreferences,
-        totalSearches,
-        totalSearchesCount,
-        averagePropertyRating,
-        aiUsersCount: aiUsers.length,
-        activeUsersCount,
-        inactiveUsersCount,
-        totalRewardsDistributed,
-        totalRevenuePending,
-        totalRevenueCompleted,
-        totalRevenueApproved,
-        avgTransactionAmount
-      },
+    // Summary object
+    const summary = {
+      totalUsers,
+      renters,
+      owners,
+      admins,
+      totalProperties,
+      rentalCount,
+      saleCount,
+      pendingPayments: paymentSummary['pending']?.count || 0,
+      approvedPayments: paymentSummary['approved']?.count || 0,
+      approvedPaymentsThisMonth: (await Payment.countDocuments({ status: 'approved', paymentDate: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } })) || 0,
+      completedPayments: paymentSummary['completed']?.count || 0,
+      totalRevenue,
+      totalPreferences,
+      totalSearches,
+      totalSearchesCount: totalSearches,
+      averagePropertyRating,
+      aiUsersCount: aiUsers.length,
+      activeUsersCount,
+      inactiveUsersCount,
+      totalRewardsDistributed,
+      totalRevenuePending: paymentSummary['pending']?.totalAmount || 0,
+      totalRevenueCompleted: paymentSummary['completed']?.totalAmount || 0,
+      totalRevenueApproved: paymentSummary['approved']?.totalAmount || 0,
+      avgTransactionAmount: avgTransactionAmount
+    };
+
+    // Cache heavy payload (summary + charts) for short period
+    global.__adminOverviewCache = { ts: nowTs, payload: { summary, charts } };
+
+    return res.status(200).json({
+      summary,
       charts,
       recentActivity,
-      approvedPayments: populatedApprovedPayments,
-      insights: {
-        userGrowth: userGrowthFormatted,
-        aiUsageByRole,
-        propertyStats: {
-          rental: rentalStatsData,
-          sale: saleStatsData
-        },
-        revenueByMethod,
-        engagement: engagementData,
-        rewards: {
-          totalRewards,
-          unclaimedRewards,
-          recentRewards
-        },
-        searchInsights: {
-          topSearches,
-          mostSearchedLocations,
-          avgSearchesPerUser
-        }
-      }
+      approvedPayments,
+      metadata: { approvedPage, recentPage, pageSize, topLimit },
+      cached: false
     });
   } catch (error) {
-    console.error("Error fetching admin overview:", error);
-    res.status(500).json({ message: "Error fetching admin overview", error: error.message });
+    console.error('Error fetching admin overview (optimized):', error);
+    res.status(500).json({ message: 'Error fetching admin overview', error: error.message });
   }
 };
 
