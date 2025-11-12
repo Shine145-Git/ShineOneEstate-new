@@ -82,11 +82,43 @@ const fetchUsers = async (page = 1) => {
       return;
     }
 
-    // Normalize aiAssistantUsage to always be an object or null
-    const normalized = data.users.map(u => ({
-      ...u,
-      aiAssistantUsage: u.aiAssistantUsage || null,
-    }));
+    // Normalize aiAssistantUsage into expected shape for the UI.
+    // Backend may return:
+    //  - null/undefined
+    //  - an object already shaped like { rentalPreferences: {...}, salePreferences: {...}, ... }
+    //  - an array of assistant documents [{ assistantType: 'rental', preferences: {...}, ... }, ...]
+    const normalized = (data.users || []).map(u => {
+      let aiUsage = u.aiAssistantUsage || null;
+
+      if (Array.isArray(aiUsage)) {
+        // convert array of assistant docs into object with rentalPreferences and salePreferences
+        const combined = { rentalPreferences: {}, salePreferences: {}, email: u.email };
+        aiUsage.forEach(doc => {
+          const type = (doc.assistantType || '').toString().toLowerCase();
+          if (type === 'rental') combined.rentalPreferences = doc.preferences || {};
+          else if (type === 'sale') combined.salePreferences = doc.preferences || {};
+          else combined[type] = doc.preferences || {};
+        });
+        aiUsage = combined;
+      } else if (aiUsage && aiUsage.assistantType && aiUsage.preferences) {
+        // single assistant document returned as an object
+        const obj = { rentalPreferences: {}, salePreferences: {} };
+        const type = (aiUsage.assistantType || '').toString().toLowerCase();
+        if (type === 'rental') obj.rentalPreferences = aiUsage.preferences || {};
+        else if (type === 'sale') obj.salePreferences = aiUsage.preferences || {};
+        aiUsage = obj;
+      } else if (aiUsage && (aiUsage.rentalPreferences || aiUsage.salePreferences)) {
+        // already shaped correctly
+        aiUsage = aiUsage;
+      } else {
+        aiUsage = aiUsage || null;
+      }
+
+      return {
+        ...u,
+        aiAssistantUsage: aiUsage
+      };
+    });
 
     setUsers(normalized);
     setTotalPages(data.totalPages || 1);

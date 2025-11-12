@@ -674,17 +674,23 @@ const getAllUsersDetailed = async (req, res) => {
     const detailedUsers = await Promise.all(users.map(async (user) => {
       const userId = user._id;
 
-      // AI Assistant usage
-      const rawAiUsage = await UserPreferencesARIA.findOne({ email: user.email }).lean();
-      // Normalize AI usage shape so frontend always receives a predictable object
-      const aiUsage = rawAiUsage
-        ? {
-            assistantType: rawAiUsage.assistantType || null,
-            preferences: rawAiUsage.preferences || {},
-            createdAt: rawAiUsage.createdAt || null,
-            updatedAt: rawAiUsage.updatedAt || null,
-          }
-        : null;
+      // AI Assistant usage: fetch ALL preference documents for this user (rental + sale)
+      const rawAiUsageDocs = await UserPreferencesARIA.find({ email: user.email }).lean();
+
+      // Normalize into a single object expected by frontend: { rentalPreferences: {...}, salePreferences: {...} }
+      let aiUsage = null;
+      if (Array.isArray(rawAiUsageDocs) && rawAiUsageDocs.length > 0) {
+        const combined = { rentalPreferences: {}, salePreferences: {} };
+        rawAiUsageDocs.forEach(doc => {
+          const type = (doc.assistantType || '').toString().toLowerCase();
+          if (type === 'rental') combined.rentalPreferences = doc.preferences || {};
+          else if (type === 'sale') combined.salePreferences = doc.preferences || {};
+          else combined[type] = doc.preferences || {};
+        });
+        aiUsage = combined;
+      } else {
+        aiUsage = null;
+      }
 
       // Rewards info (count and latest message)
       const rewards = await PropertyAnalysis.find({ user: userId, rewardMessage: { $exists: true, $ne: null } })
