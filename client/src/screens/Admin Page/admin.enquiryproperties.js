@@ -81,22 +81,29 @@ const AdminEnquiryProperties = () => {
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
   const deleteEnquiry = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this enquiry?"))
-      return;
+    if (!window.confirm("Are you sure you want to delete this enquiry?")) return;
     try {
+      // Call admin delete route (protected)
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/enquiry/${id}`,
+        `${process.env.REACT_APP_Base_API}/admin/api/deleteenquiry/${id}`,
         {
           method: "DELETE",
           credentials: "include",
+          headers: { "Content-Type": "application/json" }
         }
       );
+
+      const payload = await response.json();
       if (!response.ok) {
-        throw new Error(`Error deleting enquiry: ${response.statusText}`);
+        throw new Error(payload?.message || `Error deleting enquiry: ${response.statusText}`);
       }
-      setEnquiries(enquiries.filter((enquiry) => enquiry._id !== id));
+
+      // Remove from UI list
+      setEnquiries((prev) => prev.filter((enq) => enq._id !== id));
+      setTotalEnquiries((t) => Math.max(0, t - 1));
     } catch (err) {
       alert(`Failed to delete enquiry: ${err.message}`);
+      console.error('Delete enquiry failed', err);
     }
   };
 

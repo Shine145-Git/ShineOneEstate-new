@@ -151,9 +151,10 @@ router.get("/api/check-eligibility", verifyToken, checkEligibility);
 router.post("/api/request-callback", verifyToken, requestCallback);
 
 // ================== ENQUIRY ROUTES ==================
-const { createEnquiry, getEnquiries } = require("../controllers/Enquiry.controller.js");
+const { createEnquiry, getEnquiries , deleteEnquiry } = require("../controllers/Enquiry.controller.js");
 router.post("/api/enquiry", verifyToken, createEnquiry);
 router.get("/api/enquiry", verifyToken, checkAdminEmail, getEnquiries);
+router.delete("/admin/api/deleteenquiry/:id", verifyToken, checkAdminEmail, deleteEnquiry);
 
 // ================== CHATBOT ROUTES ==================
 router.post("/api/chatbot", getChatResponse);

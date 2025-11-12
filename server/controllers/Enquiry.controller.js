@@ -145,6 +145,26 @@ const getEnquiries = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
   }
 };
+const deleteEnquiry = async (req, res) => {
+  try {
+    const { enquiryId } = req.params;
+
+    if (!enquiryId) {
+      return res.status(400).json({ success: false, message: "Enquiry ID is required" });
+    }
+
+    const deleted = await Enquiry.findByIdAndDelete(enquiryId);
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Enquiry not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Enquiry deleted successfully" });
+  } catch (err) {
+    console.error("❌ Delete Enquiry Error:", err);
+    return res.status(500).json({ success: false, message: "Failed to delete enquiry", error: err.message });
+  }
+};
 
 
-module.exports = { createEnquiry, getEnquiries };
+module.exports = { createEnquiry, getEnquiries , deleteEnquiry };
