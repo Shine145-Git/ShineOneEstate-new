@@ -74,6 +74,8 @@ export default function PropertyListingForm() {
   const imageInputRef = useRef();
   const [user, setUser] = useState(null);
   const [errors, setErrors] = useState({});
+  const [submittedProperty, setSubmittedProperty] = useState(null);
+  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -428,8 +430,20 @@ if (draftPanoramas && draftPanoramas.length) {
       });
 
       if (res.ok) {
-        toast.success("✅ Property submitted successfully!");
-        setTimeout(() => navigate("/"), 1500);
+        // Try to parse the saved property returned by the API
+        let saved = null;
+        try {
+          saved = await res.json();
+        } catch (e) {
+          // If server didn't return JSON, fall back to minimal success
+          console.warn('Create responded ok but no JSON returned');
+        }
+
+        // Prefer to show a modal with the submitted property details so the owner
+        // knows it is pending admin approval and can preview or edit.
+        setSubmittedProperty(saved || null);
+        setShowSubmittedModal(true);
+        setLoading(false);
         return;
       }
 
@@ -2153,6 +2167,69 @@ if (draftPanoramas && draftPanoramas.length) {
           background: "#22D3EE", // Cyan progress bar
         }}
       />
+
+      {/* Submitted modal: shows after successful create instead of immediate redirect */}
+      {showSubmittedModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ width: 'min(720px, 96%)', background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 8px 40px rgba(2,6,23,0.18)' }}>
+            <h3 style={{ margin: 0, color: '#003366' }}>Property submitted — pending admin approval</h3>
+            <p style={{ color: '#4A6A8A', marginTop: 8 }}>
+              Your property has been submitted and is awaiting admin approval. It will be visible to other users once approved.
+            </p>
+
+            {submittedProperty && (
+              <div style={{ borderRadius: 8, padding: 12, background: '#F8FAFC', marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, color: '#003366' }}>{submittedProperty.title || submittedProperty.name || 'Untitled'}</div>
+                    <div style={{ color: '#4A6A8A', fontSize: 13 }}>{submittedProperty.address || submittedProperty.location || ''}</div>
+                    <div style={{ marginTop: 8, fontSize: 13 }}>
+                      <strong>Status:</strong> {submittedProperty.isPostedNew === true ? 'Pending approval' : (submittedProperty.isActive ? 'Active' : 'Inactive')}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        // Preview route depends on property type
+                        const t = submittedProperty.defaultPropertyType || submittedProperty.defaultpropertytype || '';
+                        if (t.toLowerCase() === 'rental') navigate(`/Rentaldetails/${submittedProperty._id}`);
+                        else if (t.toLowerCase() === 'sale') navigate(`/Saledetails/${submittedProperty._id}`);
+                        else {
+                          // fallback: try both routes (prefer rental)
+                          navigate(`/Rentaldetails/${submittedProperty._id}`);
+                        }
+                        setShowSubmittedModal(false);
+                      }}
+                      style={{ background: '#00A79D', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+                    >
+                      Preview Property
+                    </button>
+                    <button
+                      onClick={() => {
+                        // go to manage listings for editing
+                        setShowSubmittedModal(false);
+                        navigate('/my-properties');
+                      }}
+                      style={{ background: '#FFFFFF', color: '#003366', border: '2px solid #E5E7EB', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+                    >
+                      Edit in Manage Listings
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button
+                onClick={() => { setShowSubmittedModal(false); }}
+                style={{ background: '#E5E7EB', color: '#003366', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Loading overlay */}
       {loading && (
         <div

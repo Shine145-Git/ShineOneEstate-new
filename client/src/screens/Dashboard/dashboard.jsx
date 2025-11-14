@@ -749,7 +749,11 @@ export default function RealEstateDashboard() {
                       if (searchBox) {
                         searchBox.classList.add("slide-out");
                         setTimeout(() => {
-                          navigate("/add-property");
+                          if(!user){
+                            navigate("/login");
+                          }
+                          else{
+                          navigate("/add-property");}
                           searchBox.classList.remove("slide-out");
                         }, 600);
                       } else {

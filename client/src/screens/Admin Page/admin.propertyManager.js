@@ -127,25 +127,42 @@ const AdminPropertyManager = () => {
 
   const toggleReview = async (propertyId) => {
     try {
+      // find the property in local state first
+      const property = properties.find((p) => p._id === propertyId);
+      if (!property) {
+        console.warn('Property not found for toggleReview:', propertyId);
+        return;
+      }
+
+      // Determine the new reviewed state
+      const newIsReviewed = !property.isReviewed;
+
+      // When marking as reviewed, clear isPostedNew so it moves out of pending
+      const payload = newIsReviewed ? { isReviewed: true, isPostedNew: false } : { isReviewed: false };
+
       await axios.patch(
         `${process.env.REACT_APP_Base_API}/api/admin/property/${propertyId}/toggle-review`,
-        {},
+        payload,
         { withCredentials: true }
       );
-      // Update local state and move between lists
-      const property = properties.find(p => p._id === propertyId);
-      if (property) {
-        const updatedProperty = {...property, isReviewed: !property.isReviewed};
-        setProperties(prev => prev.map(p => p._id === propertyId ? updatedProperty : p));
-        // Update stats
-        setStats(prev => ({
-          ...prev,
-          reviewed: property.isReviewed ? prev.reviewed - 1 : prev.reviewed + 1,
-          notReviewed: property.isReviewed ? prev.notReviewed + 1 : prev.notReviewed - 1
-        }));
-      }
+
+      // Update local state: set isReviewed and clear isPostedNew when reviewed
+      const updatedProperty = {
+        ...property,
+        isReviewed: newIsReviewed,
+        isPostedNew: newIsReviewed ? false : property.isPostedNew,
+      };
+
+      setProperties((prev) => prev.map((p) => (p._id === propertyId ? updatedProperty : p)));
+
+      // Update stats counts reliably
+      setStats((prev) => ({
+        ...prev,
+        reviewed: newIsReviewed ? prev.reviewed + 1 : Math.max(0, prev.reviewed - 1),
+        notReviewed: newIsReviewed ? Math.max(0, prev.notReviewed - 1) : prev.notReviewed + 1,
+      }));
     } catch (err) {
-      console.error("Error toggling review status:", err);
+      console.error('Error toggling review status:', err);
     }
   };
 
@@ -170,8 +187,11 @@ const AdminPropertyManager = () => {
     );
   }
 
-  const notReviewedList = properties.filter(p => !p.isReviewed);
-  const reviewedList = properties.filter(p => p.isReviewed);
+  // Treat `isPostedNew` as the source of truth for review state:
+  // - isPostedNew === true  => consider as NOT reviewed (pending approval)
+  // - isPostedNew !== true  => consider as reviewed
+  const notReviewedList = properties.filter((p) => p.isPostedNew === true);
+  const reviewedList = properties.filter((p) => p.isPostedNew !== true);
   const notReviewedTotal = notReviewedList.length;
   const reviewedTotal = reviewedList.length;
   const paginatedNotReviewed = notReviewedList;

@@ -212,7 +212,7 @@ export default function PropertyCards() {
   const filteredProperties = properties.filter((p) => {
     let statusMatch = true;
     // Exclude newly posted (unapproved) properties
-    if (p.isPostedNew === true) return false;
+    
 
     if (filterStatus === "active") statusMatch = p.isActive === true;
     else if (filterStatus === "inactive") statusMatch = p.isActive === false;
@@ -2242,8 +2242,14 @@ export default function PropertyCards() {
           );
           const isActive = property?.isActive;
           // Modal config based on property status
-          const modalConfig = isActive
-            ? {
+          const modalConfig = (function() {
+            // If the property is newly posted and awaiting admin approval,
+            // show a visually disabled/grey configuration but keep the
+            // confirm button clickable so we can show a friendly message
+            // when the user clicks it.
+            if (isActive === undefined) {
+              // fallback to original behavior if isActive is not available
+              return {
                 bgColor: "#FEE2E2",
                 icon: <Trash2 size={32} color="#DC2626" />,
                 title: "Delete Property?",
@@ -2252,17 +2258,50 @@ export default function PropertyCards() {
                 buttonText: "Delete Property",
                 buttonColor: "#DC2626",
                 buttonHover: "#B91C1C",
-              }
-            : {
-                bgColor: "#DCFCE7",
-                icon: <CheckCircle size={32} color="#16A34A" />,
-                title: "Activate Property?",
-                message:
-                  "Are you sure you want to activate this property? It will be visible to users again.",
-                buttonText: "Activate Property",
-                buttonColor: "#16A34A",
-                buttonHover: "#166534",
+                pending: false,
               };
+            }
+
+            // If pending approval, show a greyed-out modal config
+            if (property?.isPostedNew === true) {
+              return {
+                bgColor: "#F3F4F6",
+                icon: <AlertCircle size={32} color="#9CA3AF" />,
+                title: "Pending Approval",
+                message:
+                  "This property is currently pending admin approval and cannot be activated or deleted yet.",
+                buttonText: "Waiting for approval",
+                buttonColor: "#9CA3AF",
+                buttonHover: "#9CA3AF",
+                pending: true,
+              };
+            }
+
+            // Normal behavior when not pending
+            return isActive
+              ? {
+                  bgColor: "#FEE2E2",
+                  icon: <Trash2 size={32} color="#DC2626" />,
+                  title: "Delete Property?",
+                  message:
+                    "Are you sure you want to delete this property? This action cannot be undone and all associated data will be permanently removed.",
+                  buttonText: "Delete Property",
+                  buttonColor: "#DC2626",
+                  buttonHover: "#B91C1C",
+                  pending: false,
+                }
+              : {
+                  bgColor: "#DCFCE7",
+                  icon: <CheckCircle size={32} color="#16A34A" />,
+                  title: "Activate Property?",
+                  message:
+                    "Are you sure you want to activate this property? It will be visible to users again.",
+                  buttonText: "Activate Property",
+                  buttonColor: "#16A34A",
+                  buttonHover: "#166534",
+                  pending: false,
+                };
+          })();
           return (
             <div
               style={{
@@ -2348,7 +2387,15 @@ export default function PropertyCards() {
                     Cancel
                   </button>
                   <button
-                    onClick={() => handleDelete(deleteModal.propertyId)}
+                    onClick={() => {
+                      if (modalConfig.pending) {
+                        // show friendly message for pending properties
+                        alert('This property is pending admin approval. Please wait until it is approved before activating or deleting.');
+                        setDeleteModal({ show: false, propertyId: null });
+                        return;
+                      }
+                      handleDelete(deleteModal.propertyId);
+                    }}
                     style={{
                       flex: 1,
                       backgroundColor: modalConfig.buttonColor,
@@ -2356,7 +2403,7 @@ export default function PropertyCards() {
                       border: "none",
                       borderRadius: "8px",
                       padding: "12px",
-                      cursor: "pointer",
+                      cursor: modalConfig.pending ? 'pointer' : 'pointer',
                       fontWeight: "600",
                       fontSize: "14px",
                       transition: "all 0.2s",

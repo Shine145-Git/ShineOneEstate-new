@@ -142,7 +142,7 @@ const AdminLandingPage = () => {
     },
     {
       id: 'properties',
-      title: 'Properties',
+      title: 'ALL Properties',
       description: 'Manage all property listings',
       icon: Home,
       route: '/admin/rewardsproperties',

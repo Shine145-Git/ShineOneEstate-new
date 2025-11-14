@@ -136,13 +136,17 @@ const Searchproperty = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleLogout = async () => {
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
-      method: "POST",
-      credentials: "include",
-    });
-    setUser(null);
-    navigate("/");
+const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      navigate("/");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   useEffect(() => {
@@ -763,7 +767,7 @@ const Searchproperty = () => {
             zIndex: 999,
           }}
         >
-          <TopNavigationBar user={user} onLogout={handleLogout} navItems={navItems} />
+          <TopNavigationBar user={user} handleLogout={handleLogout} navItems={navItems} />
         </div>
 
         {/* Hero Search Section */}

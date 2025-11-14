@@ -43,7 +43,19 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
 
   return (<div style={{display: 'flex', fontFamily: 'Arial, sans-serif'}}>
       {/* Sidebar */}
-      <div style={{width: isOpen ? '340px' : '0', backgroundColor: '#FFFFFF', height: '100vh', position: 'fixed', left: '0', top: '0', boxShadow: '4px 0 24px rgba(0,0,0,0.1)', transition: 'all 0.3s ease', overflow: 'hidden', zIndex: '1000'}}>
+      <div style={{
+        width: isOpen ? '340px' : '0',
+        backgroundColor: '#FFFFFF',
+        height: '100vh',
+        position: 'fixed',
+        left: '0',
+        top: '0',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.1)',
+        transition: 'all 0.3s ease',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        zIndex: '1000'
+      }}>
         {/* Header */}
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F4F7F9'}}>
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
