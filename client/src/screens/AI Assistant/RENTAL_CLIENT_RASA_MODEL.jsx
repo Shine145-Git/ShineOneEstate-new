@@ -13,6 +13,17 @@ const VoiceAssistantRent = () => {
         .catch((err) => console.warn("Sound play failed:", err));
     }
   };
+  // Ensure page is scrolled to top when this screen/component loads
+useEffect(() => {
+  try {
+    // scroll to top-left on initial mount
+    if (typeof window !== 'undefined' && window.scrollTo) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  } catch (e) {
+    /* ignore */
+  }
+}, []);
   const [sessionId, setSessionId] = useState(null);
   const [listening, setListening] = useState(false);
   const [botResponse, setBotResponse] = useState("");

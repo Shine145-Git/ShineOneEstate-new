@@ -24,7 +24,13 @@ const toggleActiveStatus = async (req, res) => {
     }
     const propertyType = property.defaultpropertytype;
 
+    // Toggle active flag
     property.isActive = !property.isActive;
+    // Clear the "isPostedNew" flag when an admin toggles active state so that
+    // approving a property will also remove the 'newly posted' pending state.
+    // When deactivating, also clear isPostedNew to avoid it being treated as 'pending'.
+    property.isPostedNew = false;
+
     await property.save();
 
     res.status(200).json({

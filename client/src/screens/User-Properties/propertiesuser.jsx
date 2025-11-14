@@ -211,6 +211,8 @@ export default function PropertyCards() {
 
   const filteredProperties = properties.filter((p) => {
     let statusMatch = true;
+    // Exclude newly posted (unapproved) properties
+    if (p.isPostedNew === true) return false;
 
     if (filterStatus === "active") statusMatch = p.isActive === true;
     else if (filterStatus === "inactive") statusMatch = p.isActive === false;

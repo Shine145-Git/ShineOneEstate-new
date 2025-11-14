@@ -176,9 +176,10 @@ exports.getMyProperties = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Fetch rental and sale properties concurrently with createdAt for global sorting
+    // Exclude newly posted properties (isPostedNew: true) from the user's manage listings view
     const [rentalMeta, saleMeta] = await Promise.all([
-      RentalProperty.find({ owner: userId }).select('_id createdAt').lean(),
-      SaleProperty.find({ ownerId: userId }).select('_id createdAt').lean(),
+      RentalProperty.find({ owner: userId, isPostedNew: { $ne: true } }).select('_id createdAt').lean(),
+      SaleProperty.find({ ownerId: userId, isPostedNew: { $ne: true } }).select('_id createdAt').lean(),
     ]);
 
     const rentalCount = rentalMeta.length;

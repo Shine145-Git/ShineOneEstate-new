@@ -88,20 +88,38 @@ const AdminPropertyManager = () => {
 
   const toggleActive = async (propertyId) => {
     try {
+      // find property in local state
+      const property = properties.find((p) => p._id === propertyId);
+      if (!property) {
+        console.warn('Property not found for toggleActive:', propertyId);
+        return;
+      }
+
+      const newIsActive = !property.isActive;
+      // Send explicit update for both flags: set isActive to the new value and clear isPostedNew
+      // (this ensures that approving/activating also clears the 'newly posted' flag,
+      // and deactivating also clears it so it doesn't appear as pending)
+      const payload = { isActive: newIsActive, isPostedNew: false };
+
       await axios.patch(
         `${process.env.REACT_APP_Base_API}/api/admin/property/${propertyId}/toggle-active`,
-        {},
+        payload,
         { withCredentials: true }
       );
-      // Update local state
-      setProperties(prev => prev.map(p => 
-        p._id === propertyId ? {...p, isActive: !p.isActive} : p
+
+      // Update local state to reflect the server-side change
+      setProperties((prev) => prev.map((p) =>
+        p._id === propertyId ? { ...p, isActive: newIsActive, isPostedNew: false } : p
       ));
-      // Update stats
-      setStats(prev => ({
-        ...prev,
-        active: properties.filter(p => p._id === propertyId ? !p.isActive : p.isActive).length
-      }));
+
+      // Recalculate active count from the updated properties list
+      setStats((prev) => {
+        const updatedProps = properties.map((p) => p._id === propertyId ? { ...p, isActive: newIsActive, isPostedNew: false } : p);
+        return {
+          ...prev,
+          active: updatedProps.filter((p) => p.isActive).length,
+        };
+      });
     } catch (err) {
       console.error("Error toggling active state:", err);
     }

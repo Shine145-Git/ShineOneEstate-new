@@ -79,7 +79,9 @@ const RentalpropertySchema = new mongoose.Schema(
     ownernumber: { type: String },
     ownerType: { type: String, enum: ["Owner", "Agent"], default: "Owner" },
 
-    isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+    isPostedNew: { type: Boolean, default: false } // true = new post awaiting admin approval (hidden from manage listings/searches until approved)
+ 
   },
   { timestamps: true }
 );

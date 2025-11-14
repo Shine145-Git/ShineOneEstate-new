@@ -42,7 +42,8 @@ totalArea: {
   cloudinaryFolder: { type: String },
   defaultpropertytype: { type: String, default: "sale", immutable: true },
   ownernumber: { type: String },
-  isActive: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: false },
+    isPostedNew: { type: Boolean, default: true }, // true = new post awaiting admin approval (hidden from manage listings/searches until approved)
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
