@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Play,
   Download,
   MapPin,
   Phone,
@@ -15,9 +14,16 @@ import {
   Users,
   Image as ImageIcon,
   X,
-  ZoomIn,
   Menu,
 } from "lucide-react";
+
+// Utility: Format seconds as mm:ss
+const formatTime = (s = 0) => {
+  if (!isFinite(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+};
 
 const MailIconPlaceholder = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block' }}>
@@ -37,6 +43,28 @@ const useIsMobile = () => {
   return isMobile;
 };
 
+// prevent background scroll when modal is open
+const useLockBodyScroll = (locked) => {
+  useEffect(() => {
+    if (!locked) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [locked]);
+};
+
+// reduced motion preference
+const useReducedMotion = () => {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const on = () => setReduced(mq.matches);
+    on(); mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
+  return reduced;
+};
+
 const colors = {
   cream: "#EFECE3",
   lightBlue: "#8FABD4",
@@ -53,7 +81,7 @@ const projectData = {
   progress: 78,
   units: "32 Premium Apartments",
   area: "15,000 sq.ft",
-  possession: "Dec 2025",
+  possession: "June 2026",
   rera: "P51900052847",
   architect: "Studio Arch",
   priceRange: "₹2.5Cr - ₹4.8Cr",
@@ -266,10 +294,10 @@ const projectData = {
     },
   ],
   projects: [
-    { name: 'Sector 4', status: 'Completed', area: '160 Sq. Yard' },
-    { name: 'Sector 9', status: 'Completed', area: '160 Sq. Yard' },
-    { name: 'Sector 46', status: 'Completed', area: '100 Sq. Yard' },
-    { name: 'Sector 42', status: 'Ongoing', area: '80 Sq. Yard' }
+    { name: 'Sector 4', status: 'Completed', area: '7200 Sq. Feet' },
+    { name: 'Sector 9', status: 'Completed', area: '7200 Sq. Feet' },
+    { name: 'Sector 46', status: 'Completed', area: '900 Sq. Feet' },
+    { name: 'Sector 42', status: 'Ongoing', area: ' 3600 Sq. Feet' }
   ],
 };
 // Auto-generate stories and load all images and videos from src/data grouped per folder
@@ -321,6 +349,63 @@ const projectData = {
 
   projectData.stories = generatedStories;
 })();
+
+// Reusable media thumbnail (video or image)
+const MediaThumbnail = ({ src, isVideo, onClick }) => {
+  const [duration, setDuration] = useState(null);
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        cursor: 'pointer',
+        background: '#000'
+      }}
+    >
+      {isVideo ? (
+        <video
+          src={src}
+          muted
+          playsInline
+          preload="metadata"
+          poster=""
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            objectPosition: 'center',
+            background: '#000',
+            pointerEvents: 'none'
+          }}
+          onLoadedMetadata={(e)=>setDuration(e.target.duration)}
+        />
+      ) : (
+        <img
+          src={src}
+          loading="lazy"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      )}
+      {isVideo && duration && (
+        <div style={{
+          position: 'absolute',
+          bottom: 6,
+          right: 6,
+          background: 'rgba(0,0,0,0.65)',
+          color: '#fff',
+          fontSize: 12,
+          padding: '2px 6px',
+          borderRadius: 6,
+          fontWeight: 600
+        }}>
+          {formatTime(duration)}
+        </div>
+      )}
+    </div>
+  );
+};
 const VideoSection = () => {
   const isMobile = useIsMobile();
   const folderImages = projectData.folderImages || {};
@@ -336,6 +421,9 @@ const VideoSection = () => {
   const openVideo = (folder, src) => setPlayer({ open: true, src, folder });
   const closeVideo = () => setPlayer({ open: false, src: '', folder: '' });
 
+  // MOBILE PATCH: prevent background scroll when modal is open
+  useLockBodyScroll(player.open);
+
   return (
     <div style={{ padding: isMobile ? '20px 12px' : '36px 20px', background: 'white' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -346,11 +434,48 @@ const VideoSection = () => {
           <div key={folder} style={{ marginBottom: 14 }}>
             <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 800, color: colors.black, marginBottom: 8 }}>{folder}</div>
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-              {(folderImages[folder] || []).filter(isVideo).map((src, idx) => (
-                <div key={idx} style={{ minWidth: isMobile ? 200 : 280, height: isMobile ? 120 : 160, borderRadius: 8, overflow: 'hidden', cursor: 'pointer', background: '#000', position: 'relative' }} onClick={() => openVideo(folder, src)}>
-                  <video src={src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline />
-                  <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.5)', color: 'white', padding: '6px 8px', borderRadius: 6, fontSize: 12 }}>Play</div>
-                </div>
+              {(folderImages[folder] || [])
+                .filter(src => isVideo(src))
+                .map((src, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      minWidth: isMobile ? 200 : 280,
+                      height: isMobile ? 120 : 160,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      background: '#000',
+                      position: 'relative'
+                    }}
+                    onClick={() => openVideo(folder, src)}
+                  >
+                    <MediaThumbnail src={src} isVideo onClick={() => openVideo(folder, src)} />
+
+                    {/* Play icon overlay */}
+                    <div style={{
+                      position:'absolute',
+                      inset:0,
+                      display:'flex',
+                      alignItems:'center',
+                      justifyContent:'center',
+                      background:'rgba(0,0,0,0.15)'
+                    }}>
+                      <div style={{
+                        width:48,
+                        height:48,
+                        borderRadius:'50%',
+                        background:'rgba(0,0,0,0.6)',
+                        display:'flex',
+                        alignItems:'center',
+                        justifyContent:'center',
+                        color:'#fff',
+                        fontSize:20,
+                        fontWeight:900
+                      }}>
+                        ▶
+                      </div>
+                    </div>
+                  </div>
               ))}
             </div>
           </div>
@@ -359,13 +484,26 @@ const VideoSection = () => {
         {player.open && (
           <div onClick={closeVideo} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1300 }}>
             <div style={{ maxWidth: isMobile ? '95%' : 1000, width: '90%', position: 'relative' }} onClick={(e)=>e.stopPropagation()}>
-              <video src={player.src} controls autoPlay style={{ width: '100%', height: 'auto', borderRadius: 12 }} />
-
+              <video
+                src={player.src}
+                controls
+                muted
+                playsInline
+                autoPlay
+                preload="metadata"
+                style={{ width: '100%', height: 'auto', borderRadius: 12 }}
+              />
+              {/* Tap-to-unmute overlay button */}
+              <button
+                onClick={(e)=>{ e.stopPropagation(); const v=e.currentTarget.previousSibling; if(v && v.muted!==undefined) v.muted=false; }}
+                style={{ position:'absolute', bottom:18, left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.6)', color:'#fff', border:'none', borderRadius:20, padding:'8px 14px', fontWeight:700 }}
+              >
+                Tap to unmute
+              </button>
               {/* prominent close button inside player */}
               <button onClick={closeVideo} style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.95)', border: 'none', borderRadius: '50%', width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={20} color={colors.black} />
               </button>
-
             </div>
           </div>
         )}
@@ -376,17 +514,20 @@ const VideoSection = () => {
 
 const Hero = () => {
   const isMobile = useIsMobile();
+  const reducedMotion = useReducedMotion();
   // try to use images from src/data/Caraousel if available
   const carousel = (projectData.folderImages && (projectData.folderImages['Caraousel'] || projectData.folderImages['caraousel'])) || projectData.images;
   const [currentImage, setCurrentImage] = useState(0);
+  const [openPreview, setOpenPreview] = useState(false);
   useEffect(() => {
     if (!carousel || !carousel.length) return;
+    if (reducedMotion) return;
     const timer = setInterval(
       () => setCurrentImage((prev) => (prev + 1) % carousel.length),
       2500
     );
     return () => clearInterval(timer);
-  }, [carousel]);
+  }, [carousel, reducedMotion]);
 
   const bg = carousel && carousel.length ? carousel[currentImage] : projectData.images[0];
 
@@ -397,6 +538,7 @@ const Hero = () => {
       <img
         src={bg}
         alt="Hero background"
+        loading="lazy"
         style={{
           position: 'absolute',
           inset: 0,
@@ -467,8 +609,52 @@ const Hero = () => {
                 <img
                   src={bg}
                   alt="carousel-foreground"
-                  style={{ width: '100%', height: isMobile ? '260px' : '420px', objectFit: 'contain', objectPosition: 'center', background: 'transparent' }}
+                  loading="eager"
+                  onClick={() => setOpenPreview(true)}
+                  style={{
+                    width: '100%',
+                    height: isMobile ? '260px' : '420px',
+                    objectFit: 'contain',
+                    cursor: 'zoom-in',
+                    background: 'transparent'
+                  }}
                 />
+      {openPreview && (
+        <div
+          onClick={() => setOpenPreview(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.95)',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <img
+            src={bg}
+            loading="eager"
+            style={{ maxWidth: '95%', maxHeight: '95%' }}
+          />
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpenPreview(false); }}
+            style={{
+              position: 'absolute',
+              top: 18,
+              right: 18,
+              background: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: 44,
+              height: 44,
+              cursor: 'pointer'
+            }}
+          >
+            <X size={22} color={colors.black} />
+          </button>
+        </div>
+      )}
               </div>
             </div>
           </div>
@@ -517,7 +703,7 @@ const QuickSnapshot = () => {
             },{
               icon: <Award size={20} color={colors.darkBlue} />,
               label: 'Completed Area',
-              value: `${completedAreaTotal} Sq. Yard`
+              value: `${completedAreaTotal} Sq. Feet`
             }].map((c, i) => (
               <div key={i} style={{ background: 'white', padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 6px 18px rgba(0,0,0,0.06)' }}>
                 {c.icon}
@@ -627,6 +813,9 @@ const StoriesViewer = () => {
   const touchRef = React.useRef({ startX: 0, endX: 0 });
   const animTimer = React.useRef(null);
   const rafRef = React.useRef(null);
+
+  // MOBILE PATCH: prevent background scroll when modal is open
+  useLockBodyScroll(openStory.open);
 
   const DEFAULT_DURATION = 4000;
 
@@ -763,7 +952,7 @@ const StoriesViewer = () => {
             .map(folder => (
               <div key={folder} style={{ textAlign: 'center', cursor: 'pointer', minWidth: 120 }} onClick={() => open(folder)}>
                 <div style={{ width: 110, height: 110, borderRadius: '50%', overflow: 'hidden', border: `4px solid ${colors.darkBlue}`, margin: '0 auto 8px' }}>
-                  <img src={folderImages[folder][0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={folderImages[folder][0]} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ fontWeight: 700, color: colors.black }}>{folder}</div>
               </div>
@@ -793,7 +982,7 @@ const StoriesViewer = () => {
             {/* TOP INFO (title + count) */}
             <div style={{ position: 'absolute', top: 26, left: 18, display: 'flex', alignItems: 'center', gap: 12, color: 'white' }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', border: `2px solid rgba(255,255,255,0.85)` }}>
-                <img src={openStory.images[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={openStory.images[0]} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ fontWeight: 700 }}>{openStory.folder}</div>
               <div style={{ opacity: 0.9, marginLeft: 8 }}>{openStory.idx + 1}/{openStory.images.length}</div>
@@ -807,17 +996,20 @@ const StoriesViewer = () => {
                     key={openStory.images[openStory.idx]}
                     src={openStory.images[openStory.idx]}
                     style={{ maxWidth: '100%', maxHeight: '100%' }}
+                    controls={!isMobile}
                     playsInline
-                    muted
                     autoPlay
+                    preload="metadata"
                     onLoadedMetadata={handleVideoMeta}
                     onEnded={handleVideoEnd}
+                    muted
                   />
                 ) : (
                   <img
                     key={openStory.images[openStory.idx]}
                     src={openStory.images[openStory.idx]}
                     alt={`story-${openStory.idx}`}
+                    loading="lazy"
                     style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                     onLoad={() => setCurrentDuration(DEFAULT_DURATION)}
                   />
@@ -864,7 +1056,7 @@ const ImageGallery = () => {
             <div style={{ display: 'flex', gap: 8, overflowX: isMobile ? 'auto' : 'auto', paddingBottom: 8 }}>
               {folderImages[folder].map((src, idx) => (
                 <div key={idx} style={{ minWidth: isMobile ? 120 : 150, height: isMobile ? 80 : 100, borderRadius: 8, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 6px 18px rgba(0,0,0,0.06)' }} onClick={() => openImage(folder, src)}>
-                  <img src={src} alt={`${folder}-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={src} alt={`${folder}-${idx}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
@@ -874,7 +1066,7 @@ const ImageGallery = () => {
         {lightbox.open && (
           <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
             <div style={{ maxWidth: isMobile ? '95%' : 1000, width: '90%', position: 'relative' }}>
-              <img src={lightbox.src} alt={lightbox.folder} style={{ width: '100%', height: 'auto', borderRadius: 12 }} />
+              <img src={lightbox.src} alt={lightbox.folder} loading="lazy" style={{ width: '100%', height: 'auto', borderRadius: 12 }} />
               <button onClick={(e)=>{ e.stopPropagation(); close(); }} style={{ position: 'absolute', top: 12, right: 12, background: 'white', border: 'none', borderRadius: '50%', width: 42, height: 42, cursor: 'pointer' }}>
                 <X size={20} color={colors.black} />
               </button>
@@ -906,7 +1098,7 @@ const CollageDesigner = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 8 }}>
               {Array.from({length:4}).map((_, i) => (
                 <div key={i} style={{ height: isMobile ? 110 : 160, overflow: 'hidden', borderRadius: 8 }}>
-                  <img src={collageImages[i] || projectData.images[i % projectData.images.length]} alt={`col-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={collageImages[i] || projectData.images[i % projectData.images.length]} alt={`col-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
@@ -917,10 +1109,10 @@ const CollageDesigner = () => {
           <div style={{ background: 'white', padding: 10, borderRadius: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gridTemplateRows: isMobile ? 'auto auto' : 'repeat(2, 1fr)', gap: 8, height: isMobile ? 'auto' : 332 }}>
               <div style={{ gridRow: isMobile ? 'auto' : '1 / span 2', overflow: 'hidden', borderRadius: 8, height: isMobile ? 180 : '100%' }}>
-                <img src={collageImages[0] || projectData.images[0]} alt='big' style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={collageImages[0] || projectData.images[0]} alt='big' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-              <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[1] || projectData.images[1]} alt='m1' style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
-              <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[2] || projectData.images[2]} alt='m2' style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+              <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[1] || projectData.images[1]} alt='m1' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+              <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[2] || projectData.images[2]} alt='m2' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
             </div>
             <div style={{ marginTop: 10, fontWeight: 700, color: colors.darkBlue }}>Mosaic Highlight</div>
           </div>
@@ -930,7 +1122,7 @@ const CollageDesigner = () => {
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
           {collageImages.slice(4).map((src, i) => (
             <div key={i} style={{ minWidth: isMobile ? 140 : 180, height: isMobile ? 90 : 120, borderRadius: 8, overflow: 'hidden' }}>
-              <img src={src} alt={`strip-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={src} alt={`strip-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ))}
         </div>
@@ -1091,12 +1283,13 @@ const TeamSection = () => {
   return (
     <div style={{ padding: isMobile ? '36px 12px' : '60px 20px', background: 'white' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: '700', color: colors.black, marginBottom: '24px', textAlign: 'center' }}>Meet The Team</h2>
+        <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: '700', color: colors.black, marginBottom: '24px', textAlign: 'center' }}>Contact Us At</h2>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 18 : 30, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', textAlign: 'center', maxWidth: isMobile ? 320 : 420 }}>
             <img
               src={require("./data/Profile/my_img.jpeg")}
               alt="Parveen Chawla"
+              loading="lazy"
               style={{
                 width: isMobile ? 110 : 140,
                 height: isMobile ? 110 : 140,
@@ -1256,6 +1449,7 @@ const MapSection = () => {
               <img
                 src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000"
                 alt="map"
+                loading="lazy"
                 style={{
                   width: "100%",
                   height: "100%",
@@ -1332,7 +1526,21 @@ const MapSection = () => {
 const StickyCTA = () => {
   const isMobile = useIsMobile();
   return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: colors.black, padding: isMobile ? '10px' : '15px 20px', display: 'flex', justifyContent: 'center', gap: '10px', zIndex: 100, boxShadow: '0 -2px 10px rgba(0,0,0,0.2)', flexWrap: 'wrap' }}>
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      background: colors.black,
+      padding: isMobile ? '10px' : '15px 20px',
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '10px',
+      zIndex: 100,
+      boxShadow: '0 -2px 10px rgba(0,0,0,0.2)',
+      flexWrap: 'wrap',
+      paddingBottom: 'calc(10px + env(safe-area-inset-bottom))'
+    }}>
       <a href="tel:+919310994032" style={{ textDecoration: 'none', flex: isMobile ? '0 1 100%' : '1', minWidth: '120px' }}>
         <button style={{ background: colors.darkBlue, color: 'white', padding: '12px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', width: '100%' }}>
           <Phone size={18} /> Call
