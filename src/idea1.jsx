@@ -19,26 +19,41 @@ import {
 
 // Utility: Format seconds as mm:ss
 const formatTime = (s = 0) => {
-  if (!isFinite(s)) return '0:00';
+  if (!isFinite(s)) return "0:00";
   const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60).toString().padStart(2, '0');
+  const sec = Math.floor(s % 60)
+    .toString()
+    .padStart(2, "0");
   return `${m}:${sec}`;
 };
 
 const MailIconPlaceholder = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block' }}>
-    <path d="M3 6.5C3 5.67 3.67 5 4.5 5H19.5C20.33 5 21 5.67 21 6.5V17.5C21 18.33 20.33 19 19.5 19H4.5C3.67 19 3 18.33 3 17.5V6.5Z" stroke="white" strokeWidth="1.2"/>
-    <path d="M21 6L12 12.5L3 6" stroke="white" strokeWidth="1.2"/>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ display: "inline-block" }}
+  >
+    <path
+      d="M3 6.5C3 5.67 3.67 5 4.5 5H19.5C20.33 5 21 5.67 21 6.5V17.5C21 18.33 20.33 19 19.5 19H4.5C3.67 19 3 18.33 3 17.5V6.5Z"
+      stroke="white"
+      strokeWidth="1.2"
+    />
+    <path d="M21 6L12 12.5L3 6" stroke="white" strokeWidth="1.2" />
   </svg>
-)
+);
 
 // responsive helper hook — returns true when viewport width <= 768px
 const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth <= 768,
+  );
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
   return isMobile;
 };
@@ -48,8 +63,10 @@ const useLockBodyScroll = (locked) => {
   useEffect(() => {
     if (!locked) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [locked]);
 };
 
@@ -57,10 +74,11 @@ const useLockBodyScroll = (locked) => {
 const useReducedMotion = () => {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const on = () => setReduced(mq.matches);
-    on(); mq.addEventListener?.('change', on);
-    return () => mq.removeEventListener?.('change', on);
+    on();
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
   }, []);
   return reduced;
 };
@@ -80,7 +98,7 @@ const useRevealOnScroll = () => {
           obs.disconnect();
         }
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -90,9 +108,9 @@ const useRevealOnScroll = () => {
     ref,
     style: {
       opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0px)' : 'translateY(24px)',
-      transition: 'opacity 0.7s ease, transform 0.7s ease'
-    }
+      transform: visible ? "translateY(0px)" : "translateY(24px)",
+      transition: "opacity 0.7s ease, transform 0.7s ease",
+    },
   };
 };
 
@@ -263,33 +281,53 @@ const projectData = {
     lng: 77.0266,
     nearby: [
       {
-        name: 'Sector 4, Gurugram',
-        distance: 'Central',
-        type: 'Family-friendly residential sector',
-        description: 'Calm, well-established neighbourhood with top schools, local markets and easy access to inner-Gurugram.',
-        highlights: ['Top schools within 5–10 mins', 'Local groceries & weekly markets', 'Peaceful residential streets']
+        name: "Sector 4, Gurugram",
+        distance: "Central",
+        type: "Family-friendly residential sector",
+        description:
+          "Calm, well-established neighbourhood with top schools, local markets and easy access to inner-Gurugram.",
+        highlights: [
+          "Top schools within 5–10 mins",
+          "Local groceries & weekly markets",
+          "Peaceful residential streets",
+        ],
       },
       {
-        name: 'Sector 9, Gurugram',
-        distance: 'Well-connected',
-        type: 'Transit-oriented sector',
-        description: 'Rapidly improving connectivity with planned metro links and good road access — ideal for commuters.',
-        highlights: ['Planned metro connectivity', 'Quick road links to business hubs', 'Growing service infrastructure']
+        name: "Sector 9, Gurugram",
+        distance: "Well-connected",
+        type: "Transit-oriented sector",
+        description:
+          "Rapidly improving connectivity with planned metro links and good road access — ideal for commuters.",
+        highlights: [
+          "Planned metro connectivity",
+          "Quick road links to business hubs",
+          "Growing service infrastructure",
+        ],
       },
       {
-        name: 'Sector 46, Gurugram',
-        distance: 'Established',
-        type: 'Community-focused sector',
-        description: 'An established locale with busy community markets, healthcare centres and family amenities nearby.',
-        highlights: ['Active community markets', 'Nearby clinics & pharmacies', 'Strong rental demand']
+        name: "Sector 46, Gurugram",
+        distance: "Established",
+        type: "Community-focused sector",
+        description:
+          "An established locale with busy community markets, healthcare centres and family amenities nearby.",
+        highlights: [
+          "Active community markets",
+          "Nearby clinics & pharmacies",
+          "Strong rental demand",
+        ],
       },
       {
-        name: 'Sector 42, Gurugram',
-        distance: 'High-growth corridor',
-        type: 'Emerging residential & investment zone',
-        description: 'Located near the Dwarka Expressway corridor with new launches and strong appreciation potential.',
-        highlights: ['Close to Dwarka Expressway', 'New residential launches', 'High appreciation potential']
-      }
+        name: "Sector 42, Gurugram",
+        distance: "High-growth corridor",
+        type: "Emerging residential & investment zone",
+        description:
+          "Located near the Dwarka Expressway corridor with new launches and strong appreciation potential.",
+        highlights: [
+          "Close to Dwarka Expressway",
+          "New residential launches",
+          "High appreciation potential",
+        ],
+      },
     ],
     activeSector: 0,
   },
@@ -325,40 +363,67 @@ const projectData = {
     },
   ],
   projects: [
-    { name: 'Sector 4', status: 'Completed', area: '5700 Sq. Feet' },
-    { name: 'Sector 9', status: 'Completed', area: '4200 Sq. Feet' },
-    { name: 'Sector 46', status: 'Completed', area: '4500 Sq. Feet' },
-    { name: 'Sector 42', status: 'Ongoing', area: '3200 Sq. Feet', progress: 78 },
-    { name: 'Reliance MET City', status: 'Ongoing', area: '1620 Sq. Feet', progress: 8, stage: 'Foundation', eta: 'June 2027' }
+    { name: "Sector 4", status: "Completed", area: "5700 Sq. Feet" },
+    { name: "Sector 9", status: "Completed", area: "4200 Sq. Feet" },
+    { name: "Sector 46", status: "Completed", area: "4500 Sq. Feet" },
+    {
+      name: "Sector 42",
+      status: "Ongoing",
+      area: "3200 Sq. Feet",
+      progress: 78,
+    },
+    {
+      name: "Reliance MET City",
+      status: "Ongoing",
+      area: "1620 Sq. Feet",
+      progress: 8,
+      stage: "Foundation",
+      eta: "June 2027",
+    },
   ],
 };
 // Auto-generate stories and load all images and videos from src/data grouped per folder
-(function generateStoriesFromDataFolders(){
+(function generateStoriesFromDataFolders() {
   let generatedStories = [];
   try {
     // require images and videos from src/data and subfolders
-    const ctx = require.context('./data', true, /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i);
+    const ctx = require.context(
+      "./data",
+      true,
+      /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i,
+    );
     const keys = ctx.keys(); // e.g. ['./sec 4/img1.jpg', './sec 9/video.mp4']
     const folderImages = {}; // { 'sec 4': [url1, url2], 'sec 9': [url3] }
 
     keys.forEach((k) => {
-      const clean = k.replace(/^\.\//, '');
-      const parts = clean.split('/');
+      const clean = k.replace(/^\.\//, "");
+      const parts = clean.split("/");
       if (parts.length >= 2) {
         const folder = parts[0];
         if (!folderImages[folder]) folderImages[folder] = [];
-        try { folderImages[folder].push(ctx(k)); } catch(e) { /* ignore resolution errors */ }
+        try {
+          folderImages[folder].push(ctx(k));
+        } catch (e) {
+          /* ignore resolution errors */
+        }
       }
     });
 
     // EXTRA: also try loading media from src/Reliance Met City (outside /data)
     try {
-      const rmcCtx = require.context('./Reliance Met City', false, /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i);
+      const rmcCtx = require.context(
+        "./Reliance Met City",
+        false,
+        /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i,
+      );
       const rmcKeys = rmcCtx.keys();
       if (rmcKeys.length) {
-        if (!folderImages['Reliance Met City']) folderImages['Reliance Met City'] = [];
+        if (!folderImages["Reliance Met City"])
+          folderImages["Reliance Met City"] = [];
         rmcKeys.forEach((k) => {
-          try { folderImages['Reliance Met City'].push(rmcCtx(k)); } catch (e) {}
+          try {
+            folderImages["Reliance Met City"].push(rmcCtx(k));
+          } catch (e) {}
         });
       }
     } catch (e) {
@@ -371,16 +436,18 @@ const projectData = {
     // create stories from folder names (use first media per folder for story thumbnail)
     const folderNames = Object.keys(folderImages);
     if (folderNames.length) {
-      const folders = folderNames.sort((a,b)=>{
-        const na = (a.match(/\d+/)||[])[0]||0;
-        const nb = (b.match(/\d+/)||[])[0]||0;
-        return Number(na)-Number(nb);
+      const folders = folderNames.sort((a, b) => {
+        const na = (a.match(/\d+/) || [])[0] || 0;
+        const nb = (b.match(/\d+/) || [])[0] || 0;
+        return Number(na) - Number(nb);
       });
-      generatedStories = folders.map(folder => ({
+      generatedStories = folders.map((folder) => ({
         week: folder,
-        date: '',
+        date: "",
         title: folder,
-        image: (folderImages[folder] && folderImages[folder][0]) || projectData.images[0]
+        image:
+          (folderImages[folder] && folderImages[folder][0]) ||
+          projectData.images[0],
       }));
     }
   } catch (e) {
@@ -389,7 +456,12 @@ const projectData = {
 
   if (!generatedStories.length) {
     // fallback: create simple stories from projects
-    generatedStories = projectData.projects.map(p => ({ week: p.name, date: '', title: p.name, image: projectData.images[0] }));
+    generatedStories = projectData.projects.map((p) => ({
+      week: p.name,
+      date: "",
+      title: p.name,
+      image: projectData.images[0],
+    }));
     projectData.folderImages = projectData.folderImages || {};
   }
 
@@ -403,11 +475,11 @@ const MediaThumbnail = ({ src, isVideo, onClick }) => {
     <div
       onClick={onClick}
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        cursor: 'pointer',
-        background: '#000'
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        cursor: "pointer",
+        background: "#000",
       }}
     >
       {isVideo ? (
@@ -418,34 +490,36 @@ const MediaThumbnail = ({ src, isVideo, onClick }) => {
           preload="metadata"
           poster=""
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            objectPosition: 'center',
-            background: '#000',
-            pointerEvents: 'none'
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            objectPosition: "center",
+            background: "#000",
+            pointerEvents: "none",
           }}
-          onLoadedMetadata={(e)=>setDuration(e.target.duration)}
+          onLoadedMetadata={(e) => setDuration(e.target.duration)}
         />
       ) : (
         <img
           src={src}
           loading="lazy"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       )}
       {isVideo && duration && (
-        <div style={{
-          position: 'absolute',
-          bottom: 6,
-          right: 6,
-          background: 'rgba(0,0,0,0.65)',
-          color: '#fff',
-          fontSize: 12,
-          padding: '2px 6px',
-          borderRadius: 6,
-          fontWeight: 600
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 6,
+            right: 6,
+            background: "rgba(0,0,0,0.65)",
+            color: "#fff",
+            fontSize: 12,
+            padding: "2px 6px",
+            borderRadius: 6,
+            fontWeight: 600,
+          }}
+        >
           {formatTime(duration)}
         </div>
       )}
@@ -458,7 +532,11 @@ const Hero = () => {
   const isMobile = useIsMobile();
   const reducedMotion = useReducedMotion();
   // try to use images from src/data/Caraousel if available
-  const carousel = (projectData.folderImages && (projectData.folderImages['Caraousel'] || projectData.folderImages['caraousel'])) || projectData.images;
+  const carousel =
+    (projectData.folderImages &&
+      (projectData.folderImages["Caraousel"] ||
+        projectData.folderImages["caraousel"])) ||
+    projectData.images;
   const [currentImage, setCurrentImage] = useState(0);
   const [openPreview, setOpenPreview] = useState(false);
   useEffect(() => {
@@ -466,51 +544,68 @@ const Hero = () => {
     if (reducedMotion) return;
     const timer = setInterval(
       () => setCurrentImage((prev) => (prev + 1) % carousel.length),
-      2500
+      2500,
     );
     return () => clearInterval(timer);
   }, [carousel, reducedMotion]);
 
-  const bg = carousel && carousel.length ? carousel[currentImage] : projectData.images[0];
+  const bg =
+    carousel && carousel.length
+      ? carousel[currentImage]
+      : projectData.images[0];
 
   return (
-    <div style={{ position: 'relative', height: isMobile ? '52vh' : '70vh', overflow: 'hidden', background: colors.black }}>
-
+    <div
+      style={{
+        position: "relative",
+        height: isMobile ? "52vh" : "70vh",
+        overflow: "hidden",
+        background: colors.black,
+      }}
+    >
       {/* Blurred background layer (zoomed slightly) */}
       <img
         src={bg}
         alt="Hero background"
         loading="lazy"
         style={{
-          position: 'absolute',
+          position: "absolute",
           inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          filter: 'blur(14px) brightness(0.45)',
-          transform: 'scale(1.08)',
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          filter: "blur(14px) brightness(0.45)",
+          transform: "scale(1.08)",
         }}
       />
 
       {/* Dim overlay to improve contrast */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6))' }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6))",
+        }}
+      />
 
       {/* TOP BAR: LEFT — Title + Tagline | RIGHT — Buttons */}
-      <div style={{ 
-        position: 'absolute', 
-        top: isMobile ? 56 : 12, 
-        left: 0, 
-        right: 0, 
-        zIndex: 6, 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        padding: isMobile ? '8px 14px' : '0 28px',
-        pointerEvents: 'none'
-      }}>
-        
+      <div
+        style={{
+          position: "absolute",
+          top: isMobile ? 56 : 12,
+          left: 0,
+          right: 0,
+          zIndex: 6,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: isMobile ? "8px 14px" : "0 28px",
+          pointerEvents: "none",
+        }}
+      >
         {/* LEFT SIDE: Large Project Title */}
-        <div style={{ pointerEvents: 'auto' }}>
+        <div style={{ pointerEvents: "auto" }}>
           {/* <div style={{ color: colors.cream, fontSize: isMobile ? '1.6rem' : '3rem', fontWeight: 900, letterSpacing: 0.6, lineHeight: 1 }}>
             {projectData.name}
           </div> */}
@@ -520,21 +615,78 @@ const Hero = () => {
         </div>
 
         {/* RIGHT SIDE: CTA Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, pointerEvents: 'auto' }}>
-          <a href="tel:+919310994032" style={{ textDecoration: 'none' }}>
-            <button style={{ background: colors.darkBlue, color: colors.cream, padding: isMobile ? '8px 10px' : '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: isMobile ? 13 : 15 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isMobile ? 8 : 14,
+            pointerEvents: "auto",
+          }}
+        >
+          <a href="tel:+919310994032" style={{ textDecoration: "none" }}>
+            <button
+              style={{
+                background: colors.darkBlue,
+                color: colors.cream,
+                padding: isMobile ? "8px 10px" : "10px 14px",
+                borderRadius: 10,
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontWeight: 700,
+                fontSize: isMobile ? 13 : 15,
+              }}
+            >
               <Phone size={isMobile ? 14 : 16} /> Call
             </button>
           </a>
 
-          <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-            <button style={{ background: '#25D366', color: '#fff', padding: isMobile ? '8px 10px' : '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: isMobile ? 13 : 15 }}>
+          <a
+            href="https://wa.me/919310994032"
+            target="_blank"
+            rel="noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <button
+              style={{
+                background: "#25D366",
+                color: "#fff",
+                padding: isMobile ? "8px 10px" : "10px 14px",
+                borderRadius: 10,
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontWeight: 700,
+                fontSize: isMobile ? 13 : 15,
+              }}
+            >
               <MessageCircle size={isMobile ? 14 : 16} /> WhatsApp
             </button>
           </a>
 
-          <a href="mailto:parveen@shineoneestate.co.in" style={{ textDecoration: 'none' }}>
-            <button style={{ background: colors.lightBlue, color: colors.black, padding: isMobile ? '8px 10px' : '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: isMobile ? 13 : 15 }}>
+          <a
+            href="mailto:parveen@shineoneestate.co.in"
+            style={{ textDecoration: "none" }}
+          >
+            <button
+              style={{
+                background: colors.lightBlue,
+                color: colors.black,
+                padding: isMobile ? "8px 10px" : "10px 14px",
+                borderRadius: 10,
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontWeight: 700,
+                fontSize: isMobile ? 13 : 15,
+              }}
+            >
               <MailIconPlaceholder /> Email
             </button>
           </a>
@@ -542,76 +694,132 @@ const Hero = () => {
       </div>
 
       {/* Foreground carousel image (zoomed OUT / contained) */}
-      <div style={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <div style={{ maxWidth: '1100px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: isMobile ? '95%' : '85%', maxWidth: 980, borderRadius: 14, overflow: 'hidden', boxShadow: '0 18px 48px rgba(0,0,0,0.5)', background: 'rgba(255,255,255,0.04)' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: isMobile ? 12 : 20  }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 3,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 20,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1100px",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 18,
+          }}
+        >
+          <div
+            style={{ width: "100%", display: "flex", justifyContent: "center" }}
+          >
+            <div
+              style={{
+                width: isMobile ? "95%" : "85%",
+                maxWidth: 980,
+                borderRadius: 14,
+                overflow: "hidden",
+                boxShadow: "0 18px 48px rgba(0,0,0,0.5)",
+                background: "rgba(255,255,255,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: isMobile ? 12 : 20,
+                }}
+              >
                 <img
                   src={bg}
                   alt="carousel-foreground"
                   loading="eager"
                   onClick={() => setOpenPreview(true)}
                   style={{
-                    width: '100%',
-                    height: isMobile ? '260px' : '420px',
-                    objectFit: 'contain',
-                    cursor: 'zoom-in',
-                    background: 'transparent',
-                    transition: 'transform 6s ease',
-                    transform: 'scale(1.02)'
+                    width: "100%",
+                    height: isMobile ? "260px" : "420px",
+                    objectFit: "contain",
+                    cursor: "zoom-in",
+                    background: "transparent",
+                    transition: "transform 6s ease",
+                    transform: "scale(1.02)",
                   }}
                 />
-      {openPreview && (
-        <div
-          onClick={() => setOpenPreview(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.95)',
-            zIndex: 3000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <img
-            src={bg}
-            loading="eager"
-            style={{ maxWidth: '95%', maxHeight: '95%' }}
-          />
-          <button
-            onClick={(e) => { e.stopPropagation(); setOpenPreview(false); }}
-            style={{
-              position: 'absolute',
-              top: 18,
-              right: 18,
-              background: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: 44,
-              height: 44,
-              cursor: 'pointer'
-            }}
-          >
-            <X size={22} color={colors.black} />
-          </button>
-        </div>
-      )}
+                {openPreview && (
+                  <div
+                    onClick={() => setOpenPreview(false)}
+                    style={{
+                      position: "fixed",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.95)",
+                      zIndex: 3000,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={bg}
+                      loading="eager"
+                      style={{ maxWidth: "95%", maxHeight: "95%" }}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenPreview(false);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: 18,
+                        right: 18,
+                        background: "white",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: 44,
+                        height: 44,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <X size={22} color={colors.black} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* small dots */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
             {(carousel || projectData.images).map((_, idx) => (
-              <div key={idx} onClick={() => setCurrentImage(idx)} style={{ width: isMobile ? 8 : 10, height: isMobile ? 8 : 10, borderRadius: '50%', background: idx === currentImage ? colors.lightBlue : 'rgba(255,255,255,0.6)', cursor: 'pointer', boxShadow: idx === currentImage ? '0 6px 18px rgba(74,112,169,0.28)' : 'none' }} />
+              <div
+                key={idx}
+                onClick={() => setCurrentImage(idx)}
+                style={{
+                  width: isMobile ? 8 : 10,
+                  height: isMobile ? 8 : 10,
+                  borderRadius: "50%",
+                  background:
+                    idx === currentImage
+                      ? colors.lightBlue
+                      : "rgba(255,255,255,0.6)",
+                  cursor: "pointer",
+                  boxShadow:
+                    idx === currentImage
+                      ? "0 6px 18px rgba(74,112,169,0.28)"
+                      : "none",
+                }}
+              />
             ))}
           </div>
         </div>
       </div>
-
     </div>
   );
 };
@@ -619,90 +827,226 @@ const Hero = () => {
 const QuickSnapshot = () => {
   const isMobile = useIsMobile();
   const reveal = useRevealOnScroll();
-  const completedProjects = projectData.projects.filter(p => p.status.toLowerCase().includes('completed')).length;
-  const ongoingProjects = projectData.projects.filter(p => p.status.toLowerCase().includes('ongoing')).length;
+  const completedProjects = projectData.projects.filter((p) =>
+    p.status.toLowerCase().includes("completed"),
+  ).length;
+  const ongoingProjects = projectData.projects.filter((p) =>
+    p.status.toLowerCase().includes("ongoing"),
+  ).length;
   const completedAreaTotal = projectData.projects
-    .filter(p => p.status.toLowerCase().includes('completed'))
+    .filter((p) => p.status.toLowerCase().includes("completed"))
     .reduce((s, p) => {
-      const num = parseInt(String(p.area).replace(/[^0-9]/g, '')) || 0;
+      const num = parseInt(String(p.area).replace(/[^0-9]/g, "")) || 0;
       return s + num;
     }, 0);
 
   return (
-    <section id="section-overview" ref={reveal.ref} style={{ padding: isMobile ? '32px 12px' : '60px 20px', background: colors.cream, ...reveal.style }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 12 }}>
+    <section
+      id="section-overview"
+      ref={reveal.ref}
+      style={{
+        padding: isMobile ? "32px 12px" : "60px 20px",
+        background: colors.cream,
+        ...reveal.style,
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 18,
+            gap: 12,
+          }}
+        >
           <div>
-            <h2 style={{ fontSize: isMobile ? '1.5rem' : '1.9rem', margin: 0, fontWeight: 800, color: colors.darkBlue }}>Projects Overview</h2>
-            <p style={{ margin: '6px 0 0', color: colors.black, opacity: 0.8, lineHeight: 1.5 }}>
-              A quick snapshot of completed and ongoing developments, including total delivered area, construction status and project distribution across sectors.
+            <h2
+              style={{
+                fontSize: isMobile ? "1.5rem" : "1.9rem",
+                margin: 0,
+                fontWeight: 800,
+                color: colors.darkBlue,
+              }}
+            >
+              Projects Overview
+            </h2>
+            <p
+              style={{
+                margin: "6px 0 0",
+                color: colors.black,
+                opacity: 0.8,
+                lineHeight: 1.5,
+              }}
+            >
+              A quick snapshot of completed and ongoing developments, including
+              total delivered area, construction status and project distribution
+              across sectors.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: isMobile ? 12 : 0, flexWrap: 'wrap' }}>
-            {[{
-              icon: <Home size={20} color={colors.darkBlue} />,
-              label: 'Completed',
-              value: completedProjects
-            },{
-              icon: <Clock size={20} color={colors.darkBlue} />,
-              label: 'Ongoing',
-              value: ongoingProjects
-            },{
-              icon: <Award size={20} color={colors.darkBlue} />,
-              label: 'Completed Area',
-              value: `${completedAreaTotal} Sq. Feet`
-            }].map((c, i) => (
-              <div key={i} style={{ background: 'white', padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 6px 18px rgba(0,0,0,0.06)' }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: isMobile ? 12 : 0,
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              {
+                icon: <Home size={20} color={colors.darkBlue} />,
+                label: "Completed",
+                value: completedProjects,
+              },
+              {
+                icon: <Clock size={20} color={colors.darkBlue} />,
+                label: "Ongoing",
+                value: ongoingProjects,
+              },
+              {
+                icon: <Award size={20} color={colors.darkBlue} />,
+                label: "Completed Area",
+                value: `${completedAreaTotal} Sq. Feet`,
+              },
+            ].map((c, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "white",
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
+                }}
+              >
                 {c.icon}
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, color: colors.black, fontWeight: 700 }}>{c.value}</div>
-                  <div style={{ fontSize: 12, color: colors.darkBlue, opacity: 0.9 }}>{c.label}</div>
+                <div style={{ textAlign: "right" }}>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: colors.black,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {c.value}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: colors.darkBlue,
+                      opacity: 0.9,
+                    }}
+                  >
+                    {c.label}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 12,
+          }}
+        >
           {projectData.projects.map((p, idx) => (
             <div
               key={idx}
               style={{
-                background: 'linear-gradient(180deg, rgba(255,255,255,1), rgba(245,247,250,1))',
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,1), rgba(245,247,250,1))",
                 borderRadius: 12,
                 padding: 12,
-                boxShadow: '0 10px 24px rgba(0,0,0,0.06)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                transition: 'transform 0.25s ease, box-shadow 0.25s ease'
+                boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                transition: "transform 0.25s ease, box-shadow 0.25s ease",
               }}
-              onMouseEnter={(e)=>{
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 16px 28px rgba(0,0,0,0.12)';
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow =
+                  "0 16px 28px rgba(0,0,0,0.12)";
               }}
-              onMouseLeave={(e)=>{
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 10px 24px rgba(0,0,0,0.06)';
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 10px 24px rgba(0,0,0,0.06)";
               }}
             >
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: colors.darkBlue }}>{p.name}</div>
-                <div style={{ fontSize: 13, color: colors.black, opacity: 0.8, marginTop: 6 }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: colors.darkBlue,
+                  }}
+                >
+                  {p.name}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: colors.black,
+                    opacity: 0.8,
+                    marginTop: 6,
+                  }}
+                >
                   {p.status} • <span style={{ fontWeight: 700 }}>{p.area}</span>
                 </div>
-                <div style={{ fontSize: 12, color: colors.darkBlue, opacity: 0.85, marginTop: 4 }}>
-                  {p.status.toLowerCase().includes('completed')
-                    ? 'Delivered and handed over to owners.'
-                    : 'Construction currently in progress with active site work.'}
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: colors.darkBlue,
+                    opacity: 0.85,
+                    marginTop: 4,
+                  }}
+                >
+                  {p.status.toLowerCase().includes("completed")
+                    ? "Delivered and handed over to owners."
+                    : "Construction currently in progress with active site work."}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <div style={{ padding: '6px 10px', borderRadius: 20, fontWeight: 700, fontSize: 12, color: p.status.toLowerCase().includes('completed') ? '#016936' : '#7a5d00', background: p.status.toLowerCase().includes('completed') ? '#e6fff0' : '#fff8e1' }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 20,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: p.status.toLowerCase().includes("completed")
+                      ? "#016936"
+                      : "#7a5d00",
+                    background: p.status.toLowerCase().includes("completed")
+                      ? "#e6fff0"
+                      : "#fff8e1",
+                  }}
+                >
                   {p.status.toUpperCase()}
                 </div>
-                {p.status.toLowerCase().includes('ongoing') && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: colors.darkBlue, opacity: 0.9 }}>
+                {p.status.toLowerCase().includes("ongoing") && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      color: colors.darkBlue,
+                      opacity: 0.9,
+                    }}
+                  >
                     ETA: {p.eta || projectData.possession}
                   </div>
                 )}
@@ -718,100 +1062,239 @@ const QuickSnapshot = () => {
 const ProgressTimeline = () => {
   const isMobile = useIsMobile();
   const reveal = useRevealOnScroll();
-  const [selectedProjectName, setSelectedProjectName] = useState(projectData.projects[0].name);
-  const project = projectData.projects.find(p => p.name === selectedProjectName) || projectData.projects[0];
-  const progress = project.progress !== undefined ? project.progress : (project.status.toLowerCase().includes('completed') ? 100 : 78);
-  const stages = ['Foundation','Structure','Finishing','Interior Works','Final Inspection','Handover'];
+  const [selectedProjectName, setSelectedProjectName] = useState(
+    projectData.projects[0].name,
+  );
+  const project =
+    projectData.projects.find((p) => p.name === selectedProjectName) ||
+    projectData.projects[0];
+  const progress =
+    project.progress !== undefined
+      ? project.progress
+      : project.status.toLowerCase().includes("completed")
+        ? 100
+        : 78;
+  const stages = [
+    "Foundation",
+    "Structure",
+    "Finishing",
+    "Interior Works",
+    "Final Inspection",
+    "Handover",
+  ];
   const stageStatuses = stages.map((s, idx) => {
-    if (project.status.toLowerCase().includes('completed')) return 'completed';
+    if (project.status.toLowerCase().includes("completed")) return "completed";
 
-    if (project.status.toLowerCase().includes('ongoing')) {
+    if (project.status.toLowerCase().includes("ongoing")) {
       // If a specific current stage is defined (e.g. Foundation for new projects)
       if (project.stage) {
-        const currentIdx = stages.findIndex(st => st.toLowerCase() === String(project.stage).toLowerCase());
-        if (currentIdx === -1) return 'pending';
-        if (idx < currentIdx) return 'completed';
-        if (idx === currentIdx) return 'ongoing';
-        return 'pending';
+        const currentIdx = stages.findIndex(
+          (st) => st.toLowerCase() === String(project.stage).toLowerCase(),
+        );
+        if (currentIdx === -1) return "pending";
+        if (idx < currentIdx) return "completed";
+        if (idx === currentIdx) return "ongoing";
+        return "pending";
       }
 
       // Default behavior for ongoing projects
-      if (s === 'Finishing') return 'ongoing';
-      const finishingIndex = stages.indexOf('Finishing');
-      if (idx < finishingIndex) return 'completed';
-      return 'pending';
+      if (s === "Finishing") return "ongoing";
+      const finishingIndex = stages.indexOf("Finishing");
+      if (idx < finishingIndex) return "completed";
+      return "pending";
     }
 
-    return 'pending';
+    return "pending";
   });
 
   return (
-    <div id="section-progress" ref={reveal.ref} style={{ padding: isMobile ? '32px 16px' : "60px 16px", background: "white", ...reveal.style }}>
+    <div
+      id="section-progress"
+      ref={reveal.ref}
+      style={{
+        padding: isMobile ? "32px 16px" : "60px 16px",
+        background: "white",
+        ...reveal.style,
+      }}
+    >
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-        <h2 style={{ fontSize: isMobile ? '1.4rem' : "2rem", fontWeight: 700, color: colors.black, marginBottom: 12, textAlign: 'center' }}>Construction Progress</h2>
-        <p style={{ textAlign: 'center', color: colors.black, opacity: 0.75, maxWidth: 760, margin: '0 auto 18px', lineHeight: 1.5 }}>
-          Track each construction phase from foundation to handover. Select a project to view current completion percentage and stage-by-stage progress updates.
+        <h2
+          style={{
+            fontSize: isMobile ? "1.4rem" : "2rem",
+            fontWeight: 700,
+            color: colors.black,
+            marginBottom: 12,
+            textAlign: "center",
+          }}
+        >
+          Construction Progress
+        </h2>
+        <p
+          style={{
+            textAlign: "center",
+            color: colors.black,
+            opacity: 0.75,
+            maxWidth: 760,
+            margin: "0 auto 18px",
+            lineHeight: 1.5,
+          }}
+        >
+          Track each construction phase from foundation to handover. Select a
+          project to view current completion percentage and stage-by-stage
+          progress updates.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'center', marginBottom: 18, gap: 12, alignItems: 'center' }}>
-          <label style={{ fontWeight: 600, color: colors.darkBlue }}>Select Project:</label>
-          <select value={selectedProjectName} onChange={(e) => setSelectedProjectName(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${colors.darkBlue}` }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            justifyContent: "center",
+            marginBottom: 18,
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <label style={{ fontWeight: 600, color: colors.darkBlue }}>
+            Select Project:
+          </label>
+          <select
+            value={selectedProjectName}
+            onChange={(e) => setSelectedProjectName(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: `1px solid ${colors.darkBlue}`,
+            }}
+          >
             {projectData.projects.map((p, i) => (
-              <option key={i} value={p.name}>{p.name} — {p.status}</option>
+              <option key={i} value={p.name}>
+                {p.name} — {p.status}
+              </option>
             ))}
           </select>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: 14 }}>
-          <div style={{ fontSize: isMobile ? '1.6rem' : '2.4rem', fontWeight: 800, color: colors.darkBlue }}>{progress}%</div>
-          <div style={{ fontSize: '0.85rem', color: colors.black, opacity: 0.7 }}>Overall Completion</div>
+        <div style={{ textAlign: "center", marginBottom: 14 }}>
+          <div
+            style={{
+              fontSize: isMobile ? "1.6rem" : "2.4rem",
+              fontWeight: 800,
+              color: colors.darkBlue,
+            }}
+          >
+            {progress}%
+          </div>
+          <div
+            style={{ fontSize: "0.85rem", color: colors.black, opacity: 0.7 }}
+          >
+            Overall Completion
+          </div>
         </div>
 
-        <div style={{ height: 14, background: colors.cream, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{
-            height: '100%',
-            background: `linear-gradient(90deg, ${colors.lightBlue}, ${colors.darkBlue})`,
-            width: `${progress}%`,
-            transition: 'width 1s ease',
-            boxShadow: '0 0 14px rgba(74,112,169,0.35)'
-          }} />
+        <div
+          style={{
+            height: 14,
+            background: colors.cream,
+            borderRadius: 10,
+            overflow: "hidden",
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              background: `linear-gradient(90deg, ${colors.lightBlue}, ${colors.darkBlue})`,
+              width: `${progress}%`,
+              transition: "width 1s ease",
+              boxShadow: "0 0 14px rgba(74,112,169,0.35)",
+            }}
+          />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: 12,
+          }}
+        >
           {stages.map((stage, idx) => {
             const status = stageStatuses[idx];
-            const bg = status === 'completed' ? '#e6fff0' : status === 'ongoing' ? '#fff8e1' : 'rgba(255,255,255,0.9)';
-            const color = status === 'completed' ? '#016936' : status === 'ongoing' ? '#7a5d00' : colors.darkBlue;
+            const bg =
+              status === "completed"
+                ? "#e6fff0"
+                : status === "ongoing"
+                  ? "#fff8e1"
+                  : "rgba(255,255,255,0.9)";
+            const color =
+              status === "completed"
+                ? "#016936"
+                : status === "ongoing"
+                  ? "#7a5d00"
+                  : colors.darkBlue;
             return (
-              <div key={stage} style={{ padding: 12, borderRadius: 10, background: bg, boxShadow: '0 6px 18px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color }}>{stage}</div>
-                <div style={{ marginTop: 6, fontSize: 12, color: colors.black, opacity: 0.8 }}>
-                  {status === 'completed' ? 'Completed' : status === 'ongoing' ? 'In Progress' : 'Pending'}
+              <div
+                key={stage}
+                style={{
+                  padding: 12,
+                  borderRadius: 10,
+                  background: bg,
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.04)",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800, color }}>
+                  {stage}
                 </div>
-                <div style={{ marginTop: 6, fontSize: 11, color: colors.darkBlue, opacity: 0.8 }}>
-                  {status === 'completed'
-                    ? 'Work finished and quality verified.'
-                    : status === 'ongoing'
-                    ? 'Active execution in progress on-site.'
-                    : 'Scheduled for upcoming phase.'}
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: colors.black,
+                    opacity: 0.8,
+                  }}
+                >
+                  {status === "completed"
+                    ? "Completed"
+                    : status === "ongoing"
+                      ? "In Progress"
+                      : "Pending"}
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 11,
+                    color: colors.darkBlue,
+                    opacity: 0.8,
+                  }}
+                >
+                  {status === "completed"
+                    ? "Work finished and quality verified."
+                    : status === "ongoing"
+                      ? "Active execution in progress on-site."
+                      : "Scheduled for upcoming phase."}
                 </div>
               </div>
             );
           })}
         </div>
-
       </div>
     </div>
   );
 };
 
-
-
 const StoriesViewer = () => {
   const isMobile = useIsMobile();
   const reveal = useRevealOnScroll();
   const folderImages = projectData.folderImages || {};
-  const [openStory, setOpenStory] = useState({ open: false, folder: '', images: [], idx: 0 });
+  const [openStory, setOpenStory] = useState({
+    open: false,
+    folder: "",
+    images: [],
+    idx: 0,
+  });
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [currentDuration, setCurrentDuration] = useState(4000);
@@ -837,7 +1320,7 @@ const StoriesViewer = () => {
   };
 
   const close = () => {
-    setOpenStory({ open: false, folder: '', images: [], idx: 0 });
+    setOpenStory({ open: false, folder: "", images: [], idx: 0 });
     setProgress(0);
     setIsPaused(false);
     setCurrentDuration(DEFAULT_DURATION);
@@ -893,7 +1376,9 @@ const StoriesViewer = () => {
       }
     };
     rafRef.current = requestAnimationFrame(run);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openStory.open, openStory.idx, isPaused, currentDuration]);
 
@@ -920,7 +1405,8 @@ const StoriesViewer = () => {
     const dx = endX - startX;
     // threshold
     if (Math.abs(dx) > 40) {
-      if (dx > 0) prev(); else next();
+      if (dx > 0) prev();
+      else next();
     }
     touchRef.current.startX = 0;
     touchRef.current.endX = 0;
@@ -942,47 +1428,116 @@ const StoriesViewer = () => {
     // prevent tapping from interfering with buttons
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    if (x < rect.width / 2) prev(); else next();
+    if (x < rect.width / 2) prev();
+    else next();
   };
 
   return (
-    <div id="section-stories" ref={reveal.ref} style={{ padding: '70px 20px', background: colors.cream, ...reveal.style }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <h2 style={{ fontSize: '2.5rem', fontWeight: 700, textAlign: 'center', marginBottom: 8 }}>Project Stories</h2>
-        <p style={{ textAlign: 'center', color: colors.black, opacity: 0.75, maxWidth: 760, margin: '0 auto 24px', lineHeight: 1.5 }}>
-          Explore real on-site updates from each sector. Stories show progress snapshots, construction milestones and ongoing site activity exactly as captured during development.
+    <div
+      id="section-stories"
+      ref={reveal.ref}
+      style={{
+        padding: "70px 20px",
+        background: colors.cream,
+        ...reveal.style,
+      }}
+    >
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <h2
+          style={{
+            fontSize: "2.5rem",
+            fontWeight: 700,
+            textAlign: "center",
+            marginBottom: 8,
+          }}
+        >
+          Project Stories
+        </h2>
+        <p
+          style={{
+            textAlign: "center",
+            color: colors.black,
+            opacity: 0.75,
+            maxWidth: 760,
+            margin: "0 auto 24px",
+            lineHeight: 1.5,
+          }}
+        >
+          Explore real on-site updates from each sector. Stories show progress
+          snapshots, construction milestones and ongoing site activity exactly
+          as captured during development.
         </p>
 
         {/* THUMBNAILS */}
-        <div style={{ display: 'flex', gap: 15, overflowX: 'auto', paddingBottom: 8 }}>
-          {['sec 4','sec 9','sec 46','sec 42','reliance met city']
-            .map(d => Object.keys(folderImages).find(k => k.toLowerCase() === d))
+        <div
+          style={{
+            display: "flex",
+            gap: 15,
+            overflowX: "auto",
+            paddingBottom: 8,
+          }}
+        >
+          {["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]
+            .map((d) =>
+              Object.keys(folderImages).find((k) => k.toLowerCase() === d),
+            )
             .filter(Boolean)
-            .map(folder => (
+            .map((folder) => (
               <div
                 key={folder}
-                style={{ textAlign: 'center', cursor: 'pointer', minWidth: 120 }}
+                style={{
+                  textAlign: "center",
+                  cursor: "pointer",
+                  minWidth: 120,
+                }}
                 onClick={() => open(folder)}
-                onMouseEnter={(e)=>{ const c=e.currentTarget.querySelector('[data-story-circle]'); if(c) c.style.transform='scale(1.05)'; }}
-                onMouseLeave={(e)=>{ const c=e.currentTarget.querySelector('[data-story-circle]'); if(c) c.style.transform='scale(1)'; }}
+                onMouseEnter={(e) => {
+                  const c = e.currentTarget.querySelector(
+                    "[data-story-circle]",
+                  );
+                  if (c) c.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  const c = e.currentTarget.querySelector(
+                    "[data-story-circle]",
+                  );
+                  if (c) c.style.transform = "scale(1)";
+                }}
               >
                 <div
                   style={{
                     width: 110,
                     height: 110,
-                    borderRadius: '50%',
-                    overflow: 'hidden',
+                    borderRadius: "50%",
+                    overflow: "hidden",
                     border: `4px solid ${colors.darkBlue}`,
-                    margin: '0 auto 8px',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-                    transition: 'transform 0.25s ease'
+                    margin: "0 auto 8px",
+                    boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+                    transition: "transform 0.25s ease",
                   }}
                   data-story-circle
                 >
-                  <img src={folderImages[folder][0]} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={folderImages[folder][0]}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
                 </div>
-                <div style={{ fontWeight: 700, color: colors.black }}>{folder}</div>
-                <div style={{ fontSize: 12, color: colors.darkBlue, opacity: 0.8, marginTop: 4 }}>
+                <div style={{ fontWeight: 700, color: colors.black }}>
+                  {folder}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: colors.darkBlue,
+                    opacity: 0.8,
+                    marginTop: 4,
+                  }}
+                >
                   Tap to view live updates
                 </div>
               </div>
@@ -998,34 +1553,117 @@ const StoriesViewer = () => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.95)",
+              zIndex: 2000,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             {/* PROGRESS BAR ROW */}
-            <div style={{ position: 'absolute', top: 18, left: 12, right: 12, display: 'flex', gap: 6 }}>
+            <div
+              style={{
+                position: "absolute",
+                top: 18,
+                left: 12,
+                right: 12,
+                display: "flex",
+                gap: 6,
+              }}
+            >
               {openStory.images.map((_, i) => (
-                <div key={i} style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.35)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: i < openStory.idx ? '100%' : i === openStory.idx ? `${progress * 100}%` : '0%', background: 'white', transition: 'width 120ms linear' }} />
+                <div
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: 3,
+                    background: "rgba(255,255,255,0.35)",
+                    borderRadius: 3,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width:
+                        i < openStory.idx
+                          ? "100%"
+                          : i === openStory.idx
+                            ? `${progress * 100}%`
+                            : "0%",
+                      background: "white",
+                      transition: "width 120ms linear",
+                    }}
+                  />
                 </div>
               ))}
             </div>
 
             {/* TOP INFO (title + count) */}
-            <div style={{ position: 'absolute', top: 26, left: 18, display: 'flex', alignItems: 'center', gap: 12, color: 'white' }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', border: `2px solid rgba(255,255,255,0.85)` }}>
-                <img src={openStory.images[0]} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div
+              style={{
+                position: "absolute",
+                top: 26,
+                left: 18,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                color: "white",
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  border: `2px solid rgba(255,255,255,0.85)`,
+                }}
+              >
+                <img
+                  src={openStory.images[0]}
+                  loading="lazy"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
               </div>
               <div style={{ fontWeight: 700 }}>{openStory.folder}</div>
-              <div style={{ opacity: 0.9, marginLeft: 8 }}>{openStory.idx + 1}/{openStory.images.length}</div>
+              <div style={{ opacity: 0.9, marginLeft: 8 }}>
+                {openStory.idx + 1}/{openStory.images.length}
+              </div>
             </div>
 
             {/* IMAGE / VIDEO container with fade animation */}
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-              <div style={{ transition: 'opacity 180ms ease', opacity: isAnimating ? 0 : 1, maxWidth: '90%', maxHeight: '90%', borderRadius: 12, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 24,
+              }}
+            >
+              <div
+                style={{
+                  transition: "opacity 180ms ease",
+                  opacity: isAnimating ? 0 : 1,
+                  maxWidth: "90%",
+                  maxHeight: "90%",
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 {isVideo(openStory.images[openStory.idx]) ? (
                   <video
                     key={openStory.images[openStory.idx]}
                     src={openStory.images[openStory.idx]}
-                    style={{ maxWidth: '100%', maxHeight: '100%' }}
+                    style={{ maxWidth: "100%", maxHeight: "100%" }}
                     controls={!isMobile}
                     playsInline
                     autoPlay
@@ -1040,7 +1678,11 @@ const StoriesViewer = () => {
                     src={openStory.images[openStory.idx]}
                     alt={`story-${openStory.idx}`}
                     loading="lazy"
-                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
                     onLoad={() => setCurrentDuration(DEFAULT_DURATION)}
                   />
                 )}
@@ -1048,14 +1690,58 @@ const StoriesViewer = () => {
             </div>
 
             {/* CLOSE BUTTON */}
-            <button onClick={(e)=>{ e.stopPropagation(); close(); }} style={{ position: 'absolute', top: 18, right: 18, background: 'white', borderRadius: '50%', border: 'none', width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                close();
+              }}
+              style={{
+                position: "absolute",
+                top: 18,
+                right: 18,
+                background: "white",
+                borderRadius: "50%",
+                border: "none",
+                width: 44,
+                height: 44,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <X size={22} color={colors.black} />
             </button>
 
             {/* NAV HINTS (left/right) - visible on desktop */}
-            <div style={{ position: 'absolute', left: 6, top: 0, bottom: 0, width: '40%', cursor: 'pointer' }} onClick={(e)=>{ e.stopPropagation(); prev(); }} />
-            <div style={{ position: 'absolute', right: 6, top: 0, bottom: 0, width: '40%', cursor: 'pointer' }} onClick={(e)=>{ e.stopPropagation(); next(); }} />
-
+            <div
+              style={{
+                position: "absolute",
+                left: 6,
+                top: 0,
+                bottom: 0,
+                width: "40%",
+                cursor: "pointer",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                prev();
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                right: 6,
+                top: 0,
+                bottom: 0,
+                width: "40%",
+                cursor: "pointer",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                next();
+              }}
+            />
           </div>
         )}
       </div>
@@ -1065,7 +1751,13 @@ const StoriesViewer = () => {
 
 const ImageGallery = () => {
   const isMobile = useIsMobile();
-  const [lightbox, setLightbox] = useState({ open: false, src: '', folder: '', index: 0, items: [] });
+  const [lightbox, setLightbox] = useState({
+    open: false,
+    src: "",
+    folder: "",
+    index: 0,
+    items: [],
+  });
   const [touchStart, setTouchStart] = useState(null);
   const reveal = useRevealOnScroll();
   const folderImages = projectData.folderImages || {};
@@ -1092,51 +1784,62 @@ const ImageGallery = () => {
   const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
 
   // Project grouping
-  const completedFolders = ['sec 4', 'sec 9', 'sec 46'];
-  const ongoingFolders = ['sec 42', 'reliance met city'];
+  const completedFolders = ["sec 4", "sec 9", "sec 46"];
+  const ongoingFolders = ["sec 42", "reliance met city"];
 
-  const normalize = (s) => String(s || '').toLowerCase().trim();
-  const resolveFolder = (name) => keys.find(k => normalize(k) === normalize(name));
+  const normalize = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .trim();
+  const resolveFolder = (name) =>
+    keys.find((k) => normalize(k) === normalize(name));
 
   const completedResolved = completedFolders.map(resolveFolder).filter(Boolean);
   const ongoingResolved = ongoingFolders.map(resolveFolder).filter(Boolean);
 
   const projectDescriptions = {
-    'sec 4': 'Completed residential project with quality finishing and fully delivered units.',
-    'sec 9': 'Delivered residential development focused on modern planning and family-friendly spaces.',
-    'sec 46': 'Completed premium housing cluster with ready-to-move homes and landscaped surroundings.',
-    'sec 42': 'Active development site currently under construction with ongoing structural and finishing work.',
-    'reliance met city': 'Newly started project site located in a growing urban zone with future-ready infrastructure.'
+    "sec 4":
+      "Completed residential project with quality finishing and fully delivered units.",
+    "sec 9":
+      "Delivered residential development focused on modern planning and family-friendly spaces.",
+    "sec 46":
+      "Completed premium housing cluster with ready-to-move homes and landscaped surroundings.",
+    "sec 42":
+      "Active development site currently under construction with ongoing structural and finishing work.",
+    "reliance met city":
+      "Newly started project site located in a growing urban zone with future-ready infrastructure.",
   };
 
   const openImage = (folder, src, idx, items) => {
     setLightbox({ open: true, src, folder, index: idx, items });
   };
 
-  const close = () => setLightbox({ open: false, src: '', folder: '', index: 0, items: [] });
+  const close = () =>
+    setLightbox({ open: false, src: "", folder: "", index: 0, items: [] });
 
   const goNext = () => {
     if (!lightbox.open) return;
     const next = (lightbox.index + 1) % lightbox.items.length;
-    setLightbox(s => ({ ...s, index: next, src: s.items[next] }));
+    setLightbox((s) => ({ ...s, index: next, src: s.items[next] }));
   };
 
   const goPrev = () => {
     if (!lightbox.open) return;
-    const prev = (lightbox.index - 1 + lightbox.items.length) % lightbox.items.length;
-    setLightbox(s => ({ ...s, index: prev, src: s.items[prev] }));
+    const prev =
+      (lightbox.index - 1 + lightbox.items.length) % lightbox.items.length;
+    setLightbox((s) => ({ ...s, index: prev, src: s.items[prev] }));
   };
 
   // keyboard navigation for lightbox
   useEffect(() => {
     if (!lightbox.open) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') close();
-      if (e.key === 'ArrowRight') goNext();
-      if (e.key === 'ArrowLeft') goPrev();
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight") goNext();
+      if (e.key === "ArrowLeft") goPrev();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [lightbox.open, lightbox.index, lightbox.items]);
 
   // swipe support on mobile lightbox
@@ -1152,28 +1855,56 @@ const ImageGallery = () => {
   };
 
   return (
-    <div id="section-gallery" ref={reveal.ref} style={{ padding: isMobile ? '24px 12px' : '60px 20px', background: 'white', ...reveal.style }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div
+      id="section-gallery"
+      ref={reveal.ref}
+      style={{
+        padding: isMobile ? "24px 12px" : "60px 20px",
+        background: "white",
+        ...reveal.style,
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <style>{galleryKeyframes}</style>
-        <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>
+        <h2
+          style={{
+            fontSize: isMobile ? "1.4rem" : "2rem",
+            fontWeight: 700,
+            color: colors.darkBlue,
+            textAlign: "center",
+            marginBottom: 16,
+          }}
+        >
           Photo Gallery
         </h2>
 
         {/* COMPLETED PROJECTS */}
         <div style={{ marginBottom: 34 }}>
-          <h3 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: colors.darkBlue, marginBottom: 14, textAlign: 'center' }}>
+          <h3
+            style={{
+              fontSize: isMobile ? 18 : 24,
+              fontWeight: 800,
+              color: colors.darkBlue,
+              marginBottom: 14,
+              textAlign: "center",
+            }}
+          >
             Completed & Delivered Projects
           </h3>
 
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0,1fr))',
+              display: "grid",
+              gridTemplateColumns: isMobile
+                ? "1fr"
+                : "repeat(3, minmax(0,1fr))",
               gap: 14,
             }}
           >
             {completedResolved.map((folder) => {
-              const items = (folderImages[folder] || []).filter(src => !isVideo(src));
+              const items = (folderImages[folder] || []).filter(
+                (src) => !isVideo(src),
+              );
               if (!items.length) return null;
               const src = items[0];
               const key = normalize(folder);
@@ -1184,50 +1915,78 @@ const ImageGallery = () => {
                   onClick={() => openImage(folder, src, 0, items)}
                   style={{
                     borderRadius: 12,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 22px rgba(0,0,0,0.10)',
-                    transform: 'translateY(0)',
-                    transition: 'transform 0.35s ease, box-shadow 0.35s ease',
-                    background: '#fff',
-                    animation: 'cardFloat 5s ease-in-out infinite, glowPulse 4s ease-in-out infinite',
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    boxShadow: "0 8px 22px rgba(0,0,0,0.10)",
+                    transform: "translateY(0)",
+                    transition: "transform 0.35s ease, box-shadow 0.35s ease",
+                    background: "#fff",
+                    animation:
+                      "cardFloat 5s ease-in-out infinite, glowPulse 4s ease-in-out infinite",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
-                    e.currentTarget.style.boxShadow = '0 16px 34px rgba(0,0,0,0.18)';
-                    e.currentTarget.style.animationPlayState = 'paused';
-                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1.04)';
+                    e.currentTarget.style.transform =
+                      "translateY(-6px) scale(1.01)";
+                    e.currentTarget.style.boxShadow =
+                      "0 16px 34px rgba(0,0,0,0.18)";
+                    e.currentTarget.style.animationPlayState = "paused";
+                    const img = e.currentTarget.querySelector("img");
+                    if (img) img.style.transform = "scale(1.04)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)';
-                    e.currentTarget.style.animationPlayState = 'running';
-                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1)';
+                    e.currentTarget.style.transform = "translateY(0) scale(1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 8px 22px rgba(0,0,0,0.10)";
+                    e.currentTarget.style.animationPlayState = "running";
+                    const img = e.currentTarget.querySelector("img");
+                    if (img) img.style.transform = "scale(1)";
                   }}
                 >
-                  <div style={{ position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: "relative", overflow: "hidden" }}>
                     <img
                       src={src}
                       alt={folder}
                       loading="lazy"
                       style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block',
-                        objectFit: 'contain',
-                        background: '#000',
-                        transition: 'transform 0.6s ease',
+                        width: "100%",
+                        height: "auto",
+                        display: "block",
+                        objectFit: "contain",
+                        background: "#000",
+                        transition: "transform 0.6s ease",
                       }}
                     />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))' }} />
-                    <div style={{ position: 'absolute', bottom: 10, left: 12, color: '#fff', fontWeight: 800, fontSize: 14 }}>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 10,
+                        left: 12,
+                        color: "#fff",
+                        fontWeight: 800,
+                        fontSize: 14,
+                      }}
+                    >
                       {folder}
                     </div>
                   </div>
 
-                  <div style={{ padding: '10px 12px 12px' }}>
-                    <div style={{ fontSize: 13, color: colors.black, lineHeight: 1.45 }}>
-                      {projectDescriptions[key] || 'Completed project.'}
+                  <div style={{ padding: "10px 12px 12px" }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: colors.black,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {projectDescriptions[key] || "Completed project."}
                     </div>
                   </div>
                 </div>
@@ -1238,23 +1997,35 @@ const ImageGallery = () => {
 
         {/* ONGOING PROJECTS */}
         <div style={{ marginBottom: 22 }}>
-          <h3 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: colors.darkBlue, marginBottom: 14, textAlign: 'center' }}>
+          <h3
+            style={{
+              fontSize: isMobile ? 18 : 24,
+              fontWeight: 800,
+              color: colors.darkBlue,
+              marginBottom: 14,
+              textAlign: "center",
+            }}
+          >
             On Going Projects
           </h3>
 
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0,1fr))',
+              display: "grid",
+              gridTemplateColumns: isMobile
+                ? "1fr"
+                : "repeat(2, minmax(0,1fr))",
               gap: 14,
             }}
           >
             {ongoingResolved.map((folder) => {
-              const items = (folderImages[folder] || []).filter(src => !isVideo(src));
+              const items = (folderImages[folder] || []).filter(
+                (src) => !isVideo(src),
+              );
               if (!items.length) return null;
               const src = items[0];
               const key = normalize(folder);
-              const isNewProject = key === 'reliance met city';
+              const isNewProject = key === "reliance met city";
 
               return (
                 <div
@@ -1262,44 +2033,50 @@ const ImageGallery = () => {
                   onClick={() => openImage(folder, src, 0, items)}
                   style={{
                     borderRadius: 12,
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 22px rgba(0,0,0,0.10)',
-                    transform: 'translateY(0)',
-                    transition: 'transform 0.35s ease, box-shadow 0.35s ease',
-                    background: '#fff',
-                    animation: 'cardFloat 5.5s ease-in-out infinite, glowPulse 4.5s ease-in-out infinite',
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    boxShadow: "0 8px 22px rgba(0,0,0,0.10)",
+                    transform: "translateY(0)",
+                    transition: "transform 0.35s ease, box-shadow 0.35s ease",
+                    background: "#fff",
+                    animation:
+                      "cardFloat 5.5s ease-in-out infinite, glowPulse 4.5s ease-in-out infinite",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
-                    e.currentTarget.style.boxShadow = '0 16px 34px rgba(0,0,0,0.18)';
-                    e.currentTarget.style.animationPlayState = 'paused';
-                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1.04)';
+                    e.currentTarget.style.transform =
+                      "translateY(-6px) scale(1.01)";
+                    e.currentTarget.style.boxShadow =
+                      "0 16px 34px rgba(0,0,0,0.18)";
+                    e.currentTarget.style.animationPlayState = "paused";
+                    const img = e.currentTarget.querySelector("img");
+                    if (img) img.style.transform = "scale(1.04)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)';
-                    e.currentTarget.style.animationPlayState = 'running';
-                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1)';
+                    e.currentTarget.style.transform = "translateY(0) scale(1)";
+                    e.currentTarget.style.boxShadow =
+                      "0 8px 22px rgba(0,0,0,0.10)";
+                    e.currentTarget.style.animationPlayState = "running";
+                    const img = e.currentTarget.querySelector("img");
+                    if (img) img.style.transform = "scale(1)";
                   }}
                 >
-                  <div style={{ position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: "relative", overflow: "hidden" }}>
                     {isNewProject && (
                       <div
                         style={{
-                          position: 'absolute',
+                          position: "absolute",
                           top: 10,
                           right: 10,
-                          background: '#16a34a',
-                          color: '#fff',
+                          background: "#16a34a",
+                          color: "#fff",
                           fontWeight: 800,
                           fontSize: 11,
-                          padding: '5px 10px',
+                          padding: "5px 10px",
                           borderRadius: 999,
-                          border: '2px solid white',
+                          border: "2px solid white",
                           letterSpacing: 0.5,
                           zIndex: 3,
-                          animation: 'newPulse 1.8s ease-in-out infinite',
+                          animation: "newPulse 1.8s ease-in-out infinite",
                         }}
                       >
                         NEW
@@ -1310,23 +2087,46 @@ const ImageGallery = () => {
                       alt={folder}
                       loading="lazy"
                       style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block',
-                        objectFit: 'contain',
-                        background: '#000',
-                        transition: 'transform 0.6s ease',
+                        width: "100%",
+                        height: "auto",
+                        display: "block",
+                        objectFit: "contain",
+                        background: "#000",
+                        transition: "transform 0.6s ease",
                       }}
                     />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))' }} />
-                    <div style={{ position: 'absolute', bottom: 10, left: 12, color: '#fff', fontWeight: 800, fontSize: 14 }}>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 10,
+                        left: 12,
+                        color: "#fff",
+                        fontWeight: 800,
+                        fontSize: 14,
+                      }}
+                    >
                       {folder}
                     </div>
                   </div>
 
-                  <div style={{ padding: '10px 12px 12px' }}>
-                    <div style={{ fontSize: 13, color: colors.black, lineHeight: 1.45 }}>
-                      {projectDescriptions[key] || 'Project currently in progress.'}
+                  <div style={{ padding: "10px 12px 12px" }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: colors.black,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {projectDescriptions[key] ||
+                        "Project currently in progress."}
                     </div>
                   </div>
                 </div>
@@ -1342,31 +2142,70 @@ const ImageGallery = () => {
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
             style={{
-              position: 'fixed',
+              position: "fixed",
               inset: 0,
-              background: 'rgba(0,0,0,0.92)',
-              backdropFilter: 'blur(6px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1200
+              background: "rgba(0,0,0,0.92)",
+              backdropFilter: "blur(6px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1200,
             }}
           >
-            <div style={{ maxWidth: isMobile ? '96%' : 1100, width: '92%', position: 'relative' }} onClick={(e)=>e.stopPropagation()}>
+            <div
+              style={{
+                maxWidth: isMobile ? "96%" : 1100,
+                width: "92%",
+                position: "relative",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
                 src={lightbox.src}
                 alt={lightbox.folder}
                 loading="lazy"
-                style={{ width: '100%', height: 'auto', borderRadius: 12, maxHeight: '85vh', objectFit: 'contain' }}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: 12,
+                  maxHeight: "85vh",
+                  objectFit: "contain",
+                }}
               />
 
-              <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.55)', color: '#fff', padding: '6px 10px', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
-                {lightbox.folder} • {lightbox.index + 1} / {lightbox.items.length}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  background: "rgba(0,0,0,0.55)",
+                  color: "#fff",
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                {lightbox.folder} • {lightbox.index + 1} /{" "}
+                {lightbox.items.length}
               </div>
 
               <button
-                onClick={(e)=>{ e.stopPropagation(); close(); }}
-                style={{ position: 'absolute', top: 12, right: 12, background: 'white', border: 'none', borderRadius: '50%', width: 42, height: 42, cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  close();
+                }}
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  background: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 42,
+                  height: 42,
+                  cursor: "pointer",
+                }}
               >
                 <X size={20} color={colors.black} />
               </button>
@@ -1375,13 +2214,41 @@ const ImageGallery = () => {
                 <>
                   <button
                     onClick={goPrev}
-                    style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{
+                      position: "absolute",
+                      left: -18,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "rgba(255,255,255,0.95)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
                     <ChevronLeft size={20} color={colors.black} />
                   </button>
                   <button
                     onClick={goNext}
-                    style={{ position: 'absolute', right: -18, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{
+                      position: "absolute",
+                      right: -18,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "rgba(255,255,255,0.95)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
                     <ChevronRight size={20} color={colors.black} />
                   </button>
@@ -1398,18 +2265,25 @@ const ImageGallery = () => {
 const CollageDesigner = () => {
   const isMobile = useIsMobile();
   const folderImages = projectData.folderImages || {};
-  const desired = ['sec 4','sec 9','sec 46','sec 42'];
+  const desired = ["sec 4", "sec 9", "sec 46", "sec 42"];
   const keys = Object.keys(folderImages || {});
-  const allowed = desired.map(d => keys.find(k => k.toLowerCase() === d)).filter(Boolean);
-  const allImages = allowed.map(f => folderImages[f]).flat();
+  const allowed = desired
+    .map((d) => keys.find((k) => k.toLowerCase() === d))
+    .filter(Boolean);
+  const allImages = allowed.map((f) => folderImages[f]).flat();
   const collageImages = allImages.slice(0, 8);
 
   return (
-    <div style={{ padding: isMobile ? '24px 12px' : '40px 20px', background: colors.cream }}>
+    <div
+      style={{
+        padding: isMobile ? "24px 12px" : "40px 20px",
+        background: colors.cream,
+      }}
+    >
       {/* <div style={{ maxWidth: 1100, margin: '0 auto' }}> */}
-        {/* <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>Auto Collages & Designs</h2> */}
+      {/* <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>Auto Collages & Designs</h2> */}
 
-        {/* <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      {/* <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
           
           <div style={{ background: 'white', padding: 10, borderRadius: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 8 }}>
@@ -1439,8 +2313,7 @@ const CollageDesigner = () => {
           </div>
         </div> */}
 
-        
-        {/* <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+      {/* <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
           {collageImages.slice(4).map((src, i) => (
             <div key={i} style={{ minWidth: isMobile ? 140 : 180, height: isMobile ? 90 : 120, borderRadius: 8, overflow: 'hidden' }}>
               <img src={src} alt={`strip-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1453,19 +2326,42 @@ const CollageDesigner = () => {
   );
 };
 
-
-
-
-
 const TeamSection = () => {
   const isMobile = useIsMobile();
   const reveal = useRevealOnScroll();
   return (
-    <div id="section-contact" ref={reveal.ref} style={{ padding: isMobile ? '40px 12px' : '70px 20px', background: 'white', ...reveal.style }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: '700', color: colors.black, marginBottom: '24px', textAlign: 'center' }}>Contact Us At</h2>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 18 : 30, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', textAlign: 'center', maxWidth: isMobile ? 320 : 420 }}>
+    <div
+      id="section-contact"
+      ref={reveal.ref}
+      style={{
+        padding: isMobile ? "40px 12px" : "70px 20px",
+        background: "white",
+        ...reveal.style,
+      }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <h2
+          style={{
+            fontSize: isMobile ? "1.8rem" : "2.5rem",
+            fontWeight: "700",
+            color: colors.black,
+            marginBottom: "24px",
+            textAlign: "center",
+          }}
+        >
+          Contact Us At
+        </h2>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              background: "white",
+              borderRadius: 12,
+              padding: isMobile ? 18 : 30,
+              boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+              textAlign: "center",
+              maxWidth: isMobile ? 320 : 420,
+            }}
+          >
             <img
               src={require("./data/Profile/my_img.jpeg")}
               alt="Parveen Chawla"
@@ -1479,9 +2375,44 @@ const TeamSection = () => {
                 border: `4px solid ${colors.lightBlue}`,
               }}
             />
-            <h3 style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', fontWeight: 800, color: colors.black, marginBottom: 6 }}>{'Parveen Chawla'}</h3>
-            <div style={{ fontSize: '1rem', color: colors.black, marginBottom: 6 }}>Phone: <a href="tel:9310994032" style={{ color: colors.darkBlue, fontWeight: 700, textDecoration: 'none' }}>+91 93109 94032</a></div>
-            <div style={{ fontSize: '1rem', color: colors.black }}>Email: <a href="mailto:parveen@shineoneestate.co.in" style={{ color: colors.darkBlue, fontWeight: 700, textDecoration: 'none' }}>parveen@shineoneestate.co.in</a></div>
+            <h3
+              style={{
+                fontSize: isMobile ? "1.1rem" : "1.3rem",
+                fontWeight: 800,
+                color: colors.black,
+                marginBottom: 6,
+              }}
+            >
+              {"Parveen Chawla"}
+            </h3>
+            <div
+              style={{ fontSize: "1rem", color: colors.black, marginBottom: 6 }}
+            >
+              Phone:{" "}
+              <a
+                href="tel:9310994032"
+                style={{
+                  color: colors.darkBlue,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
+              >
+                +91 93109 94032
+              </a>
+            </div>
+            <div style={{ fontSize: "1rem", color: colors.black }}>
+              Email:{" "}
+              <a
+                href="mailto:parveen@shineoneestate.co.in"
+                style={{
+                  color: colors.darkBlue,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
+              >
+                parveen@shineoneestate.co.in
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -1497,7 +2428,14 @@ const MapSection = () => {
   const active = sectors[activeIndex];
 
   return (
-    <div ref={reveal.ref} style={{ padding: "90px 20px", background: colors.cream, ...reveal.style }}>
+    <div
+      ref={reveal.ref}
+      style={{
+        padding: "90px 20px",
+        background: colors.cream,
+        ...reveal.style,
+      }}
+    >
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         <h2
           style={{
@@ -1518,7 +2456,7 @@ const MapSection = () => {
             justifyContent: "center",
             gap: "12px",
             flexWrap: "wrap",
-            marginBottom: isMobile ? '18px' : '30px',
+            marginBottom: isMobile ? "18px" : "30px",
           }}
         >
           {sectors.map((s, i) => (
@@ -1544,7 +2482,7 @@ const MapSection = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
             gap: "40px",
             alignItems: "stretch",
           }}
@@ -1554,7 +2492,7 @@ const MapSection = () => {
             style={{
               background: "white",
               borderRadius: "18px",
-              padding: isMobile ? '16px' : '30px',
+              padding: isMobile ? "16px" : "30px",
               boxShadow: "0 10px 28px rgba(0,0,0,0.12)",
               display: "flex",
               flexDirection: "column",
@@ -1619,7 +2557,7 @@ const MapSection = () => {
               style={{
                 marginTop: "30px",
                 width: "100%",
-                height: isMobile ? '140px' : '220px',
+                height: isMobile ? "140px" : "220px",
                 borderRadius: "14px",
                 overflow: "hidden",
                 position: "relative",
@@ -1703,39 +2641,105 @@ const MapSection = () => {
   );
 };
 
-
 const StickyCTA = () => {
   const isMobile = useIsMobile();
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      background: colors.black,
-      padding: isMobile ? '8px 10px' : '15px 20px',
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '10px',
-      zIndex: 100,
-      boxShadow: '0 -2px 10px rgba(0,0,0,0.2)',
-      flexWrap: 'wrap',
-      paddingBottom: 'calc(10px + env(safe-area-inset-bottom))'
-    }}>
-      <a href="tel:+919310994032" style={{ textDecoration: 'none', flex: isMobile ? '0 1 100%' : '1', minWidth: '120px' }}>
-        <button style={{ background: colors.darkBlue, color: 'white', padding: '12px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', width: '100%' }}>
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: colors.black,
+        padding: isMobile ? "8px 10px" : "15px 20px",
+        display: "flex",
+        justifyContent: "center",
+        gap: "10px",
+        zIndex: 100,
+        boxShadow: "0 -2px 10px rgba(0,0,0,0.2)",
+        flexWrap: "wrap",
+        paddingBottom: "calc(10px + env(safe-area-inset-bottom))",
+      }}
+    >
+      <a
+        href="tel:+919310994032"
+        style={{
+          textDecoration: "none",
+          flex: isMobile ? "0 1 100%" : "1",
+          minWidth: "120px",
+        }}
+      >
+        <button
+          style={{
+            background: colors.darkBlue,
+            color: "white",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontWeight: "600",
+            width: "100%",
+          }}
+        >
           <Phone size={18} /> Call
         </button>
       </a>
 
-      <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: 'none', flex: isMobile ? '0 1 100%' : '1', minWidth: '120px' }}>
-        <button style={{ background: '#25D366', color: 'white', padding: '12px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', width: '100%' }}>
+      <a
+        href="https://wa.me/919310994032"
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          textDecoration: "none",
+          flex: isMobile ? "0 1 100%" : "1",
+          minWidth: "120px",
+        }}
+      >
+        <button
+          style={{
+            background: "#25D366",
+            color: "white",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontWeight: "600",
+            width: "100%",
+          }}
+        >
           <MessageCircle size={18} /> WhatsApp
         </button>
       </a>
 
-      <a href="mailto:parveen@shineoneestate.co.in" style={{ textDecoration: 'none', flex: isMobile ? '0 1 100%' : '1', minWidth: '120px' }}>
-        <button style={{ background: colors.lightBlue, color: colors.black, padding: '12px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', width: '100%' }}>
+      <a
+        href="mailto:parveen@shineoneestate.co.in"
+        style={{
+          textDecoration: "none",
+          flex: isMobile ? "0 1 100%" : "1",
+          minWidth: "120px",
+        }}
+      >
+        <button
+          style={{
+            background: colors.lightBlue,
+            color: colors.black,
+            padding: "12px 20px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontWeight: "600",
+            width: "100%",
+          }}
+        >
           <MailIconPlaceholder /> Email
         </button>
       </a>
@@ -1743,30 +2747,73 @@ const StickyCTA = () => {
   );
 };
 
-
 const Footer = () => {
   const isMobile = useIsMobile();
   return (
-    <footer style={{
-      background: colors.black,
-      color: colors.cream,
-      padding: isMobile ? '46px 12px 90px' : '70px 20px 110px',
-      backgroundImage: 'radial-gradient(circle at top left, rgba(74,112,169,0.25), transparent 60%)'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr 1fr', gap: '28px', marginBottom: '26px' }}>
+    <footer
+      style={{
+        background: colors.black,
+        color: colors.cream,
+        padding: isMobile ? "46px 12px 90px" : "70px 20px 110px",
+        backgroundImage:
+          "radial-gradient(circle at top left, rgba(74,112,169,0.25), transparent 60%)",
+      }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1.3fr 1fr 1fr",
+            gap: "28px",
+            marginBottom: "26px",
+          }}
+        >
           <div>
-            <h3 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: '10px', color: colors.lightBlue }}>ShineOne Estate</h3>
-            
-            <p style={{ fontSize: '0.98rem', lineHeight: 1.6, opacity: 0.85, maxWidth: 380 }}>
-              Premium residential development focused on transparent construction, quality materials and timely delivery across Gurugram sectors.
+            <h3
+              style={{
+                fontSize: "1.7rem",
+                fontWeight: 800,
+                marginBottom: "10px",
+                color: colors.lightBlue,
+              }}
+            >
+              ShineOne Estate
+            </h3>
+
+            <p
+              style={{
+                fontSize: "0.98rem",
+                lineHeight: 1.6,
+                opacity: 0.85,
+                maxWidth: 380,
+              }}
+            >
+              Premium residential development focused on transparent
+              construction, quality materials and timely delivery across
+              Gurugram sectors.
             </p>
           </div>
 
           <div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '10px', color: colors.lightBlue }}>Projects</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, opacity: 0.85 }}>
+            <h4
+              style={{
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                marginBottom: "10px",
+                color: colors.lightBlue,
+              }}
+            >
+              Projects
+            </h4>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                fontSize: 14,
+                opacity: 0.85,
+              }}
+            >
               <div>Sector 4 — Completed</div>
               <div>Sector 9 — Completed</div>
               <div>Sector 46 — Completed</div>
@@ -1776,16 +2823,49 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '10px', color: colors.lightBlue }}>Contact</h4>
-            <div style={{ fontSize: '0.95rem', lineHeight: 1.7, opacity: 0.85 }}>
-              <div><a href="tel:+919310994032" style={{ color: colors.cream, textDecoration: 'none' }}>+91 93109 94032</a></div>
-              <div><a href="mailto:parveen@shineoneestate.co.in" style={{ color: colors.cream, textDecoration: 'none' }}>parveen@shineoneestate.co.in</a></div>
+            <h4
+              style={{
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                marginBottom: "10px",
+                color: colors.lightBlue,
+              }}
+            >
+              Contact
+            </h4>
+            <div
+              style={{ fontSize: "0.95rem", lineHeight: 1.7, opacity: 0.85 }}
+            >
+              <div>
+                <a
+                  href="tel:+919310994032"
+                  style={{ color: colors.cream, textDecoration: "none" }}
+                >
+                  +91 93109 94032
+                </a>
+              </div>
+              <div>
+                <a
+                  href="mailto:parveen@shineoneestate.co.in"
+                  style={{ color: colors.cream, textDecoration: "none" }}
+                >
+                  parveen@shineoneestate.co.in
+                </a>
+              </div>
               <div style={{ marginTop: 6 }}>{projectData.location}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ borderTop: `1px solid ${colors.darkBlue}`, paddingTop: '16px', textAlign: 'center', fontSize: '0.85rem', opacity: 0.7 }}>
+        <div
+          style={{
+            borderTop: `1px solid ${colors.darkBlue}`,
+            paddingTop: "16px",
+            textAlign: "center",
+            fontSize: "0.85rem",
+            opacity: 0.7,
+          }}
+        >
           © 2026 ShineOne Estate • Built with transparency and trust.
         </div>
       </div>
@@ -1801,42 +2881,64 @@ const StickyHeader = () => {
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const links = [
-    { label: 'Overview', id: 'section-overview' },
-    { label: 'Progress', id: 'section-progress' },
-    { label: 'Stories', id: 'section-stories' },
-    { label: 'Gallery', id: 'section-gallery' },
-    { label: 'Contact', id: 'section-contact' },
+    { label: "Overview", id: "section-overview" },
+    { label: "Progress", id: "section-progress" },
+    { label: "Stories", id: "section-stories" },
+    { label: "Gallery", id: "section-gallery" },
+    { label: "Contact", id: "section-contact" },
   ];
 
   const goTo = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         top: 0,
         left: 0,
         right: 0,
         zIndex: 1500,
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        background: scrolled ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.35)',
-        borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.25)',
-        transition: 'all 0.25s ease',
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        background: scrolled
+          ? "rgba(255,255,255,0.72)"
+          : "rgba(255,255,255,0.35)",
+        borderBottom: scrolled
+          ? "1px solid rgba(0,0,0,0.08)"
+          : "1px solid rgba(255,255,255,0.25)",
+        transition: "all 0.25s ease",
       }}
     >
-      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '8px 12px' : '10px 20px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <div style={{ fontWeight: 800, color: colors.darkBlue, fontSize: isMobile ? 14 : 16, letterSpacing: 0.2 }}>
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: isMobile ? "8px 12px" : "10px 20px",
+        }}
+      >
+        <div
+          style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}
+        >
+          <div
+            style={{
+              fontWeight: 800,
+              color: colors.darkBlue,
+              fontSize: isMobile ? 14 : 16,
+              letterSpacing: 0.2,
+            }}
+          >
             ShineOne Estate
           </div>
           <div
@@ -1846,28 +2948,34 @@ const StickyHeader = () => {
               color: colors.black,
               opacity: 0.75,
               marginTop: 2,
-              whiteSpace: 'nowrap'
+              whiteSpace: "nowrap",
             }}
           >
             Plots • Flats • Floors • Construction — We Build Your Vision
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: isMobile ? 8 : 14, overflowX: isMobile ? 'auto' : 'visible' }}>
+        <div
+          style={{
+            display: "flex",
+            gap: isMobile ? 8 : 14,
+            overflowX: isMobile ? "auto" : "visible",
+          }}
+        >
           {links.map((l) => (
             <button
               key={l.id}
               onClick={() => goTo(l.id)}
               style={{
-                border: 'none',
-                background: 'transparent',
+                border: "none",
+                background: "transparent",
                 color: colors.black,
                 fontWeight: 700,
                 fontSize: isMobile ? 12 : 13,
-                cursor: 'pointer',
-                padding: '6px 8px',
+                cursor: "pointer",
+                padding: "6px 8px",
                 borderRadius: 8,
-                whiteSpace: 'nowrap'
+                whiteSpace: "nowrap",
               }}
             >
               {l.label}
@@ -1883,11 +2991,11 @@ export default function App() {
   return (
     <div
       style={{
-        fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, sans-serif',
+        fontFamily: "Inter, system-ui, -apple-system, Segoe UI, sans-serif",
         background: colors.cream,
-        minHeight: '100vh',
-        scrollBehavior: 'smooth',
-        paddingTop: '52px',
+        minHeight: "100vh",
+        scrollBehavior: "smooth",
+        paddingTop: "52px",
       }}
     >
       <StickyHeader />
