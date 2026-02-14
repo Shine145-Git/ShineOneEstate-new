@@ -65,6 +65,37 @@ const useReducedMotion = () => {
   return reduced;
 };
 
+// reveal-on-scroll helper
+const useRevealOnScroll = () => {
+  const [visible, setVisible] = useState(false);
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return {
+    ref,
+    style: {
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0px)' : 'translateY(24px)',
+      transition: 'opacity 0.7s ease, transform 0.7s ease'
+    }
+  };
+};
+
 const colors = {
   cream: "#EFECE3",
   lightBlue: "#8FABD4",
@@ -294,10 +325,11 @@ const projectData = {
     },
   ],
   projects: [
-    { name: 'Sector 4', status: 'Completed', area: '7200 Sq. Feet' },
-    { name: 'Sector 9', status: 'Completed', area: '7200 Sq. Feet' },
-    { name: 'Sector 46', status: 'Completed', area: '900 Sq. Feet' },
-    { name: 'Sector 42', status: 'Ongoing', area: ' 3600 Sq. Feet' }
+    { name: 'Sector 4', status: 'Completed', area: '5700 Sq. Feet' },
+    { name: 'Sector 9', status: 'Completed', area: '4200 Sq. Feet' },
+    { name: 'Sector 46', status: 'Completed', area: '4500 Sq. Feet' },
+    { name: 'Sector 42', status: 'Ongoing', area: '3200 Sq. Feet', progress: 78 },
+    { name: 'Reliance MET City', status: 'Ongoing', area: '1620 Sq. Feet', progress: 8, stage: 'Foundation', eta: 'June 2027' }
   ],
 };
 // Auto-generate stories and load all images and videos from src/data grouped per folder
@@ -318,6 +350,20 @@ const projectData = {
         try { folderImages[folder].push(ctx(k)); } catch(e) { /* ignore resolution errors */ }
       }
     });
+
+    // EXTRA: also try loading media from src/Reliance Met City (outside /data)
+    try {
+      const rmcCtx = require.context('./Reliance Met City', false, /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i);
+      const rmcKeys = rmcCtx.keys();
+      if (rmcKeys.length) {
+        if (!folderImages['Reliance Met City']) folderImages['Reliance Met City'] = [];
+        rmcKeys.forEach((k) => {
+          try { folderImages['Reliance Met City'].push(rmcCtx(k)); } catch (e) {}
+        });
+      }
+    } catch (e) {
+      // folder may not exist; ignore
+    }
 
     // store mapping on projectData so other components can use all media
     projectData.folderImages = folderImages;
@@ -406,111 +452,7 @@ const MediaThumbnail = ({ src, isVideo, onClick }) => {
     </div>
   );
 };
-const VideoSection = () => {
-  const isMobile = useIsMobile();
-  const folderImages = projectData.folderImages || {};
-  const desired = ['sec 4','sec 9','sec 46','sec 42'];
-  const keys = Object.keys(folderImages || {});
-  const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
-
-  // find folders that match desired and that actually contain at least one video
-  const matched = desired.map(d => keys.find(k => k.toLowerCase() === d)).filter(Boolean);
-  const allFolders = matched.filter(folder => (folderImages[folder] || []).some(isVideo));
-
-  const [player, setPlayer] = useState({ open: false, src: '', folder: '' });
-  const openVideo = (folder, src) => setPlayer({ open: true, src, folder });
-  const closeVideo = () => setPlayer({ open: false, src: '', folder: '' });
-
-  // MOBILE PATCH: prevent background scroll when modal is open
-  useLockBodyScroll(player.open);
-
-  return (
-    <div style={{ padding: isMobile ? '20px 12px' : '36px 20px', background: 'white' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 12 }}>Project Videos</h2>
-        {allFolders.length === 0 && <div style={{ textAlign: 'center', color: colors.black }}>No videos found.</div>}
-
-        {allFolders.map(folder => (
-          <div key={folder} style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 800, color: colors.black, marginBottom: 8 }}>{folder}</div>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-              {(folderImages[folder] || [])
-                .filter(src => isVideo(src))
-                .map((src, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      minWidth: isMobile ? 200 : 280,
-                      height: isMobile ? 120 : 160,
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      background: '#000',
-                      position: 'relative'
-                    }}
-                    onClick={() => openVideo(folder, src)}
-                  >
-                    <MediaThumbnail src={src} isVideo onClick={() => openVideo(folder, src)} />
-
-                    {/* Play icon overlay */}
-                    <div style={{
-                      position:'absolute',
-                      inset:0,
-                      display:'flex',
-                      alignItems:'center',
-                      justifyContent:'center',
-                      background:'rgba(0,0,0,0.15)'
-                    }}>
-                      <div style={{
-                        width:48,
-                        height:48,
-                        borderRadius:'50%',
-                        background:'rgba(0,0,0,0.6)',
-                        display:'flex',
-                        alignItems:'center',
-                        justifyContent:'center',
-                        color:'#fff',
-                        fontSize:20,
-                        fontWeight:900
-                      }}>
-                        ▶
-                      </div>
-                    </div>
-                  </div>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {player.open && (
-          <div onClick={closeVideo} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1300 }}>
-            <div style={{ maxWidth: isMobile ? '95%' : 1000, width: '90%', position: 'relative' }} onClick={(e)=>e.stopPropagation()}>
-              <video
-                src={player.src}
-                controls
-                muted
-                playsInline
-                autoPlay
-                preload="metadata"
-                style={{ width: '100%', height: 'auto', borderRadius: 12 }}
-              />
-              {/* Tap-to-unmute overlay button */}
-              <button
-                onClick={(e)=>{ e.stopPropagation(); const v=e.currentTarget.previousSibling; if(v && v.muted!==undefined) v.muted=false; }}
-                style={{ position:'absolute', bottom:18, left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.6)', color:'#fff', border:'none', borderRadius:20, padding:'8px 14px', fontWeight:700 }}
-              >
-                Tap to unmute
-              </button>
-              {/* prominent close button inside player */}
-              <button onClick={closeVideo} style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.95)', border: 'none', borderRadius: '50%', width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={20} color={colors.black} />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// VideoSection component removed due to syntax error and duplication
 
 const Hero = () => {
   const isMobile = useIsMobile();
@@ -556,7 +498,7 @@ const Hero = () => {
       {/* TOP BAR: LEFT — Title + Tagline | RIGHT — Buttons */}
       <div style={{ 
         position: 'absolute', 
-        top: 12, 
+        top: isMobile ? 56 : 12, 
         left: 0, 
         right: 0, 
         zIndex: 6, 
@@ -569,12 +511,12 @@ const Hero = () => {
         
         {/* LEFT SIDE: Large Project Title */}
         <div style={{ pointerEvents: 'auto' }}>
-          <div style={{ color: colors.cream, fontSize: isMobile ? '1.6rem' : '3rem', fontWeight: 900, letterSpacing: 0.6, lineHeight: 1 }}>
+          {/* <div style={{ color: colors.cream, fontSize: isMobile ? '1.6rem' : '3rem', fontWeight: 900, letterSpacing: 0.6, lineHeight: 1 }}>
             {projectData.name}
-          </div>
-          <div style={{ color: colors.cream, opacity: 0.95, fontSize: isMobile ? '0.85rem' : '1.05rem', fontWeight: 700, marginTop: 4 }}>
+          </div> */}
+          {/* <div style={{ color: colors.cream, opacity: 0.95, fontSize: isMobile ? '0.85rem' : '1.05rem', fontWeight: 700, marginTop: 4 }}>
             {projectData.tagline}
-          </div>
+          </div> */}
         </div>
 
         {/* RIGHT SIDE: CTA Buttons */}
@@ -616,7 +558,9 @@ const Hero = () => {
                     height: isMobile ? '260px' : '420px',
                     objectFit: 'contain',
                     cursor: 'zoom-in',
-                    background: 'transparent'
+                    background: 'transparent',
+                    transition: 'transform 6s ease',
+                    transform: 'scale(1.02)'
                   }}
                 />
       {openPreview && (
@@ -674,6 +618,7 @@ const Hero = () => {
 
 const QuickSnapshot = () => {
   const isMobile = useIsMobile();
+  const reveal = useRevealOnScroll();
   const completedProjects = projectData.projects.filter(p => p.status.toLowerCase().includes('completed')).length;
   const ongoingProjects = projectData.projects.filter(p => p.status.toLowerCase().includes('ongoing')).length;
   const completedAreaTotal = projectData.projects
@@ -684,12 +629,14 @@ const QuickSnapshot = () => {
     }, 0);
 
   return (
-    <section style={{ padding: isMobile ? '28px 12px' : '48px 20px', background: colors.cream }}>
+    <section id="section-overview" ref={reveal.ref} style={{ padding: isMobile ? '32px 12px' : '60px 20px', background: colors.cream, ...reveal.style }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 12 }}>
           <div>
             <h2 style={{ fontSize: isMobile ? '1.5rem' : '1.9rem', margin: 0, fontWeight: 800, color: colors.darkBlue }}>Projects Overview</h2>
-            <p style={{ margin: '6px 0 0', color: colors.black, opacity: 0.8 }}>A concise summary of completed and ongoing projects — showing only the essential facts.</p>
+            <p style={{ margin: '6px 0 0', color: colors.black, opacity: 0.8, lineHeight: 1.5 }}>
+              A quick snapshot of completed and ongoing developments, including total delivered area, construction status and project distribution across sectors.
+            </p>
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: isMobile ? 12 : 0, flexWrap: 'wrap' }}>
             {[{
@@ -718,17 +665,46 @@ const QuickSnapshot = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
           {projectData.projects.map((p, idx) => (
-            <div key={idx} style={{ background: 'linear-gradient(180deg, rgba(255,255,255,1), rgba(245,247,250,1))', borderRadius: 12, padding: 12, boxShadow: '0 10px 24px rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              key={idx}
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,255,255,1), rgba(245,247,250,1))',
+                borderRadius: 12,
+                padding: 12,
+                boxShadow: '0 10px 24px rgba(0,0,0,0.06)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'transform 0.25s ease, box-shadow 0.25s ease'
+              }}
+              onMouseEnter={(e)=>{
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 16px 28px rgba(0,0,0,0.12)';
+              }}
+              onMouseLeave={(e)=>{
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 10px 24px rgba(0,0,0,0.06)';
+              }}
+            >
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: colors.darkBlue }}>{p.name}</div>
-                <div style={{ fontSize: 13, color: colors.black, opacity: 0.8, marginTop: 6 }}>{p.status} • <span style={{ fontWeight: 700 }}>{p.area}</span></div>
+                <div style={{ fontSize: 13, color: colors.black, opacity: 0.8, marginTop: 6 }}>
+                  {p.status} • <span style={{ fontWeight: 700 }}>{p.area}</span>
+                </div>
+                <div style={{ fontSize: 12, color: colors.darkBlue, opacity: 0.85, marginTop: 4 }}>
+                  {p.status.toLowerCase().includes('completed')
+                    ? 'Delivered and handed over to owners.'
+                    : 'Construction currently in progress with active site work.'}
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                 <div style={{ padding: '6px 10px', borderRadius: 20, fontWeight: 700, fontSize: 12, color: p.status.toLowerCase().includes('completed') ? '#016936' : '#7a5d00', background: p.status.toLowerCase().includes('completed') ? '#e6fff0' : '#fff8e1' }}>
                   {p.status.toUpperCase()}
                 </div>
                 {p.status.toLowerCase().includes('ongoing') && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: colors.darkBlue, opacity: 0.9 }}>ETA: {projectData.possession}</div>
+                  <div style={{ marginTop: 8, fontSize: 12, color: colors.darkBlue, opacity: 0.9 }}>
+                    ETA: {p.eta || projectData.possession}
+                  </div>
                 )}
               </div>
             </div>
@@ -741,25 +717,41 @@ const QuickSnapshot = () => {
 
 const ProgressTimeline = () => {
   const isMobile = useIsMobile();
+  const reveal = useRevealOnScroll();
   const [selectedProjectName, setSelectedProjectName] = useState(projectData.projects[0].name);
   const project = projectData.projects.find(p => p.name === selectedProjectName) || projectData.projects[0];
   const progress = project.progress !== undefined ? project.progress : (project.status.toLowerCase().includes('completed') ? 100 : 78);
   const stages = ['Foundation','Structure','Finishing','Interior Works','Final Inspection','Handover'];
   const stageStatuses = stages.map((s, idx) => {
     if (project.status.toLowerCase().includes('completed')) return 'completed';
+
     if (project.status.toLowerCase().includes('ongoing')) {
+      // If a specific current stage is defined (e.g. Foundation for new projects)
+      if (project.stage) {
+        const currentIdx = stages.findIndex(st => st.toLowerCase() === String(project.stage).toLowerCase());
+        if (currentIdx === -1) return 'pending';
+        if (idx < currentIdx) return 'completed';
+        if (idx === currentIdx) return 'ongoing';
+        return 'pending';
+      }
+
+      // Default behavior for ongoing projects
       if (s === 'Finishing') return 'ongoing';
       const finishingIndex = stages.indexOf('Finishing');
       if (idx < finishingIndex) return 'completed';
       return 'pending';
     }
+
     return 'pending';
   });
 
   return (
-    <div style={{ padding: isMobile ? '28px 16px' : "28px 16px", background: "white" }}>
+    <div id="section-progress" ref={reveal.ref} style={{ padding: isMobile ? '32px 16px' : "60px 16px", background: "white", ...reveal.style }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <h2 style={{ fontSize: isMobile ? '1.4rem' : "2rem", fontWeight: 700, color: colors.black, marginBottom: 12, textAlign: 'center' }}>Construction Progress</h2>
+        <p style={{ textAlign: 'center', color: colors.black, opacity: 0.75, maxWidth: 760, margin: '0 auto 18px', lineHeight: 1.5 }}>
+          Track each construction phase from foundation to handover. Select a project to view current completion percentage and stage-by-stage progress updates.
+        </p>
 
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'center', marginBottom: 18, gap: 12, alignItems: 'center' }}>
           <label style={{ fontWeight: 600, color: colors.darkBlue }}>Select Project:</label>
@@ -776,7 +768,13 @@ const ProgressTimeline = () => {
         </div>
 
         <div style={{ height: 14, background: colors.cream, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ height: '100%', background: `linear-gradient(90deg, ${colors.lightBlue}, ${colors.darkBlue})`, width: `${progress}%`, transition: 'width 0.8s' }} />
+          <div style={{
+            height: '100%',
+            background: `linear-gradient(90deg, ${colors.lightBlue}, ${colors.darkBlue})`,
+            width: `${progress}%`,
+            transition: 'width 1s ease',
+            boxShadow: '0 0 14px rgba(74,112,169,0.35)'
+          }} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
@@ -789,6 +787,13 @@ const ProgressTimeline = () => {
                 <div style={{ fontSize: 13, fontWeight: 800, color }}>{stage}</div>
                 <div style={{ marginTop: 6, fontSize: 12, color: colors.black, opacity: 0.8 }}>
                   {status === 'completed' ? 'Completed' : status === 'ongoing' ? 'In Progress' : 'Pending'}
+                </div>
+                <div style={{ marginTop: 6, fontSize: 11, color: colors.darkBlue, opacity: 0.8 }}>
+                  {status === 'completed'
+                    ? 'Work finished and quality verified.'
+                    : status === 'ongoing'
+                    ? 'Active execution in progress on-site.'
+                    : 'Scheduled for upcoming phase.'}
                 </div>
               </div>
             );
@@ -804,6 +809,7 @@ const ProgressTimeline = () => {
 
 const StoriesViewer = () => {
   const isMobile = useIsMobile();
+  const reveal = useRevealOnScroll();
   const folderImages = projectData.folderImages || {};
   const [openStory, setOpenStory] = useState({ open: false, folder: '', images: [], idx: 0 });
   const [progress, setProgress] = useState(0);
@@ -940,21 +946,45 @@ const StoriesViewer = () => {
   };
 
   return (
-    <div style={{ padding: '60px 20px', background: colors.cream }}>
+    <div id="section-stories" ref={reveal.ref} style={{ padding: '70px 20px', background: colors.cream, ...reveal.style }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <h2 style={{ fontSize: '2.5rem', fontWeight: 700, textAlign: 'center', marginBottom: 30 }}>Project Stories</h2>
+        <h2 style={{ fontSize: '2.5rem', fontWeight: 700, textAlign: 'center', marginBottom: 8 }}>Project Stories</h2>
+        <p style={{ textAlign: 'center', color: colors.black, opacity: 0.75, maxWidth: 760, margin: '0 auto 24px', lineHeight: 1.5 }}>
+          Explore real on-site updates from each sector. Stories show progress snapshots, construction milestones and ongoing site activity exactly as captured during development.
+        </p>
 
         {/* THUMBNAILS */}
         <div style={{ display: 'flex', gap: 15, overflowX: 'auto', paddingBottom: 8 }}>
-          {['sec 4','sec 9','sec 46','sec 42']
+          {['sec 4','sec 9','sec 46','sec 42','reliance met city']
             .map(d => Object.keys(folderImages).find(k => k.toLowerCase() === d))
             .filter(Boolean)
             .map(folder => (
-              <div key={folder} style={{ textAlign: 'center', cursor: 'pointer', minWidth: 120 }} onClick={() => open(folder)}>
-                <div style={{ width: 110, height: 110, borderRadius: '50%', overflow: 'hidden', border: `4px solid ${colors.darkBlue}`, margin: '0 auto 8px' }}>
+              <div
+                key={folder}
+                style={{ textAlign: 'center', cursor: 'pointer', minWidth: 120 }}
+                onClick={() => open(folder)}
+                onMouseEnter={(e)=>{ const c=e.currentTarget.querySelector('[data-story-circle]'); if(c) c.style.transform='scale(1.05)'; }}
+                onMouseLeave={(e)=>{ const c=e.currentTarget.querySelector('[data-story-circle]'); if(c) c.style.transform='scale(1)'; }}
+              >
+                <div
+                  style={{
+                    width: 110,
+                    height: 110,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: `4px solid ${colors.darkBlue}`,
+                    margin: '0 auto 8px',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                    transition: 'transform 0.25s ease'
+                  }}
+                  data-story-circle
+                >
                   <img src={folderImages[folder][0]} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ fontWeight: 700, color: colors.black }}>{folder}</div>
+                <div style={{ fontSize: 12, color: colors.darkBlue, opacity: 0.8, marginTop: 4 }}>
+                  Tap to view live updates
+                </div>
               </div>
             ))}
         </div>
@@ -1035,41 +1065,328 @@ const StoriesViewer = () => {
 
 const ImageGallery = () => {
   const isMobile = useIsMobile();
-  const [lightbox, setLightbox] = useState({ open: false, src: '', folder: '' });
+  const [lightbox, setLightbox] = useState({ open: false, src: '', folder: '', index: 0, items: [] });
+  const [touchStart, setTouchStart] = useState(null);
+  const reveal = useRevealOnScroll();
   const folderImages = projectData.folderImages || {};
-  // show only these four folders (case-insensitive) and preserve this order
-  const desired = ['sec 4', 'sec 9', 'sec 46', 'sec 42'];
-  const keys = Object.keys(folderImages || {});
-  const allFolders = desired.map(d => keys.find(k => k.toLowerCase() === d)).filter(Boolean);
 
-  const openImage = (folder, src) => setLightbox({ open: true, src, folder });
-  const close = () => setLightbox({ open: false, src: '', folder: '' });
+  const galleryKeyframes = `
+    @keyframes cardFloat {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes glowPulse {
+      0% { box-shadow: 0 8px 22px rgba(0,0,0,0.10); }
+      50% { box-shadow: 0 14px 28px rgba(74,112,169,0.18); }
+      100% { box-shadow: 0 8px 22px rgba(0,0,0,0.10); }
+    }
+    @keyframes newPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(22,163,74,0.45); }
+      50% { transform: scale(1.06); box-shadow: 0 0 14px rgba(22,163,74,0.45); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(22,163,74,0.45); }
+    }
+  `;
+
+  const keys = Object.keys(folderImages || {});
+  const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
+
+  // Project grouping
+  const completedFolders = ['sec 4', 'sec 9', 'sec 46'];
+  const ongoingFolders = ['sec 42', 'reliance met city'];
+
+  const normalize = (s) => String(s || '').toLowerCase().trim();
+  const resolveFolder = (name) => keys.find(k => normalize(k) === normalize(name));
+
+  const completedResolved = completedFolders.map(resolveFolder).filter(Boolean);
+  const ongoingResolved = ongoingFolders.map(resolveFolder).filter(Boolean);
+
+  const projectDescriptions = {
+    'sec 4': 'Completed residential project with quality finishing and fully delivered units.',
+    'sec 9': 'Delivered residential development focused on modern planning and family-friendly spaces.',
+    'sec 46': 'Completed premium housing cluster with ready-to-move homes and landscaped surroundings.',
+    'sec 42': 'Active development site currently under construction with ongoing structural and finishing work.',
+    'reliance met city': 'Newly started project site located in a growing urban zone with future-ready infrastructure.'
+  };
+
+  const openImage = (folder, src, idx, items) => {
+    setLightbox({ open: true, src, folder, index: idx, items });
+  };
+
+  const close = () => setLightbox({ open: false, src: '', folder: '', index: 0, items: [] });
+
+  const goNext = () => {
+    if (!lightbox.open) return;
+    const next = (lightbox.index + 1) % lightbox.items.length;
+    setLightbox(s => ({ ...s, index: next, src: s.items[next] }));
+  };
+
+  const goPrev = () => {
+    if (!lightbox.open) return;
+    const prev = (lightbox.index - 1 + lightbox.items.length) % lightbox.items.length;
+    setLightbox(s => ({ ...s, index: prev, src: s.items[prev] }));
+  };
+
+  // keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightbox.open) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox.open, lightbox.index, lightbox.items]);
+
+  // swipe support on mobile lightbox
+  const onTouchStart = (e) => setTouchStart(e.touches[0].clientX);
+  const onTouchEnd = (e) => {
+    if (touchStart == null) return;
+    const dx = e.changedTouches[0].clientX - touchStart;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+    setTouchStart(null);
+  };
 
   return (
-    <div style={{ padding: isMobile ? '20px 12px' : '40px 20px', background: 'white' }}>
+    <div id="section-gallery" ref={reveal.ref} style={{ padding: isMobile ? '24px 12px' : '60px 20px', background: 'white', ...reveal.style }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>Photo Gallery</h2>
-        {allFolders.length === 0 && <div style={{ textAlign: 'center', color: colors.black }}>No images found in <code>src/data</code>.</div>}
-        {allFolders.map((folder) => (
-          <div key={folder} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 800, color: colors.black, marginBottom: 8 }}>{folder}</div>
-            <div style={{ display: 'flex', gap: 8, overflowX: isMobile ? 'auto' : 'auto', paddingBottom: 8 }}>
-              {folderImages[folder].map((src, idx) => (
-                <div key={idx} style={{ minWidth: isMobile ? 120 : 150, height: isMobile ? 80 : 100, borderRadius: 8, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 6px 18px rgba(0,0,0,0.06)' }} onClick={() => openImage(folder, src)}>
-                  <img src={src} alt={`${folder}-${idx}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+        <style>{galleryKeyframes}</style>
+        <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>
+          Photo Gallery
+        </h2>
 
+        {/* COMPLETED PROJECTS */}
+        <div style={{ marginBottom: 34 }}>
+          <h3 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: colors.darkBlue, marginBottom: 14, textAlign: 'center' }}>
+            Completed & Delivered Projects
+          </h3>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0,1fr))',
+              gap: 14,
+            }}
+          >
+            {completedResolved.map((folder) => {
+              const items = (folderImages[folder] || []).filter(src => !isVideo(src));
+              if (!items.length) return null;
+              const src = items[0];
+              const key = normalize(folder);
+
+              return (
+                <div
+                  key={folder}
+                  onClick={() => openImage(folder, src, 0, items)}
+                  style={{
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 22px rgba(0,0,0,0.10)',
+                    transform: 'translateY(0)',
+                    transition: 'transform 0.35s ease, box-shadow 0.35s ease',
+                    background: '#fff',
+                    animation: 'cardFloat 5s ease-in-out infinite, glowPulse 4s ease-in-out infinite',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
+                    e.currentTarget.style.boxShadow = '0 16px 34px rgba(0,0,0,0.18)';
+                    e.currentTarget.style.animationPlayState = 'paused';
+                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1.04)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)';
+                    e.currentTarget.style.animationPlayState = 'running';
+                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1)';
+                  }}
+                >
+                  <div style={{ position: 'relative', overflow: 'hidden' }}>
+                    <img
+                      src={src}
+                      alt={folder}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        objectFit: 'contain',
+                        background: '#000',
+                        transition: 'transform 0.6s ease',
+                      }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))' }} />
+                    <div style={{ position: 'absolute', bottom: 10, left: 12, color: '#fff', fontWeight: 800, fontSize: 14 }}>
+                      {folder}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '10px 12px 12px' }}>
+                    <div style={{ fontSize: 13, color: colors.black, lineHeight: 1.45 }}>
+                      {projectDescriptions[key] || 'Completed project.'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ONGOING PROJECTS */}
+        <div style={{ marginBottom: 22 }}>
+          <h3 style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, color: colors.darkBlue, marginBottom: 14, textAlign: 'center' }}>
+            On Going Projects
+          </h3>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0,1fr))',
+              gap: 14,
+            }}
+          >
+            {ongoingResolved.map((folder) => {
+              const items = (folderImages[folder] || []).filter(src => !isVideo(src));
+              if (!items.length) return null;
+              const src = items[0];
+              const key = normalize(folder);
+              const isNewProject = key === 'reliance met city';
+
+              return (
+                <div
+                  key={folder}
+                  onClick={() => openImage(folder, src, 0, items)}
+                  style={{
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 22px rgba(0,0,0,0.10)',
+                    transform: 'translateY(0)',
+                    transition: 'transform 0.35s ease, box-shadow 0.35s ease',
+                    background: '#fff',
+                    animation: 'cardFloat 5.5s ease-in-out infinite, glowPulse 4.5s ease-in-out infinite',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
+                    e.currentTarget.style.boxShadow = '0 16px 34px rgba(0,0,0,0.18)';
+                    e.currentTarget.style.animationPlayState = 'paused';
+                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1.04)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)';
+                    e.currentTarget.style.animationPlayState = 'running';
+                    const img = e.currentTarget.querySelector('img'); if (img) img.style.transform = 'scale(1)';
+                  }}
+                >
+                  <div style={{ position: 'relative', overflow: 'hidden' }}>
+                    {isNewProject && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          background: '#16a34a',
+                          color: '#fff',
+                          fontWeight: 800,
+                          fontSize: 11,
+                          padding: '5px 10px',
+                          borderRadius: 999,
+                          border: '2px solid white',
+                          letterSpacing: 0.5,
+                          zIndex: 3,
+                          animation: 'newPulse 1.8s ease-in-out infinite',
+                        }}
+                      >
+                        NEW
+                      </div>
+                    )}
+                    <img
+                      src={src}
+                      alt={folder}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        objectFit: 'contain',
+                        background: '#000',
+                        transition: 'transform 0.6s ease',
+                      }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))' }} />
+                    <div style={{ position: 'absolute', bottom: 10, left: 12, color: '#fff', fontWeight: 800, fontSize: 14 }}>
+                      {folder}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '10px 12px 12px' }}>
+                    <div style={{ fontSize: 13, color: colors.black, lineHeight: 1.45 }}>
+                      {projectDescriptions[key] || 'Project currently in progress.'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ADVANCED LIGHTBOX */}
         {lightbox.open && (
-          <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
-            <div style={{ maxWidth: isMobile ? '95%' : 1000, width: '90%', position: 'relative' }}>
-              <img src={lightbox.src} alt={lightbox.folder} loading="lazy" style={{ width: '100%', height: 'auto', borderRadius: 12 }} />
-              <button onClick={(e)=>{ e.stopPropagation(); close(); }} style={{ position: 'absolute', top: 12, right: 12, background: 'white', border: 'none', borderRadius: '50%', width: 42, height: 42, cursor: 'pointer' }}>
+          <div
+            onClick={close}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.92)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1200
+            }}
+          >
+            <div style={{ maxWidth: isMobile ? '96%' : 1100, width: '92%', position: 'relative' }} onClick={(e)=>e.stopPropagation()}>
+              <img
+                src={lightbox.src}
+                alt={lightbox.folder}
+                loading="lazy"
+                style={{ width: '100%', height: 'auto', borderRadius: 12, maxHeight: '85vh', objectFit: 'contain' }}
+              />
+
+              <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.55)', color: '#fff', padding: '6px 10px', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+                {lightbox.folder} • {lightbox.index + 1} / {lightbox.items.length}
+              </div>
+
+              <button
+                onClick={(e)=>{ e.stopPropagation(); close(); }}
+                style={{ position: 'absolute', top: 12, right: 12, background: 'white', border: 'none', borderRadius: '50%', width: 42, height: 42, cursor: 'pointer' }}
+              >
                 <X size={20} color={colors.black} />
               </button>
+
+              {!isMobile && (
+                <>
+                  <button
+                    onClick={goPrev}
+                    style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronLeft size={20} color={colors.black} />
+                  </button>
+                  <button
+                    onClick={goNext}
+                    style={{ position: 'absolute', right: -18, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ChevronRight size={20} color={colors.black} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1089,15 +1406,16 @@ const CollageDesigner = () => {
 
   return (
     <div style={{ padding: isMobile ? '24px 12px' : '40px 20px', background: colors.cream }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>Auto Collages & Designs</h2>
+      {/* <div style={{ maxWidth: 1100, margin: '0 auto' }}> */}
+        {/* <h2 style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 700, color: colors.darkBlue, textAlign: 'center', marginBottom: 16 }}>Auto Collages & Designs</h2> */}
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          {/* collage style 1: 2x2 grid */}
+        {/* <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          
           <div style={{ background: 'white', padding: 10, borderRadius: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 8 }}>
               {Array.from({length:4}).map((_, i) => (
                 <div key={i} style={{ height: isMobile ? 110 : 160, overflow: 'hidden', borderRadius: 8 }}>
+                  <img src={collageImages[i] || projectData.images[i % projectData.images.length]} alt={`col-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <img src={collageImages[i] || projectData.images[i % projectData.images.length]} alt={`col-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
@@ -1105,183 +1423,45 @@ const CollageDesigner = () => {
             <div style={{ marginTop: 10, fontWeight: 700, color: colors.darkBlue }}>Classic 2×2 Collage</div>
           </div>
 
-          {/* collage style 2: mosaic */}
+          
           <div style={{ background: 'white', padding: 10, borderRadius: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gridTemplateRows: isMobile ? 'auto auto' : 'repeat(2, 1fr)', gap: 8, height: isMobile ? 'auto' : 332 }}>
               <div style={{ gridRow: isMobile ? 'auto' : '1 / span 2', overflow: 'hidden', borderRadius: 8, height: isMobile ? 180 : '100%' }}>
                 <img src={collageImages[0] || projectData.images[0]} alt='big' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={collageImages[0] || projectData.images[0]} alt='big' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
+              <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[1] || projectData.images[1]} alt='m1' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+              <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[2] || projectData.images[2]} alt='m2' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
               <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[1] || projectData.images[1]} alt='m1' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
               <div style={{ overflow: 'hidden', borderRadius: 8, height: isMobile ? 110 : 'auto' }}><img src={collageImages[2] || projectData.images[2]} alt='m2' loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
             </div>
             <div style={{ marginTop: 10, fontWeight: 700, color: colors.darkBlue }}>Mosaic Highlight</div>
           </div>
-        </div>
+        </div> */}
 
-        {/* simple strip of remaining images */}
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+        
+        {/* <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
           {collageImages.slice(4).map((src, i) => (
             <div key={i} style={{ minWidth: isMobile ? 140 : 180, height: isMobile ? 90 : 120, borderRadius: 8, overflow: 'hidden' }}>
               <img src={src} alt={`strip-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={src} alt={`strip-${i}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ))}
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
     </div>
   );
 };
 
-const BeforeAfterSlider = () => {
-  const isMobile = useIsMobile();
-  const [position, setPosition] = useState(50);
-  return (
-    <div style={{ padding: "60px 20px", background: "white" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <h2
-          style={{
-            fontSize: "2.5rem",
-            fontWeight: "700",
-            color: colors.black,
-            marginBottom: "40px",
-            textAlign: "center",
-          }}
-        >
-          Before & After
-        </h2>
-        {/* Enhanced blurred background for depth */}
-        <div
-          style={{
-            position: "relative",
-            maxWidth: "900px",
-            margin: "0 auto",
-            height: isMobile ? '360px' : '520px',
-            overflow: "hidden",
-            borderRadius: "16px",
-            backgroundImage: `url(${projectData.images[0]})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(12px) brightness(0.45)",
-            transform: 'scale(1.03)',
-          }}
-        />
-        {/* Overlay container with increased blur */}
-        <div
-          style={{
-            position: "relative",
-            maxWidth: "900px",
-            margin: "0 auto",
-            height: isMobile ? '360px' : '520px',
-            borderRadius: "16px",
-            overflow: "hidden",
-            marginTop: isMobile ? '-360px' : '-520px',
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          {/* dim overlay so before/after images stand out */}
-          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 0 }} />
-
-          {/* Main content area (keeps images centered) */}
-          <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1 }}>
-
-            {/* BEFORE image (fits fully) */}
-            <img
-              src={projectData.beforeAfter.before}
-              alt="Before"
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                objectPosition: 'center',
-                zIndex: 1,
-              }}
-            />
-
-            {/* CLIPPED AFTER image (moves left using objectPosition) */}
-            <div
-              style={{
-                position: "absolute",
-                width: `${position}%`,
-                height: "100%",
-                overflow: "hidden",
-                zIndex: 2,
-              }}
-            >
-              <img
-                src={projectData.beforeAfter.after}
-                alt="After"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "contain",
-                  objectPosition: "left center",
-                }}
-              />
-            </div>
-
-            {/* range slider on top */}
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: "90%",
-                cursor: "pointer",
-                zIndex: 3,
-              }}
-            />
-
-            {/* labels */}
-            <div
-              style={{
-                position: "absolute",
-                top: "20px",
-                left: "20px",
-                background: colors.black,
-                color: "white",
-                padding: "8px 16px",
-                borderRadius: "8px",
-                fontWeight: "600",
-                zIndex: 3,
-              }}
-            >
-              BEFORE
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                background: colors.darkBlue,
-                color: "white",
-                padding: "8px 16px",
-                borderRadius: "8px",
-                fontWeight: "600",
-                zIndex: 3,
-              }}
-            >
-              AFTER
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 
 
 
 const TeamSection = () => {
   const isMobile = useIsMobile();
+  const reveal = useRevealOnScroll();
   return (
-    <div style={{ padding: isMobile ? '36px 12px' : '60px 20px', background: 'white' }}>
+    <div id="section-contact" ref={reveal.ref} style={{ padding: isMobile ? '40px 12px' : '70px 20px', background: 'white', ...reveal.style }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: '700', color: colors.black, marginBottom: '24px', textAlign: 'center' }}>Contact Us At</h2>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -1312,11 +1492,12 @@ const TeamSection = () => {
 const MapSection = () => {
   const isMobile = useIsMobile();
   const [activeIndex, setActiveIndex] = useState(0);
+  const reveal = useRevealOnScroll();
   const sectors = projectData.neighbourhood.nearby;
   const active = sectors[activeIndex];
 
   return (
-    <div style={{ padding: "80px 20px", background: colors.cream }}>
+    <div ref={reveal.ref} style={{ padding: "90px 20px", background: colors.cream, ...reveal.style }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         <h2
           style={{
@@ -1532,7 +1713,7 @@ const StickyCTA = () => {
       left: 0,
       right: 0,
       background: colors.black,
-      padding: isMobile ? '10px' : '15px 20px',
+      padding: isMobile ? '8px 10px' : '15px 20px',
       display: 'flex',
       justifyContent: 'center',
       gap: '10px',
@@ -1562,25 +1743,41 @@ const StickyCTA = () => {
   );
 };
 
+
 const Footer = () => {
   const isMobile = useIsMobile();
   return (
-    <footer style={{ background: colors.black, color: colors.cream, padding: isMobile ? '40px 12px 80px' : '60px 20px 100px' }}>
+    <footer style={{
+      background: colors.black,
+      color: colors.cream,
+      padding: isMobile ? '46px 12px 90px' : '70px 20px 110px',
+      backgroundImage: 'radial-gradient(circle at top left, rgba(74,112,169,0.25), transparent 60%)'
+    }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))', gap: '30px', marginBottom: '30px' }}>
+
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr 1fr', gap: '28px', marginBottom: '26px' }}>
           <div>
-            <h3 style={{ fontSize: '1.6rem', fontWeight: '700', marginBottom: '12px', color: colors.lightBlue }}>ShineOne</h3>
-            <p style={{ fontSize: '1rem', lineHeight: '1.6', opacity: 0.8 }}>Building trust through transparency. Quality construction with complete visibility.</p>
+            <h3 style={{ fontSize: '1.7rem', fontWeight: 800, marginBottom: '10px', color: colors.lightBlue }}>ShineOne Estate</h3>
+            
+            <p style={{ fontSize: '0.98rem', lineHeight: 1.6, opacity: 0.85, maxWidth: 380 }}>
+              Premium residential development focused on transparent construction, quality materials and timely delivery across Gurugram sectors.
+            </p>
           </div>
 
           <div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '12px', color: colors.lightBlue }}>Quick Links</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{['Home','Projects','About Us','Contact','Blog'].map((l,i)=>(<a key={i} href="#" style={{ color: colors.cream, textDecoration: 'none', opacity: 0.8 }}>{l}</a>))}</div>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '10px', color: colors.lightBlue }}>Projects</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, opacity: 0.85 }}>
+              <div>Sector 4 — Completed</div>
+              <div>Sector 9 — Completed</div>
+              <div>Sector 46 — Completed</div>
+              <div>Sector 42 — Ongoing</div>
+              <div>Reliance MET City — NEW</div>
+            </div>
           </div>
 
           <div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '12px', color: colors.lightBlue }}>Contact</h4>
-            <div style={{ fontSize: '1rem', lineHeight: '1.8', opacity: 0.8 }}>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '10px', color: colors.lightBlue }}>Contact</h4>
+            <div style={{ fontSize: '0.95rem', lineHeight: 1.7, opacity: 0.85 }}>
               <div><a href="tel:+919310994032" style={{ color: colors.cream, textDecoration: 'none' }}>+91 93109 94032</a></div>
               <div><a href="mailto:parveen@shineoneestate.co.in" style={{ color: colors.cream, textDecoration: 'none' }}>parveen@shineoneestate.co.in</a></div>
               <div style={{ marginTop: 6 }}>{projectData.location}</div>
@@ -1588,11 +1785,97 @@ const Footer = () => {
           </div>
         </div>
 
-        <div style={{ borderTop: `1px solid ${colors.darkBlue}`, paddingTop: '20px', textAlign: 'center', fontSize: '0.9rem', opacity: 0.7 }}>
-          © 2025 ShineOne  | All rights reserved.
+        <div style={{ borderTop: `1px solid ${colors.darkBlue}`, paddingTop: '16px', textAlign: 'center', fontSize: '0.85rem', opacity: 0.7 }}>
+          © 2026 ShineOne Estate • Built with transparency and trust.
         </div>
       </div>
     </footer>
+  );
+};
+
+// ======= StickyHeader Glass/Blur Premium Header =======
+const StickyHeader = () => {
+  const isMobile = useIsMobile();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const links = [
+    { label: 'Overview', id: 'section-overview' },
+    { label: 'Progress', id: 'section-progress' },
+    { label: 'Stories', id: 'section-stories' },
+    { label: 'Gallery', id: 'section-gallery' },
+    { label: 'Contact', id: 'section-contact' },
+  ];
+
+  const goTo = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1500,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        background: scrolled ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.35)',
+        borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.25)',
+        transition: 'all 0.25s ease',
+      }}
+    >
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '8px 12px' : '10px 20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+          <div style={{ fontWeight: 800, color: colors.darkBlue, fontSize: isMobile ? 14 : 16, letterSpacing: 0.2 }}>
+            ShineOne Estate
+          </div>
+          <div
+            style={{
+              fontSize: isMobile ? 10 : 12,
+              fontWeight: 600,
+              color: colors.black,
+              opacity: 0.75,
+              marginTop: 2,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Plots • Flats • Floors • Construction — We Build Your Vision
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: isMobile ? 8 : 14, overflowX: isMobile ? 'auto' : 'visible' }}>
+          {links.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => goTo(l.id)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: colors.black,
+                fontWeight: 700,
+                fontSize: isMobile ? 12 : 13,
+                cursor: 'pointer',
+                padding: '6px 8px',
+                borderRadius: 8,
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -1600,19 +1883,21 @@ export default function App() {
   return (
     <div
       style={{
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, sans-serif',
         background: colors.cream,
         minHeight: '100vh',
+        scrollBehavior: 'smooth',
+        paddingTop: '52px',
       }}
     >
+      <StickyHeader />
       <Hero />
       <QuickSnapshot />
       <ProgressTimeline />
       <StoriesViewer />
-      <VideoSection />
       <ImageGallery />
       <CollageDesigner />
-      <BeforeAfterSlider />
+      {/* <BeforeAfterSlider /> */}
       <MapSection />
       <TeamSection />
       <StickyCTA />
