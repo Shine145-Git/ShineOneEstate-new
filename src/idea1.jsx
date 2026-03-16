@@ -221,9 +221,14 @@ const GlobalStyles = () => (
     .card-hover:hover { transform: translateY(-8px); box-shadow: 0 28px 56px rgba(0,0,0,0.14) !important; }
 
     .story-ring { 
-      background: conic-gradient(#2B5BA8, #C9A84C, #2B5BA8, #C9A84C, #2B5BA8);
-      animation: border-spin 4s linear infinite;
+      background: linear-gradient(135deg, #2B5BA8, #C9A84C);
       padding: 3px; border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(201,168,76,0.5);
+      animation: story-glow 2.5s ease-in-out infinite;
+    }
+    @keyframes story-glow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+      50% { box-shadow: 0 0 0 6px rgba(201,168,76,0.25), 0 0 20px rgba(43,91,168,0.2); }
     }
     .story-ring-inner { background: #F5F0E8; border-radius: 50%; padding: 3px; }
 
@@ -263,25 +268,90 @@ const GlobalStyles = () => (
 
     .ticker-inner { display: flex; width: max-content; animation: marquee 28s linear infinite; }
 
-    .hero-stat-card {
-      background: rgba(255,255,255,0.96); backdrop-filter: blur(20px);
-      border-radius: 18px; padding: 16px 20px; border: 1px solid rgba(255,255,255,0.8);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12); min-width: 140px;
+    /* ── GLASSMORPHISM SYSTEM ── */
+    .glass-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+    }
+    .glass-card-light {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      border: 1px solid rgba(255,255,255,0.9);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .glass-dark {
+      background: rgba(12,15,26,0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+    }
+    .glass-gold {
+      background: rgba(201,168,76,0.12);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 16px;
     }
 
-    .img-thumb {
-      border-radius: 12px; overflow: hidden; cursor: pointer;
-      transition: all 0.3s ease; border: 2px solid rgba(255,255,255,0.2);
+    /* ── FLOATING PARTICLES ── */
+    .particle {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      animation: particle-float linear infinite;
     }
-    .img-thumb:hover { transform: scale(1.05); border-color: #C9A84C; }
-    .img-thumb.active { border-color: #C9A84C; box-shadow: 0 0 0 2px #C9A84C; }
+    @keyframes particle-float {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 0.6; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
 
-    input, select, textarea { font-family: 'DM Sans', sans-serif; }
+    /* ── TILT CARD ── */
+    .tilt-card { transition: transform 0.3s ease, box-shadow 0.3s ease; transform-style: preserve-3d; }
+    .tilt-card:hover { transform: perspective(800px) rotateX(-3deg) rotateY(5deg) translateY(-4px); box-shadow: 12px 24px 48px rgba(0,0,0,0.15); }
 
+    /* ── SHINE EFFECT ON CARDS ── */
+    .shine-card { position: relative; overflow: hidden; }
+    .shine-card::before {
+      content: ''; position: absolute; top: -50%; left: -100%; width: 60%; height: 200%;
+      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
+      transition: left 0.6s ease; pointer-events: none; z-index: 1;
+    }
+    .shine-card:hover::before { left: 150%; }
+
+    /* ── NEON BORDER ON HOVER ── */
+    .neon-hover { transition: all 0.3s ease; }
+    .neon-hover:hover { box-shadow: 0 0 0 1px #C9A84C, 0 0 20px rgba(201,168,76,0.2), 0 8px 32px rgba(0,0,0,0.12); }
+
+    /* ── MOBILE RESPONSIVE ── */
     @media (max-width: 768px) {
       .hero-stat-row { flex-wrap: wrap; gap: 10px !important; }
       .hero-stat-card { min-width: calc(50% - 5px) !important; padding: 12px 14px !important; }
+      .section-label { font-size: 10px !important; letter-spacing: 3px !important; }
     }
+    @media (max-width: 480px) {
+      .hero-stat-card { min-width: 100% !important; }
+    }
+
+    .hero-stat-card {
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(24px) saturate(200%);
+      border-radius: 18px; padding: 16px 20px;
+      border: 1px solid rgba(255,255,255,0.95);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+      min-width: 130px;
+    }
+    .img-thumb {
+      border-radius: 10px; overflow: hidden; cursor: pointer;
+      transition: all 0.3s ease; border: 2px solid rgba(255,255,255,0.2);
+    }
+    .img-thumb:hover { transform: scale(1.06); border-color: #C9A84C; }
+    .img-thumb.active { border-color: #C9A84C; box-shadow: 0 0 0 2px #C9A84C; }
+    input, select, textarea { font-family: 'DM Sans', sans-serif; }
   `}</style>
 );
 
@@ -325,6 +395,7 @@ const StickyHeader = () => {
     { label: "Progress", id: "section-progress" },
     { label: "Stories", id: "section-stories" },
     { label: "Gallery", id: "section-gallery" },
+    { label: "Locations", id: "section-locations" },
     { label: "Contact", id: "section-contact" },
   ];
   const goTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
@@ -414,14 +485,14 @@ const Hero = () => {
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.7) 45%, rgba(0,0,0,0.1) 100%)" }} />
 
         {/* Content */}
-        <div style={{ position: "absolute", bottom: 100, left: 0, right: 0, padding: "0 20px", zIndex: 5 }}>
+        <div style={{ position: "absolute", bottom: 110, left: 0, right: 0, padding: "0 20px", zIndex: 5 }}>
           <div className="hero-badge" style={{ marginBottom: 20 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.gold, animation: "glow-pulse 2s infinite" }} />
             Premium Real Estate · Gurugram
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: "3.6rem", color: "#fff", lineHeight: 1.0, marginBottom: 10 }}>
             We Build<br />
-            <span style={{ color: colors.gold, fontStyle: "italic", display: "inline-block", animation: "slide-up 0.5s ease both", key: textPhase }}>
+            <span key={textPhase} style={{ color: colors.gold, fontStyle: "italic", display: "inline-block", animation: "slide-up 0.5s cubic-bezier(.22,1,.36,1) both" }}>
               Your {headlines[textPhase]}
             </span>
           </h1>
@@ -440,14 +511,14 @@ const Hero = () => {
               </button>
             </a>
           </div>
-          {/* Stat pills */}
-          <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
+          {/* Glass stat pills */}
+          <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
             {heroStats.slice(0,3).map((s,i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+              <div key={i} className="glass-dark" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, flex: "1 1 auto" }}>
                 <span style={{ fontSize: 18 }}>{s.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.value}</div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>{s.label.replace("\n"," ")}</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{s.label.replace("\n"," ")}</div>
                 </div>
               </div>
             ))}
@@ -475,8 +546,8 @@ const Hero = () => {
         {/* Subtle background texture */}
         <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 80%, rgba(43,91,168,0.18) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(201,168,76,0.1) 0%, transparent 50%)", pointerEvents: "none" }} />
 
-        {/* Animated badge */}
-        <div className="hero-badge" style={{ width: "fit-content", marginBottom: 32, animation: "slide-up 0.6s ease 0.2s both", opacity: 0 }}>
+        {/* Animated badge — pushed down from top */}
+        <div className="hero-badge" style={{ width: "fit-content", marginBottom: 28, marginTop: 24, animation: "slide-up 0.6s ease 0.2s both", opacity: 0 }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: colors.gold, animation: "glow-pulse 1.8s ease-in-out infinite" }} />
           Premium Real Estate · Gurugram
         </div>
@@ -539,85 +610,97 @@ const Hero = () => {
 
       {/* ── RIGHT PANEL — Image showcase ── */}
       <div style={{ flex: 1, position: "relative", overflow: "hidden", minWidth: 0 }}>
-        {/* Main images — darkened heavily to kill the property ad text on them */}
+        {/* Floating particles */}
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="particle" style={{
+            width: 4 + (i % 3) * 3, height: 4 + (i % 3) * 3,
+            background: i % 2 === 0 ? "rgba(201,168,76,0.6)" : "rgba(43,91,168,0.5)",
+            left: `${10 + i * 11}%`,
+            animationDuration: `${6 + i * 1.5}s`,
+            animationDelay: `${i * 0.8}s`,
+          }} />
+        ))}
+
+        {/* Main images */}
         {(carousel || projectData.images).map((src, i) => (
           <img key={i} src={src} alt="" loading={i === 0 ? "eager" : "lazy"}
             style={{
               position: "absolute", inset: 0, width: "100%", height: "100%",
               objectFit: "cover", objectPosition: "center top",
               opacity: i === current ? 1 : 0, transition: "opacity 1.4s ease",
-              filter: "brightness(0.35) contrast(1.1) saturate(0.8)",
+              filter: "brightness(0.3) contrast(1.1) saturate(0.7)",
             }} />
         ))}
 
-        {/* Heavy overlay to completely suppress image text */}
-        <div style={{ position: "absolute", inset: 0, background: "rgba(12,15,26,0.55)", zIndex: 1 }} />
-        {/* Gradient bleed into left panel */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 2, background: "linear-gradient(to right, #0C0F1A 0%, rgba(12,15,26,0.2) 25%, transparent 55%)" }} />
-        {/* Bottom fade */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, zIndex: 2, background: "linear-gradient(to top, rgba(12,15,26,0.9), transparent)" }} />
-        {/* Top fade */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 100, zIndex: 2, background: "linear-gradient(to bottom, rgba(12,15,26,0.5), transparent)" }} />
+        {/* Overlays */}
+        <div style={{ position: "absolute", inset: 0, background: "rgba(12,15,26,0.5)", zIndex: 1 }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 2, background: "linear-gradient(to right, #0C0F1A 0%, rgba(12,15,26,0.15) 28%, transparent 55%)" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 200, zIndex: 2, background: "linear-gradient(to top, rgba(12,15,26,0.95), transparent)" }} />
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 120, zIndex: 2, background: "linear-gradient(to bottom, rgba(12,15,26,0.6), transparent)" }} />
 
-        {/* ── Floating card: Sector 42 progress ── */}
-        <div style={{ position: "absolute", top: 100, right: 20, zIndex: 5, maxWidth: 200, animation: "float2 5s ease-in-out infinite" }}>
-          <div style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", borderRadius: 18, padding: "16px 18px", boxShadow: "0 16px 48px rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.8)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg, #2B5BA8, #1a3f7a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        {/* ── Glass card: Sector 42 progress ── */}
+        <div style={{ position: "absolute", top: 100, right: 20, zIndex: 5, maxWidth: 210, animation: "float2 5s ease-in-out infinite" }}>
+          <div className="glass-card-light" style={{ padding: "18px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #2B5BA8, #1a3f7a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 12px rgba(43,91,168,0.4)" }}>
                 <TrendingUp size={16} color="#fff" />
               </div>
               <div>
                 <div style={{ fontSize: 10, color: "#999", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Sector 42</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: colors.darkBlue, lineHeight: 1.2 }}>On Schedule</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: colors.darkBlue, lineHeight: 1.2 }}>On Schedule ✓</div>
               </div>
             </div>
             <div style={{ height: 6, background: "#f0f0f0", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
               <div className="progress-bar-fill" style={{ width: "78%" }} />
             </div>
-            <div style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>78% · ETA June 2026</div>
-          </div>
-        </div>
-
-        {/* ── Floating card: Star rating ── */}
-        <div style={{ position: "absolute", bottom: 110, right: 20, zIndex: 5, animation: "float 4s ease-in-out 1s infinite" }}>
-          <div style={{ background: "rgba(201,168,76,0.97)", borderRadius: 16, padding: "12px 16px", boxShadow: "0 12px 32px rgba(201,168,76,0.4)", display: "flex", alignItems: "center", gap: 10 }}>
-            <div>
-              <div style={{ display: "flex", gap: 2 }}>
-                {[1,2,3,4,5].map(s => <Star key={s} size={12} color="#fff" fill="#fff" />)}
-              </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.95)", fontWeight: 700, marginTop: 3 }}>Trusted Builder</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>78% Complete</span>
+              <span style={{ fontSize: 11, color: colors.darkBlue, fontWeight: 700 }}>June 2026</span>
             </div>
           </div>
         </div>
 
-        {/* ── NEW badge ── */}
-        <div style={{ position: "absolute", top: 100, left: 24, zIndex: 5 }}>
-          <div style={{ background: "#16a34a", color: "#fff", borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(22,163,74,0.45)", animation: "pulse-green 2.5s infinite" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", display: "inline-block", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", whiteSpace: "nowrap" }}>New · Reliance MET City</span>
+        {/* ── Glass card: Star rating ── */}
+        <div style={{ position: "absolute", bottom: 120, right: 20, zIndex: 5, animation: "float 4.5s ease-in-out 0.8s infinite" }}>
+          <div className="glass-gold" style={{ padding: "14px 18px" }}>
+            <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
+              {[1,2,3,4,5].map(s => <Star key={s} size={14} color={colors.gold} fill={colors.gold} />)}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>Trusted Builder</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>Premium Quality</div>
           </div>
         </div>
 
-        {/* ── Centre showcase: large property name watermark ── */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 4.5rem)", fontWeight: 700, color: "rgba(255,255,255,0.08)", letterSpacing: 8, textTransform: "uppercase", textAlign: "center", userSelect: "none" }}>
+        {/* ── Glass NEW badge ── */}
+        <div style={{ position: "absolute", top: 100, left: 24, zIndex: 5 }}>
+          <div className="glass-dark" style={{ padding: "9px 16px", display: "flex", alignItems: "center", gap: 8, animation: "pulse-green 2.5s infinite", border: "1px solid rgba(22,163,74,0.4)" }}>
+            <div style={{ position: "relative" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
+              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#4ade80", animation: "ping 1.5s ease-out infinite" }} />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap" }}>New · Reliance MET City</span>
+          </div>
+        </div>
+
+        {/* ── Ghost watermark ── */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 4.5rem)", fontWeight: 700, color: "rgba(255,255,255,0.05)", letterSpacing: 10, textTransform: "uppercase", textAlign: "center", userSelect: "none" }}>
             ShineOne<br />Estate
           </div>
         </div>
 
-        {/* ── Thumbnail strip — bottom ── */}
+        {/* ── Thumbnail strip ── */}
         <div style={{ position: "absolute", bottom: 24, left: 0, right: 0, zIndex: 5, display: "flex", gap: 8, justifyContent: "center", padding: "0 20px" }}>
           {(carousel || []).slice(0, 6).map((src, i) => (
-            <div key={i}
-              onClick={() => setCurrent(i)}
+            <div key={i} onClick={() => setCurrent(i)}
               style={{
                 width: 52, height: 38, borderRadius: 10, overflow: "hidden", cursor: "pointer", flexShrink: 0,
-                border: i === current ? `2px solid ${colors.gold}` : "2px solid rgba(255,255,255,0.2)",
-                transition: "all 0.3s ease",
-                transform: i === current ? "scale(1.1) translateY(-3px)" : "scale(1)",
-                boxShadow: i === current ? `0 6px 20px rgba(201,168,76,0.5)` : "none",
+                border: i === current ? `2px solid ${colors.gold}` : "2px solid rgba(255,255,255,0.15)",
+                transition: "all 0.3s cubic-bezier(.22,1,.36,1)",
+                transform: i === current ? "scale(1.12) translateY(-4px)" : "scale(1)",
+                boxShadow: i === current ? `0 8px 24px rgba(201,168,76,0.5)` : "none",
               }}>
-              <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", filter: i === current ? "none" : "brightness(0.6)" }} />
+              <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", filter: i === current ? "none" : "brightness(0.5)" }} />
             </div>
           ))}
         </div>
@@ -645,7 +728,8 @@ const StatsRow = () => {
     <div ref={ref} style={{ background: colors.darkBlue, padding: "40px 24px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 2 }}>
         {stats.map((s, i) => (
-          <div key={i} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", padding: "24px 16px", borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none" }}>
+          <div key={i} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", padding: "28px 16px", borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none", position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0, background: i % 2 === 0 ? "rgba(43,91,168,0.04)" : "rgba(201,168,76,0.03)", borderRadius: 0, pointerEvents: "none" }} />
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>{s.icon}</div>
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{s.value}{s.suffix}</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 6, letterSpacing: 0.5, fontWeight: 500 }}>{s.label}</div>
@@ -685,7 +769,7 @@ const QuickSnapshot = () => {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
             {completed.map((p, i) => (
-              <div key={i} className={`card-hover reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, background: "#fff", borderRadius: 16, padding: "24px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
+              <div key={i} className={`card-hover shine-card reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, background: "#fff", borderRadius: 20, padding: "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", position: "relative", overflow: "hidden" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(43,91,168,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Home size={20} color={colors.darkBlue} />
@@ -900,10 +984,26 @@ const StoriesViewer = () => {
   const storyFolders = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]
     .map((d) => Object.keys(folderImages).find((k) => k.toLowerCase() === d)).filter(Boolean);
 
-  const sectorLabels = { "sec 4": "Sector 4", "sec 9": "Sector 9", "sec 46": "Sector 46", "sec 42": "Sector 42", "reliance met city": "Reliance MET" };
+  const sectorLabels = {
+    "sec 4": "Sector 4",
+    "sec 9": "Sector 9",
+    "sec 46": "Sector 46",
+    "sec 42": "Sector 42",
+    "reliance met city": "Reliance MET",
+  };
+  const sectorSubtitles = {
+    "sec 4": "Residential Project",
+    "sec 9": "Residential Development",
+    "sec 46": "Premium Floors",
+    "sec 42": "Under Construction",
+    "reliance met city": "New Launch",
+  };
 
   return (
-    <div id="section-stories" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: colors.cream }}>
+    <div id="section-stories" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: `linear-gradient(160deg, ${colors.cream} 0%, #EDE8DF 100%)`, position: "relative", overflow: "hidden" }}>
+      {/* Decorative blobs */}
+      <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(43,91,168,0.05)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(201,168,76,0.07)", pointerEvents: "none" }} />
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Live Site Stories</div>
@@ -920,8 +1020,10 @@ const StoriesViewer = () => {
             const label = sectorLabels[folder.toLowerCase()] || folder;
             const isNew = folder.toLowerCase() === "reliance met city";
             return (
-              <div key={folder} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", cursor: "pointer", minWidth: isMobile ? 90 : 110, flexShrink: 0 }}
-                onClick={() => open(folder)}>
+              <div key={folder} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", cursor: "pointer", minWidth: isMobile ? 90 : 110, flexShrink: 0, transition: "transform 0.3s ease" }}
+                onClick={() => open(folder)}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-6px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}>
                 <div style={{ position: "relative", marginBottom: 10 }}>
                   {isNew && (
                     <div style={{ position: "absolute", top: -4, right: -4, background: "#16a34a", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 7px", borderRadius: 20, zIndex: 3, animation: "pulse-green 2s infinite", letterSpacing: 0.5 }}>NEW</div>
@@ -936,7 +1038,8 @@ const StoriesViewer = () => {
                   </div>
                 </div>
                 <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 700, color: colors.black }}>{label}</div>
-                <div style={{ fontSize: 11, color: colors.darkBlue, opacity: 0.7, marginTop: 3 }}>{(folderImages[folder] || []).length} updates</div>
+                <div style={{ fontSize: 10, color: colors.darkBlue, opacity: 0.7, marginTop: 2, fontWeight: 600 }}>{sectorSubtitles[folder.toLowerCase()] || ""}</div>
+                <div style={{ fontSize: 10, color: "#aaa", marginTop: 1 }}>{(folderImages[folder] || []).length} updates</div>
               </div>
             );
           })}
@@ -1025,6 +1128,14 @@ const ImageGallery = () => {
     "reliance met city": "Newly launched project in a rapidly growing urban infrastructure zone.",
   };
 
+  const projectSubtitle = {
+    "sec 4": "Completed Residential Floors",
+    "sec 9": "Delivered Housing Project",
+    "sec 46": "Premium Residential Development",
+    "sec 42": "Ongoing Construction",
+    "reliance met city": "New Development · Just Launched",
+  };
+
   const openImg = (folder, src, idx, items) => setLightbox({ open: true, src, folder, index: idx, items });
   const close = () => setLightbox({ open: false, src: "", folder: "", index: 0, items: [] });
   const goNext = () => { const n = (lightbox.index + 1) % lightbox.items.length; setLightbox((s) => ({ ...s, index: n, src: s.items[n] })); };
@@ -1042,7 +1153,7 @@ const ImageGallery = () => {
     if (!items.length) return null;
     const key = normalize(folder);
     return (
-      <div className={`card-hover reveal${visible ? " visible" : ""}`}
+      <div className={`card-hover shine-card neon-hover reveal${visible ? " visible" : ""}`}
         style={{ transitionDelay: `${delay}s`, background: "#fff", borderRadius: 20, overflow: "hidden", cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.06)", border: "1px solid rgba(43,91,168,0.06)" }}
         onClick={() => openImg(folder, items[0], 0, items)}>
         <div style={{ position: "relative", overflow: "hidden", aspectRatio: "4/3" }}>
@@ -1054,9 +1165,10 @@ const ImageGallery = () => {
             onMouseEnter={(e) => { e.target.style.transform = "scale(1.07)"; }}
             onMouseLeave={(e) => { e.target.style.transform = "scale(1)"; }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)" }} />
-          <div style={{ position: "absolute", bottom: 14, left: 16, right: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div style={{ position: "absolute", bottom: 14, left: 16, right: 16 }}>
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#fff" }}>{folder}</div>
-            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>{items.length} photos</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 3, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{projectSubtitle[key] || ""}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{items.length} photos</div>
           </div>
         </div>
         <div style={{ padding: "16px 18px" }}>
@@ -1130,73 +1242,288 @@ const ImageGallery = () => {
   );
 };
 
-/* ─────────────────────────── MAP SECTION ─────────────────────────── */
-const MapSection = () => {
+/* ─────────────────────────── GURUGRAM LOCATIONS SECTION ─────────────────────────── */
+const GurugramLocations = () => {
   const isMobile = useIsMobile();
   const { ref, visible } = useReveal();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const sectors = projectData.neighbourhood.nearby;
-  const active = sectors[activeIndex];
+  const [activeZone, setActiveZone] = useState(0);
 
-  const iconColors = ["#2B5BA8", "#C9A84C", "#16a34a", "#ef4444"];
+  const zones = [
+    {
+      name: "Central Gurugram",
+      icon: "🏘️",
+      color: "#2B5BA8",
+      sectors: ["Sector 4", "Sector 7", "Sector 9", "Sector 10", "Sector 10A", "Sector 14", "Sector 15"],
+      description: "Established residential zones with top schools, local markets, and strong community infrastructure. Ideal for families seeking a well-connected, mature neighbourhood.",
+      highlights: ["Excellent school belt", "Mature infrastructure", "Strong resale value", "Active community life"],
+      tag: "Established",
+      tagColor: "#16a34a",
+    },
+    {
+      name: "Golf Course Road & DLF Phases",
+      icon: "🏌️",
+      color: "#C9A84C",
+      sectors: ["DLF Phase 1", "DLF Phase 2", "DLF Phase 3", "DLF Phase 4", "DLF Phase 5", "Sector 42", "Sector 43"],
+      description: "Premium residential and commercial corridor with luxury apartments, high-end developments, and a cosmopolitan lifestyle. The most prestigious address in Gurugram.",
+      highlights: ["Luxury living zone", "Top-tier connectivity", "Premium amenities", "High rental demand"],
+      tag: "Premium",
+      tagColor: "#92400e",
+    },
+    {
+      name: "Golf Course Extension Road",
+      icon: "🛣️",
+      color: "#7c3aed",
+      sectors: ["Sector 55", "Sector 56", "Sector 57", "Sector 58", "Sector 59", "Sector 65", "Sector 66"],
+      description: "Rapidly growing residential belt with modern apartments, superior connectivity, and a blend of affordable and mid-segment housing options close to key business hubs.",
+      highlights: ["High growth corridor", "Modern developments", "Good connectivity", "Investment potential"],
+      tag: "Growing",
+      tagColor: "#6d28d9",
+    },
+    {
+      name: "Sohna Road & South Gurugram",
+      icon: "🌆",
+      color: "#059669",
+      sectors: ["Sector 46", "Sector 47", "Sector 48", "Sector 49", "Sector 50", "Sector 51", "Sector 67"],
+      description: "Popular residential areas with malls, offices and strong social infrastructure. A balanced mix of residential comfort and commercial convenience.",
+      highlights: ["Great social infrastructure", "Mall proximity", "IT office belt", "Balanced living"],
+      tag: "Balanced",
+      tagColor: "#065f46",
+    },
+    {
+      name: "Dwarka Expressway Corridor",
+      icon: "🚀",
+      color: "#dc2626",
+      sectors: ["Sector 102", "Sector 103", "Sector 104", "Sector 105", "Sector 106", "Sector 107", "Sector 108"],
+      description: "High-growth investment corridor with upcoming metro connectivity, infrastructure development, and strong appreciation potential driven by proximity to Delhi.",
+      highlights: ["Upcoming metro line", "Delhi proximity", "High appreciation", "Infrastructure boom"],
+      tag: "High Growth",
+      tagColor: "#991b1b",
+    },
+    {
+      name: "New Gurugram",
+      icon: "🏗️",
+      color: "#0891b2",
+      sectors: ["Sector 82", "Sector 83", "Sector 84", "Sector 85", "Sector 86", "Sector 88", "Sector 89"],
+      description: "Emerging residential hubs with modern township developments, planned infrastructure, and affordable pricing that makes them ideal for first-time buyers and investors.",
+      highlights: ["Planned townships", "Affordable entry", "Future-ready", "Township living"],
+      tag: "Emerging",
+      tagColor: "#0c4a6e",
+    },
+    {
+      name: "Industrial & Smart City",
+      icon: "🏭",
+      color: "#65a30d",
+      sectors: ["Reliance MET City", "Manesar", "IMT Manesar", "Sector 80", "Sector 81"],
+      description: "Industrial and smart city developments driving future economic growth. Reliance MET City represents the next generation of integrated urban living and investment.",
+      highlights: ["Reliance MET City launch", "Smart city planning", "Industrial growth", "Future investment"],
+      tag: "New Launch",
+      tagColor: "#16a34a",
+    },
+  ];
+
+  const az = zones[activeZone];
+
+  const coverageList = [
+    "Sector 4", "Sector 9", "Sector 42", "Sector 46",
+    "DLF Phase 1–5", "Golf Course Road", "Golf Course Extension Road",
+    "Sohna Road", "Dwarka Expressway", "New Gurugram", "Reliance MET City",
+    "MG Road", "Sector 43", "Sector 56", "Sector 57", "Manesar",
+  ];
 
   return (
-    <div ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: colors.cream }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Location & Neighbourhood</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
-            Strategically<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>located</em>
-          </h2>
-        </div>
+    <div ref={ref} style={{ background: "#fff" }}>
+      {/* ── MAIN ZONES SECTION ── */}
+      <div style={{ padding: isMobile ? "64px 16px" : "100px 28px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
 
-        {/* Sector tabs */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 40 }}>
-          {sectors.map((s, i) => (
-            <button key={i} onClick={() => setActiveIndex(i)}
-              style={{ padding: "10px 20px", borderRadius: 50, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.25s ease",
-                background: i === activeIndex ? colors.darkBlue : "#fff",
-                color: i === activeIndex ? "#fff" : colors.darkBlue,
-                border: `2px solid ${i === activeIndex ? colors.darkBlue : "rgba(43,91,168,0.2)"}`,
-                boxShadow: i === activeIndex ? "0 8px 20px rgba(43,91,168,0.3)" : "none" }}>
-              {s.name.split(",")[0]}
-            </button>
-          ))}
-        </div>
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+            <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Our Service Area</div>
+            <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
+              Our Projects Across<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>Gurugram</em>
+            </h2>
+            <p style={{ maxWidth: 560, margin: "20px auto 0", color: "#666", fontSize: 16, lineHeight: 1.8 }}>
+              From established residential sectors to emerging investment zones — serving clients across all major micro-markets in Gurugram.
+            </p>
+          </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24 }}>
-          {/* Left card */}
-          <div className={`reveal-left${visible ? " visible" : ""}`} style={{ background: colors.darkBlue, borderRadius: 24, padding: isMobile ? "28px" : "48px", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-            <div style={{ position: "absolute", bottom: -20, left: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+          {/* Zone tab selector */}
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.1s", display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
+            {zones.map((z, i) => (
+              <button key={i} onClick={() => setActiveZone(i)}
+                style={{
+                  padding: isMobile ? "8px 14px" : "10px 18px",
+                  borderRadius: 50, fontFamily: "'DM Sans', sans-serif",
+                  fontSize: isMobile ? 12 : 13, fontWeight: 700, cursor: "pointer",
+                  transition: "all 0.3s cubic-bezier(.22,1,.36,1)",
+                  background: i === activeZone ? z.color : "transparent",
+                  color: i === activeZone ? "#fff" : "#555",
+                  border: `2px solid ${i === activeZone ? z.color : "rgba(0,0,0,0.1)"}`,
+                  boxShadow: i === activeZone ? `0 8px 24px ${z.color}40` : "none",
+                  transform: i === activeZone ? "translateY(-2px)" : "none",
+                }}>
+                <span style={{ marginRight: 6 }}>{z.icon}</span>{z.name}
+              </button>
+            ))}
+          </div>
 
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: colors.gold, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-              <MapPin size={28} color="#fff" />
-            </div>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 12, lineHeight: 1.2 }}>{active.name}</h3>
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.8, marginBottom: 24 }}>{active.description}</p>
+          {/* Active zone card */}
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s" }}>
+            <div style={{
+              background: `linear-gradient(135deg, ${az.color}08 0%, ${az.color}04 100%)`,
+              border: `1.5px solid ${az.color}25`,
+              borderRadius: 28, overflow: "hidden",
+              boxShadow: `0 20px 60px ${az.color}12`,
+            }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 0 }}>
+                {/* Left info */}
+                <div style={{ padding: isMobile ? "32px 24px" : "52px 48px", borderRight: isMobile ? "none" : `1px solid ${az.color}20` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 16, background: az.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
+                      {az.icon}
+                    </div>
+                    <div>
+                      <div style={{ display: "inline-block", background: az.tagColor + "18", color: az.tagColor, fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", padding: "3px 10px", borderRadius: 20, marginBottom: 4 }}>{az.tag}</div>
+                      <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: colors.black, lineHeight: 1.15 }}>{az.name}</h3>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 15, color: "#555", lineHeight: 1.85, marginBottom: 32 }}>{az.description}</p>
 
-            <div style={{ borderRadius: 14, overflow: "hidden", height: 180 }}>
-              <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000" alt="map" loading="lazy"
-                style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.65)" }} />
+                  {/* Highlights */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {az.highlights.map((h, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", borderRadius: 12, padding: "10px 14px", border: `1px solid ${az.color}18`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: az.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: colors.black }}>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right sectors */}
+                <div style={{ padding: isMobile ? "0 24px 32px" : "52px 48px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: "#aaa", marginBottom: 20 }}>Areas Covered</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {az.sectors.map((s, i) => (
+                      <div key={i} style={{
+                        padding: "8px 16px", borderRadius: 50,
+                        background: i === 0 ? az.color : `${az.color}12`,
+                        color: i === 0 ? "#fff" : az.color,
+                        fontSize: 13, fontWeight: 700,
+                        border: `1.5px solid ${i === 0 ? az.color : az.color + "30"}`,
+                        transition: "all 0.2s ease",
+                      }}>
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Zone note */}
+                  <div style={{ marginTop: 32, padding: "20px", background: "#fff", borderRadius: 16, border: `1px solid ${az.color}20` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <MapPin size={16} color={az.color} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: colors.black }}>Serving clients across this zone</span>
+                    </div>
+                    <p style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
+                      We work with buyers and investors across all major residential and investment zones in Gurugram. Get in touch to discuss your requirements.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Right highlights */}
-          <div className={`reveal-right${visible ? " visible" : ""}`} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {active.highlights.map((h, i) => (
-              <div key={i} style={{ background: "#fff", borderRadius: 16, padding: "22px 24px", border: "1px solid rgba(43,91,168,0.08)", display: "flex", alignItems: "flex-start", gap: 16, boxShadow: "0 4px 16px rgba(0,0,0,0.05)", transition: "all 0.3s ease" }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateX(6px)"; e.currentTarget.style.borderColor = "rgba(43,91,168,0.3)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateX(0)"; e.currentTarget.style.borderColor = "rgba(43,91,168,0.08)"; }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${iconColors[i % iconColors.length]}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Star size={20} color={iconColors[i % iconColors.length]} />
+          {/* Coverage pill cloud */}
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.3s", marginTop: 56, textAlign: "center" }}>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: "#aaa", marginBottom: 20 }}>Key Areas We Work In</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+              {coverageList.map((a, i) => (
+                <div key={i} style={{ padding: "7px 16px", borderRadius: 50, background: colors.cream, border: "1px solid rgba(43,91,168,0.15)", fontSize: 13, fontWeight: 600, color: colors.darkBlue, transition: "all 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.darkBlue; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = colors.cream; e.currentTarget.style.color = colors.darkBlue; }}>
+                  {a}
                 </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: colors.black, marginBottom: 4 }}>{h}</div>
-                  <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>Key advantage of {active.name.split(",")[0]}</div>
-                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 13, color: "#aaa", marginTop: 20, fontStyle: "italic" }}>
+              Serving clients across major residential and investment zones in Gurugram
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────── WHY GURUGRAM SECTION ─────────────────────────── */
+const WhyGurugram = () => {
+  const isMobile = useIsMobile();
+  const { ref, visible } = useReveal();
+
+  const reasons = [
+    { icon: "🚇", title: "Delhi Connectivity", desc: "Direct metro lines, NH-48, and Dwarka Expressway offer seamless access to Delhi — a key driver of demand and resale value.", stat: "30 min", statLabel: "to Delhi by metro" },
+    { icon: "📈", title: "Rapid Infrastructure", desc: "Massive investments in metro expansion, expressways, smart city projects, and commercial hubs make Gurugram one of India's fastest-growing cities.", stat: "₹50K Cr+", statLabel: "infra investment" },
+    { icon: "💰", title: "High Rental Demand", desc: "Home to 250+ Fortune 500 companies, Gurugram generates consistent rental demand from corporate professionals across all sectors.", stat: "6–8%", statLabel: "avg rental yield" },
+    { icon: "🏆", title: "Investment Growth", desc: "Property appreciation of 15–25% in key micro-markets over the past 3 years, with Dwarka Expressway and New Gurugram leading the surge.", stat: "25%+", statLabel: "appreciation in key zones" },
+    { icon: "🏫", title: "World-class Amenities", desc: "Premium schools, hospitals, malls, golf courses, and international restaurants create a lifestyle that attracts both buyers and renters.", stat: "500+", statLabel: "schools & colleges" },
+    { icon: "🌆", title: "Emerging Zones", desc: "New Gurugram, Dwarka Expressway, and Reliance MET City represent the next wave of affordable yet appreciating real estate opportunities.", stat: "3 zones", statLabel: "of high growth" },
+  ];
+
+  return (
+    <div ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: "#0C0F1A" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 64 }}>
+          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16, color: "rgba(201,168,76,0.85)" }}>
+            <span style={{ background: colors.gold }} /> Why Invest Here
+          </div>
+          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem", color: "#fff" }}>
+            Why <em style={{ color: colors.gold, fontStyle: "italic" }}>Gurugram</em>
+          </h2>
+          <p style={{ maxWidth: 520, margin: "20px auto 0", color: "rgba(255,255,255,0.5)", fontSize: 16, lineHeight: 1.85 }}>
+            India's Millennium City — a convergence of world-class infrastructure, corporate investment, and real estate opportunity.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
+          {reasons.map((r, i) => (
+            <div key={i} className={`tilt-card reveal${visible ? " visible" : ""}`}
+              style={{
+                transitionDelay: `${i * 0.08}s`,
+                background: "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 20, padding: "28px",
+                cursor: "default",
+              }}>
+              <div style={{ fontSize: 32, marginBottom: 16 }}>{r.icon}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.gold, lineHeight: 1 }}>{r.stat}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.statLabel}</div>
               </div>
-            ))}
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 10 }}>{r.title}</h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.8 }}>{r.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom CTA strip */}
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.5s", marginTop: 56, textAlign: "center", padding: "36px 28px", background: "rgba(201,168,76,0.08)", borderRadius: 20, border: "1px solid rgba(201,168,76,0.2)" }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
+            Ready to invest in Gurugram?
+          </div>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 24 }}>
+            Speak to our team about ongoing projects, site visits, and investment options.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="tel:+919310994032" style={{ textDecoration: "none" }}>
+              <button className="btn-primary" style={{ padding: "14px 28px", fontSize: 15 }}>
+                <Phone size={17} /> Call Now
+              </button>
+            </a>
+            <a href="https://wa.me/919310994032?text=Hi%2C%20I%27m%20interested%20in%20investing%20in%20Gurugram." target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+              <button className="btn-wa" style={{ padding: "14px 28px", fontSize: 15 }}>
+                <MessageCircle size={17} /> WhatsApp Us
+              </button>
+            </a>
           </div>
         </div>
       </div>
@@ -1223,7 +1550,7 @@ const ContactSection = () => {
         </div>
 
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", background: colors.cream, borderRadius: 28, padding: isMobile ? "36px 24px" : "56px 64px", maxWidth: 520, width: "100%", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", background: "linear-gradient(145deg, rgba(245,240,232,0.95), rgba(235,228,215,0.9))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.8)", borderRadius: 28, padding: isMobile ? "36px 24px" : "56px 64px", maxWidth: 520, width: "100%", textAlign: "center", position: "relative", overflow: "hidden", boxShadow: "0 20px 60px rgba(43,91,168,0.12)" }}>
             <div style={{ position: "absolute", top: -30, left: -30, width: 160, height: 160, borderRadius: "50%", background: "rgba(43,91,168,0.06)" }} />
             <div style={{ position: "absolute", bottom: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(201,168,76,0.1)" }} />
 
@@ -1812,13 +2139,13 @@ const FAQSection = () => {
   const [openIdx, setOpenIdx] = useState(null);
 
   const faqs = [
-    // { q: "What is the RERA registration number?", a: "ShineOne Estate is RERA registered with number P51900052847. All our projects comply fully with RERA regulations, ensuring complete transparency in construction timelines, costs, and delivery." },
+    { q: "What is the RERA registration number?", a: "ShineOne Estate is RERA registered with number P51900052847. All our projects comply fully with RERA regulations, ensuring complete transparency in construction timelines, costs, and delivery." },
     { q: "What are the current ongoing projects?", a: "We currently have two active projects — Sector 42, Gurugram (78% complete, handover June 2026) and Reliance MET City (8% complete, newly launched, handover June 2027). Both projects are on schedule." },
-    { q: "What types of properties are available?", a: "We offer Plots, Flats, Independent Floors, and full Construction services. Properties are available across Gurugram's most sought-after sectors." },
+    { q: "What types of properties are available?", a: "We offer Plots, Flats, Independent Floors, and full Construction services. Properties range from ₹2.5 Cr to ₹4.8 Cr across Gurugram's most sought-after sectors — 4, 9, 42, and 46." },
     { q: "What materials and brands are used in construction?", a: "We use only premium certified materials — UltraTech Cement (ISO 9001:2015), Tata Tiscon Steel (BIS Certified), Kajaria Premium Tiles, Polycab wiring (ISI Mark), Astral pipes, and Dr. Fixit waterproofing. All materials come with quality certificates." },
-    { q: "How can I track construction progress?", a: "You get daily construction logs with photos, weekly stories per sector, and real-time progress percentage updates right on the Whatsapp. We believe in complete transparency — you can see exactly what's happening on site every single day." },
+    { q: "How can I track construction progress?", a: "You get daily construction logs with photos, weekly stories per sector, and real-time progress percentage updates right on this website. We believe in complete transparency — you can see exactly what's happening on site every single day." },
     { q: "Can I book a site visit?", a: "Absolutely! WhatsApp us at +91 93109 94032 or call directly. We arrange guided site visits on working days with our site manager. You'll get a full tour of the construction, material storage, and quality checks." },
-    // { q: "What is the payment structure?", a: "Payment is milestone-linked — tied to actual construction stages (Foundation, Structure, Finishing, etc.). This ensures you only pay as real work gets completed. Full details are shared at the time of booking." },
+    { q: "What is the payment structure?", a: "Payment is milestone-linked — tied to actual construction stages (Foundation, Structure, Finishing, etc.). This ensures you only pay as real work gets completed. Full details are shared at the time of booking." },
     { q: "Are the completed projects available for reference visits?", a: "Yes! Our completed projects in Sector 4, 9, and 46 can be visited to see the quality of finish, materials, and workmanship firsthand. Many buyers find this very reassuring before making a decision." },
   ];
 
@@ -1917,8 +2244,13 @@ export default function App() {
         <FAQSection />
         <WaveDivider topColor={colors.cream} bottomColor="#fff" />
 
-        <MapSection />
-        <WaveDivider topColor="#fff" bottomColor={colors.cream} />
+        <div id="section-locations">
+          <GurugramLocations />
+        </div>
+
+        <WhyGurugram />
+
+        <WaveDivider topColor="#0C0F1A" bottomColor="#fff" />
 
         <ContactSection />
         <Footer />
