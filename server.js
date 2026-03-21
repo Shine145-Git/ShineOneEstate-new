@@ -18,11 +18,33 @@ app.use((req, res, next) => {
   console.log(`[REQ] ${req.method} ${req.url}`);
   next();
 });
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://www.shineoneestate.co.in",
+  "https://shineoneestate.co.in"
+];
+
 app.use(cors({
-  origin: ["https://www.shineoneestate.co.in", "http://localhost:3000"],
-  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  origin: function (origin, callback) {
+    console.log("CORS ORIGIN:", origin);
+
+    // allow requests with no origin (like Postman or mobile apps)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log("CORS BLOCKED:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
+  credentials: true,
 }));
+
+// handle preflight requests
+app.options("*", cors());
 app.use(express.json());
 app.use("/local", express.static(path.join(__dirname, "src", "data")));
 
