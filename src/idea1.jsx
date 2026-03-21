@@ -114,46 +114,40 @@ const projectData = {
   stories: [],
 };
 
-/* Auto-generate stories from require.context */
-(function generateStories() {
-  let folderImages = {};
-  try {
-    const ctx = require.context("./data", true, /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i);
-    ctx.keys().forEach((k) => {
-      const clean = k.replace(/^\.\//, "");
-      const parts = clean.split("/");
-      if (parts.length >= 2) {
-        const folder = parts[0];
-        if (!folderImages[folder]) folderImages[folder] = [];
-        try { folderImages[folder].push(ctx(k)); } catch (e) {}
+// 🔥 NEW: fetch images dynamically from backend
+const useBackendMedia = () => {
+  const [folderImages, setFolderImages] = useState({});
+
+  useEffect(() => {
+    const folders = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"];
+
+    const fetchAll = async () => {
+      let data = {};
+
+      for (let folder of folders) {
+        try {
+          const res = await fetch(`http://localhost:1000/media/${encodeURIComponent(folder)}`);
+          const json = await res.json();
+
+          if (json.success) {
+            data[folder] = json.resources.map(r => r.secure_url);
+          } else {
+            data[folder] = [];
+          }
+        } catch (err) {
+          console.error("FETCH ERROR:", folder, err);
+          data[folder] = [];
+        }
       }
-    });
-  } catch (e) {}
-  try {
-    const rmcCtx = require.context("./Reliance Met City", false, /\.(png|jpe?g|webp|gif|mp4|webm|ogg)$/i);
-    rmcCtx.keys().forEach((k) => {
-      try {
-        if (!folderImages["Reliance Met City"]) folderImages["Reliance Met City"] = [];
-        folderImages["Reliance Met City"].push(rmcCtx(k));
-      } catch (e) {}
-    });
-  } catch (e) {}
 
-  projectData.folderImages = folderImages;
+      setFolderImages(data);
+    };
 
-  const order = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"];
-  const keys = Object.keys(folderImages);
-  const sorted = order.map((d) => keys.find((k) => k.toLowerCase() === d)).filter(Boolean);
-  const rest = keys.filter((k) => !sorted.includes(k));
-  projectData.stories = [...sorted, ...rest].map((folder) => ({
-    week: folder, title: folder,
-    image: (folderImages[folder] && folderImages[folder][0]) || projectData.images[0],
-  }));
+    fetchAll();
+  }, []);
 
-  if (!projectData.stories.length) {
-    projectData.stories = projectData.projects.map((p) => ({ week: p.name, title: p.name, image: projectData.images[0] }));
-  }
-})();
+  return folderImages;
+};
 
 /* ─────────────────────────── GLOBAL STYLES ─────────────────────────── */
 const GlobalStyles = () => (
@@ -447,7 +441,8 @@ const StickyHeader = () => {
 const Hero = () => {
   const isMobile = useIsMobile();
   const reduced = useReducedMotion();
-  const carousel = (projectData.folderImages?.["Caraousel"] || projectData.folderImages?.["caraousel"]) || projectData.images;
+  const folderImages = useBackendMedia();
+  const carousel = (folderImages?.["Caraousel"] || folderImages?.["caraousel"]) || projectData.images;
   const [current, setCurrent] = useState(0);
   const [textPhase, setTextPhase] = useState(0); // for cycling headline words
 
@@ -924,7 +919,7 @@ const ProgressTimeline = () => {
 const StoriesViewer = () => {
   const isMobile = useIsMobile();
   const { ref, visible } = useReveal();
-  const folderImages = projectData.folderImages || {};
+  const folderImages = useBackendMedia();
   const [openStory, setOpenStory] = useState({ open: false, folder: "", images: [], idx: 0 });
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -1106,7 +1101,7 @@ const StoriesViewer = () => {
 const ImageGallery = () => {
   const isMobile = useIsMobile();
   const { ref, visible } = useReveal();
-  const folderImages = projectData.folderImages || {};
+  const folderImages = useBackendMedia();
   const keys = Object.keys(folderImages);
   const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
 
@@ -1657,7 +1652,7 @@ const Footer = () => {
 
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>© 2026 ShineOne Estate · Built with transparency and trust.</span>
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>RERA Reg: P51900052847</span>
+         
         </div>
       </div>
     </footer>
@@ -2139,7 +2134,7 @@ const FAQSection = () => {
   const [openIdx, setOpenIdx] = useState(null);
 
   const faqs = [
-    { q: "What is the RERA registration number?", a: "ShineOne Estate is RERA registered with number P51900052847. All our projects comply fully with RERA regulations, ensuring complete transparency in construction timelines, costs, and delivery." },
+    // { q: "What is the RERA registration number?", a: "ShineOne Estate is RERA registered with number P51900052847. All our projects comply fully with RERA regulations, ensuring complete transparency in construction timelines, costs, and delivery." },
     { q: "What are the current ongoing projects?", a: "We currently have two active projects — Sector 42, Gurugram (78% complete, handover June 2026) and Reliance MET City (8% complete, newly launched, handover June 2027). Both projects are on schedule." },
     { q: "What types of properties are available?", a: "We offer Plots, Flats, Independent Floors, and full Construction services. Properties range from ₹2.5 Cr to ₹4.8 Cr across Gurugram's most sought-after sectors — 4, 9, 42, and 46." },
     { q: "What materials and brands are used in construction?", a: "We use only premium certified materials — UltraTech Cement (ISO 9001:2015), Tata Tiscon Steel (BIS Certified), Kajaria Premium Tiles, Polycab wiring (ISI Mark), Astral pipes, and Dr. Fixit waterproofing. All materials come with quality certificates." },
