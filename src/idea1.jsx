@@ -126,7 +126,8 @@ const useBackendMedia = () => {
 
       for (let folder of folders) {
         try {
-          const res = await fetch(`http://localhost:1000/media/${encodeURIComponent(folder)}`);
+          const BASE_URL = process.env.REACT_APP_API_URL || "https://shineoneestate-new-server.onrender.com";
+          const res = await fetch(`${BASE_URL}/media/${encodeURIComponent(folder)}`);
           const json = await res.json();
 
           if (json.success) {

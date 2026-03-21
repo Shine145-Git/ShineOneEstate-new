@@ -19,7 +19,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["https://www.shineoneestate.co.in", "http://localhost:3000"],
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
 }));
@@ -151,7 +151,7 @@ app.get("/media/:folder", async (req, res) => {
           resource_type: file.match(/\.(mp4|mov|webm)$/i)
             ? "video"
             : "image",
-          secure_url: `http://localhost:1000/local/${matchedFolder}/${file}`,
+          secure_url: `https://shineoneestate-new-server.onrender.com/local/${matchedFolder}/${file}`,
           format: file.split(".").pop(),
           source: "local",
         }));
@@ -223,6 +223,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(1000, () => {
-  console.log("Server running on port 1000");
+const PORT = process.env.PORT || 1000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

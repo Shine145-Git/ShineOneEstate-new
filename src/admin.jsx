@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 const SECTORS = ["sec 4", "sec 9", "sec 42", "sec 46", "reliance met city"];
 
-const BASE_URL = "http://localhost:1000";
+const BASE_URL = "https://shineoneestate-new-server.onrender.com";
 
 // Maps a Cloudinary resource object → internal media item shape
 const mapResource = (r) => ({

@@ -1,7 +1,7 @@
 import './App.css';
 import ShineOneEstate from './idea1.jsx';
 import AdminPanel from './admin.jsx';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
   return (
