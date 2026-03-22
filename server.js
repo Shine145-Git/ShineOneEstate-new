@@ -117,11 +117,21 @@ app.post("/upload-multiple", upload.array("files", 10), async (req, res) => {
       site = new SiteContent({ sectors: [] });
     }
 
-    let sector = site.sectors.find(s => s.name.toLowerCase() === folderLower);
+    let sectorIndex = site.sectors.findIndex(
+      s => s.name.toLowerCase() === folderLower
+    );
 
-    if (!sector) {
-      sector = { name: folderLower, displayName: folderLower.toUpperCase(), media: [] };
-      site.sectors.push(sector);
+    let sector;
+
+    if (sectorIndex === -1) {
+      site.sectors.push({
+        name: folderLower,
+        displayName: folderLower.toUpperCase(),
+        media: [],
+      });
+      sector = site.sectors[site.sectors.length - 1]; // ✅ proper reference
+    } else {
+      sector = site.sectors[sectorIndex];
     }
 
     response.forEach(file => {
@@ -132,6 +142,8 @@ app.post("/upload-multiple", upload.array("files", 10), async (req, res) => {
         type: file.resource_type === "video" ? "video" : "image"
       });
     });
+
+    site.markModified("sectors"); // ✅ ensure mongoose tracks nested change
 
     await site.save();
 
