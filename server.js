@@ -3,8 +3,14 @@ const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const dotenv = require("dotenv");
 const cors = require("cors");
+const mongoose = require("mongoose");
+const SiteContent = require("./schema"); // adjust if path different
 
 dotenv.config({ path: "./.env" });
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.error("MongoDB Error:", err));
 
 console.log("ENV CHECK:");
 console.log("CLOUD_NAME:", process.env.CLOUD_NAME);
@@ -103,6 +109,32 @@ app.post("/upload-multiple", upload.array("files", 10), async (req, res) => {
       resource_type: item.resource_type,
     }));
 
+    // 🔥 SAVE TO MONGODB
+    const folderLower = (req.body.folder || "general").toLowerCase();
+
+    let site = await SiteContent.findOne();
+    if (!site) {
+      site = new SiteContent({ sectors: [] });
+    }
+
+    let sector = site.sectors.find(s => s.name.toLowerCase() === folderLower);
+
+    if (!sector) {
+      sector = { name: folderLower, displayName: folderLower.toUpperCase(), media: [] };
+      site.sectors.push(sector);
+    }
+
+    response.forEach(file => {
+      sector.media.push({
+        url: file.url,
+        public_id: file.public_id,
+        source: "cloud",
+        type: file.resource_type === "video" ? "video" : "image"
+      });
+    });
+
+    await site.save();
+
     res.json({ success: true, files: response });
   } catch (err) {
     console.error(err);
@@ -116,30 +148,21 @@ app.get("/media/:folder", async (req, res) => {
     const folder = decodeURIComponent(req.params.folder).toLowerCase();
     console.log("MEDIA REQUEST folder:", folder);
 
-    // 🔵 CLOUDINARY FILES
-    let cloudResources = [];
+    const site = await SiteContent.findOne();
 
-    try {
-      const cloudResult = await cloudinary.api.resources({
-        type: "upload",
-        prefix: `ShineOne/${folder}`,
-        max_results: 100,
-      });
-      cloudResources = cloudResult.resources || [];
-    } catch (cloudErr) {
-      console.error("CLOUDINARY ERROR:", cloudErr.message);
+    if (!site) {
+      return res.json({ success: true, resources: [] });
     }
 
-    const taggedCloudResources = cloudResources.map((item) => ({
-      ...item,
-      source: "cloud",
-    }));
+    const sector = site.sectors.find(s => s.name.toLowerCase() === folder);
 
-    console.log("CLOUD FILES:", cloudResources.length);
+    if (!sector) {
+      return res.json({ success: true, resources: [] });
+    }
 
     return res.json({
       success: true,
-      resources: taggedCloudResources,
+      resources: sector.media
     });
 
   } catch (err) {
