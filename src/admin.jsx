@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 const SECTORS = ["sec 4", "sec 9", "sec 42", "sec 46", "reliance met city"];
 
-const BASE_URL = "https://shineoneestate-new-server.onrender.com";
+const BASE_URL = "https://shineoneestate-new-server.onrender.com"
 
 // Maps a Cloudinary resource object → internal media item shape
 const mapResource = (r) => ({
@@ -598,7 +598,22 @@ export default function AdminPanel() {
       console.log("[FRONTEND] handleUpload -> response status:", res.status);
       console.log("[FRONTEND] handleUpload -> response ok:", res.ok);
 
-      const data = await res.json();
+      // Guard for failed response
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("[FRONTEND] Upload failed response:", errorText);
+        throw new Error(`Upload failed: ${res.status}`);
+      }
+
+      // Safer JSON parsing
+      let data;
+      const text = await res.text();
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("[FRONTEND] Upload response is not JSON:", text);
+        throw new Error("Server returned invalid response (not JSON)");
+      }
 
       if (!data.success) throw new Error("Upload failed");
 

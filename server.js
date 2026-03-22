@@ -3,8 +3,6 @@ const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const dotenv = require("dotenv");
 const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
 
 dotenv.config({ path: "./.env" });
 
@@ -18,35 +16,14 @@ app.use((req, res, next) => {
   console.log(`[REQ] ${req.method} ${req.url}`);
   next();
 });
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://www.shineoneestate.co.in",
-  "https://shineoneestate.co.in"
-];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    console.log("CORS ORIGIN:", origin);
-
-    // allow requests with no origin (like Postman or mobile apps)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      console.log("CORS BLOCKED:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: true,
   methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
-  credentials: true,
 }));
 
-// handle preflight requests
-app.options("*", cors());
 app.use(express.json());
-app.use("/local", express.static(path.join(__dirname, "src", "data")));
 
 const upload = multer({ dest: "uploads/" });
 
@@ -140,52 +117,29 @@ app.get("/media/:folder", async (req, res) => {
     console.log("MEDIA REQUEST folder:", folder);
 
     // 🔵 CLOUDINARY FILES
-    const cloudResult = await cloudinary.api.resources({
-      type: "upload",
-      prefix: `ShineOne/${folder}`,
-      max_results: 100,
-    });
+    let cloudResources = [];
 
-    const cloudResources = cloudResult.resources || [];
+    try {
+      const cloudResult = await cloudinary.api.resources({
+        type: "upload",
+        prefix: `ShineOne/${folder}`,
+        max_results: 100,
+      });
+      cloudResources = cloudResult.resources || [];
+    } catch (cloudErr) {
+      console.error("CLOUDINARY ERROR:", cloudErr.message);
+    }
 
     const taggedCloudResources = cloudResources.map((item) => ({
       ...item,
       source: "cloud",
     }));
 
-    // 🟢 LOCAL FILES (case-insensitive match)
-    const basePath = path.join(__dirname, "src", "data");
-    let localResources = [];
-
-    if (fs.existsSync(basePath)) {
-      const folders = fs.readdirSync(basePath);
-
-      const matchedFolder = folders.find(
-        (f) => f.toLowerCase() === folder
-      );
-
-      if (matchedFolder) {
-        const fullPath = path.join(basePath, matchedFolder);
-        const files = fs.readdirSync(fullPath);
-
-        localResources = files.map((file) => ({
-          public_id: `local/${matchedFolder}/${file}`,
-          resource_type: file.match(/\.(mp4|mov|webm)$/i)
-            ? "video"
-            : "image",
-          secure_url: `https://shineoneestate-new-server.onrender.com/local/${matchedFolder}/${file}`,
-          format: file.split(".").pop(),
-          source: "local",
-        }));
-      }
-    }
-
-    console.log("LOCAL FILES:", localResources.length);
     console.log("CLOUD FILES:", cloudResources.length);
 
     return res.json({
       success: true,
-      resources: [...taggedCloudResources, ...localResources],
+      resources: taggedCloudResources,
     });
 
   } catch (err) {
@@ -205,21 +159,6 @@ app.delete("/delete/:public_id", async (req, res) => {
     const source = req.query.source;
 
     console.log("DELETE REQUEST:", publicId, "SOURCE:", source);
-
-    if (source === "local") {
-      const parts = publicId.split("/");
-      const folder = parts[1];
-      const fileName = parts.slice(2).join("/");
-
-      const filePath = path.join(__dirname, "src", "data", folder, fileName);
-
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        return res.json({ success: true, message: "Local file deleted" });
-      } else {
-        return res.status(404).json({ success: false, error: "File not found" });
-      }
-    }
 
     // Default: cloud delete
     const result = await cloudinary.uploader.destroy(publicId, {
