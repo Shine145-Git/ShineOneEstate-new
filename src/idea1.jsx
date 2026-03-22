@@ -131,7 +131,7 @@ const useBackendMedia = () => {
           const json = await res.json();
 
           if (json.success) {
-            data[folder] = json.resources.map(r => r.secure_url);
+            data[folder] = json.resources.map(r => r.url);
           } else {
             data[folder] = [];
           }

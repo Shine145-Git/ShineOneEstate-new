@@ -8,9 +8,11 @@ const BASE_URL = "https://shineoneestate-new-server.onrender.com"
 const mapResource = (r) => ({
   id: r.public_id,
   type: r.resource_type === "video" ? "video" : "image",
-  source: "cloudinary",
-  url: r.secure_url,
-  name: r.public_id.split("/").pop() + "." + r.format,
+  source: r.source === "cloud" ? "cloudinary" : r.source || "cloudinary",
+  url: r.secure_url || r.url, // FIX: support both backend formats
+  name: r.public_id
+    ? r.public_id.split("/").pop() + (r.format ? "." + r.format : "")
+    : "file",
   public_id: r.public_id,
 });
 
