@@ -43,6 +43,10 @@ cloudinary.config({
 
 /* ================= ROUTES & CONTROLLERS ================= */
 
+app.get("/ping", async (req, res) => {
+  return res.status(200).send("working");
+});
+
 // Upload single file (image/video)
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
