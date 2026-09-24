@@ -155,7 +155,53 @@ const CLOUDINARY_FOLDER_IMAGES = {
   ],
 };
 
-const useBackendMedia = () => CLOUDINARY_FOLDER_IMAGES;
+// Maps each sector's folder name to the Cloudinary tag applied to its images.
+// Tag a new image with this tag when uploading to Cloudinary and it will show
+// up on the site automatically — no code change needed.
+const CLOUDINARY_CLOUD_NAME = "dz4k2icvs";
+const CLOUDINARY_FOLDER_TAGS = {
+  "sec 4": "sec4",
+  "sec 9": "sec9",
+  "sec 42": "sec42",
+  "sec 46": "sec46",
+  "reliance met city": "reliancemetcity",
+};
+
+const useBackendMedia = () => {
+  const [folderImages, setFolderImages] = useState(CLOUDINARY_FOLDER_IMAGES);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchAll = async () => {
+      const entries = await Promise.all(
+        Object.entries(CLOUDINARY_FOLDER_TAGS).map(async ([folder, tag]) => {
+          try {
+            const res = await fetch(
+              `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/list/${tag}.json`
+            );
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            const urls = (json.resources || []).map(
+              (r) => `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/v${r.version}/${r.public_id}.${r.format}`
+            );
+            return [folder, urls.length ? urls : CLOUDINARY_FOLDER_IMAGES[folder] || []];
+          } catch (err) {
+            // Falls back to the last-known hardcoded list for this folder.
+            return [folder, CLOUDINARY_FOLDER_IMAGES[folder] || []];
+          }
+        })
+      );
+
+      if (!cancelled) setFolderImages(Object.fromEntries(entries));
+    };
+
+    fetchAll();
+    return () => { cancelled = true; };
+  }, []);
+
+  return folderImages;
+};
 
 /* ─────────────────────────── GLOBAL STYLES ─────────────────────────── */
 const GlobalStyles = () => (
