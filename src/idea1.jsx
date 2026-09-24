@@ -130,11 +130,15 @@ const CLOUDINARY_FOLDER_IMAGES = {
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774203262/ShineOne/sec%2046/g7hkr5nbn44t0nphxqra.jpg",
   ],
   "sec 42": [
+    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271088/WhatsApp_Image_2026-09-05_at_22.53.10.jpg",
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204068/ShineOne/sec%2042/rfgis7xkmsuf8ai62jfq.jpg",
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204068/ShineOne/sec%2042/drj9tr1kd2d6bu5q7tpg.jpg",
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204068/ShineOne/sec%2042/debtpchbfask0rwxkqmn.jpg",
   ],
   "reliance met city": [
+    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271100/WhatsApp_Image_2026-08-20_at_18.08.54.jpg",
+    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271098/WhatsApp_Image_2026-09-18_at_11.32.44.jpg",
+    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271098/WhatsApp_Image_2026-09-22_at_11.59.05.jpg",
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204121/ShineOne/reliance%20met%20city/rkncgrn81zaljla6mdv7.jpg",
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204121/ShineOne/reliance%20met%20city/my4n3qhd4saf8fl9otsx.jpg",
     "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774203272/ShineOne/reliance%20met%20city/xhwtd3enspryinl8ejkk.jpg",
