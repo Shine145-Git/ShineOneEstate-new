@@ -24,12 +24,33 @@ const formatTime = (s = 0) => {
   return `${m}:${sec}`;
 };
 
-const useIsMobile = () => {
-  const [v, setV] = useState(typeof window !== "undefined" && window.innerWidth <= 768);
+const useWindowWidth = () => {
+  const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
   useEffect(() => {
-    const fn = () => setV(window.innerWidth <= 768);
+    const fn = () => setW(window.innerWidth);
     window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
+    window.addEventListener("orientationchange", fn);
+    return () => { window.removeEventListener("resize", fn); window.removeEventListener("orientationchange", fn); };
+  }, []);
+  return w;
+};
+
+// Phones / small tablets
+const useIsMobile = () => useWindowWidth() <= 768;
+// Tablets & small laptops in portrait-ish widths
+const useIsTablet = () => { const w = useWindowWidth(); return w > 768 && w < 1024; };
+// Anything below a laptop: gets the touch-first layout (bottom action bar, compact hero)
+const useIsCompact = () => useWindowWidth() < 1024;
+
+// True only for a real mouse/trackpad — touch laptops & tablets don't get hover-only UI
+const useFinePointer = () => {
+  const q = "(hover: hover) and (pointer: fine)";
+  const [v, setV] = useState(typeof window !== "undefined" && window.matchMedia?.(q).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(q);
+    const on = () => setV(mq.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
   }, []);
   return v;
 };
@@ -42,6 +63,36 @@ const useLockBodyScroll = (locked) => {
     return () => { document.body.style.overflow = prev; };
   }, [locked]);
 };
+
+// Horizontal swipe + optional vertical swipe-down detection for touch surfaces.
+// Returns handlers to spread on an element and a ref telling whether the last touch was a swipe
+// (so a following synthetic click can be ignored).
+const useSwipe = ({ onLeft, onRight, onDown, threshold = 45 } = {}) => {
+  const start = useRef(null);
+  const swiped = useRef(false);
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    start.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+    swiped.current = false;
+  };
+  const onTouchEnd = (e) => {
+    if (!start.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.current.x;
+    const dy = t.clientY - start.current.y;
+    start.current = null;
+    if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      swiped.current = true;
+      if (dx < 0) onLeft?.(); else onRight?.();
+    } else if (onDown && dy > threshold * 2 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+      swiped.current = true;
+      onDown();
+    }
+  };
+  return { handlers: { onTouchStart, onTouchEnd }, swiped };
+};
+
+const vibrate = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
 
 const useReducedMotion = () => {
   const [r, setR] = useState(false);
@@ -84,7 +135,21 @@ const useCountUp = (target, duration = 1500, start = false) => {
 };
 
 /* ─────────────────────────── DATA ─────────────────────────── */
-const colors = { cream: "#F5F0E8", lightBlue: "#8FABD4", darkBlue: "#2B5BA8", black: "#0D0D0D", gold: "#C9A84C" };
+const colors = { cream: "#F5F0E8", lightBlue: "#8FABD4", darkBlue: "#2B5BA8", black: "#0D0D0D", gold: "#C9A84C", navy: "#0C0F1A", muted: "#5f6470", subtle: "#767b85" };
+
+const PHONE = "+919310994032";
+const WA_URL = "https://wa.me/919310994032";
+const EMAIL = "parveen@shineoneestate.co.in";
+
+// Readable names for the media folders
+const FOLDER_LABELS = {
+  "sec 4": "Sector 4",
+  "sec 9": "Sector 9",
+  "sec 46": "Sector 46",
+  "sec 42": "Sector 42",
+  "reliance met city": "Reliance MET City",
+};
+const folderLabel = (f) => FOLDER_LABELS[String(f || "").toLowerCase().trim()] || f;
 
 const projectData = {
   name: "ShineOne Estate",
@@ -185,20 +250,29 @@ const useBackendMedia = () => {
 /* ─────────────────────────── GLOBAL STYLES ─────────────────────────── */
 const GlobalStyles = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..500;9..600;9..700;9..800&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body { font-family: 'DM Sans', sans-serif; background: #F5F0E8; color: #0D0D0D; }
-    ::-webkit-scrollbar { width: 5px; } 
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body { font-family: 'DM Sans', sans-serif; background: #F5F0E8; color: #0D0D0D; overflow-x: hidden; }
+    img, video { max-width: 100%; }
+    button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    button { font-family: inherit; }
+    :focus { outline: none; }
+    :focus-visible { outline: 2.5px solid #C9A84C; outline-offset: 3px; border-radius: 10px; }
+    ::selection { background: rgba(201,168,76,0.35); }
+    [id^="section-"] { scroll-margin-top: 72px; }
+    @media (min-width: 1024px) { ::-webkit-scrollbar { width: 8px; } }
     ::-webkit-scrollbar-track { background: #F5F0E8; }
-    ::-webkit-scrollbar-thumb { background: #2B5BA8; border-radius: 3px; }
-    
+    ::-webkit-scrollbar-thumb { background: #2B5BA8; border-radius: 4px; }
+
     .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.75s cubic-bezier(.22,1,.36,1), transform 0.75s cubic-bezier(.22,1,.36,1); }
     .reveal.visible { opacity: 1; transform: translateY(0); }
     .reveal-left { opacity: 0; transform: translateX(-40px); transition: opacity 0.8s cubic-bezier(.22,1,.36,1), transform 0.8s cubic-bezier(.22,1,.36,1); }
     .reveal-left.visible { opacity: 1; transform: translateX(0); }
     .reveal-right { opacity: 0; transform: translateX(40px); transition: opacity 0.8s cubic-bezier(.22,1,.36,1), transform 0.8s cubic-bezier(.22,1,.36,1); }
     .reveal-right.visible { opacity: 1; transform: translateX(0); }
+    @media (max-width: 768px) {
+      .reveal { transform: translateY(20px); transition-duration: 0.55s; }
+    }
 
     @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
     @keyframes float2 { 0%,100% { transform: translateY(0px) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
@@ -209,45 +283,79 @@ const GlobalStyles = () => (
     @keyframes slide-up { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
     @keyframes slide-up-delay { 0%,30% { opacity:0; transform:translateY(20px); } 100% { opacity:1; transform:translateY(0); } }
     @keyframes fade-in { from { opacity:0; } to { opacity:1; } }
+    @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
     @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     @keyframes hero-img-scale { from { transform: scale(1.08); } to { transform: scale(1); } }
     @keyframes count-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
     @keyframes glow-pulse { 0%,100% { opacity:0.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.2); } }
     @keyframes border-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes ping { 0% { transform:scale(1); opacity:0.75; } 100% { transform:scale(2.4); opacity:0; } }
+    @keyframes scroll-cue { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }
+    @keyframes nudge-x { 0%,100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
 
     .btn-primary {
       background: linear-gradient(135deg, #2B5BA8 0%, #1a3f7a 100%);
       color: #fff; border: none; border-radius: 12px; cursor: pointer;
       font-family: 'DM Sans', sans-serif; font-weight: 700; letter-spacing: 0.3px;
-      transition: all 0.28s cubic-bezier(.22,1,.36,1); display: inline-flex; align-items: center; gap: 8px;
-      position: relative; overflow: hidden;
+      transition: transform 0.28s cubic-bezier(.22,1,.36,1), box-shadow 0.28s ease, background 0.2s ease;
+      display: inline-flex; align-items: center; gap: 8px; min-height: 48px;
+      position: relative; overflow: hidden; box-shadow: 0 6px 18px rgba(43,91,168,0.28);
     }
-    .btn-primary::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0); transition: background 0.2s; }
-    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(43,91,168,0.45); }
-    .btn-primary:hover::after { background:rgba(255,255,255,0.08); }
-    .btn-primary:active { transform: translateY(-1px); }
-
     .btn-wa {
       background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
       color: #fff; border: none; border-radius: 12px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700;
-      transition: all 0.28s cubic-bezier(.22,1,.36,1); display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'DM Sans', sans-serif; font-weight: 700; min-height: 48px;
+      transition: transform 0.28s cubic-bezier(.22,1,.36,1), box-shadow 0.28s ease;
+      display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 18px rgba(18,140,126,0.28);
     }
-    .btn-wa:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(37,211,102,0.4); }
-
     .btn-ghost {
-      background: rgba(255,255,255,0.12); backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       color: #fff; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 12px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; font-weight: 700; min-height: 48px;
       transition: all 0.28s ease; display: inline-flex; align-items: center; gap: 8px;
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.22); transform: translateY(-3px); border-color: rgba(255,255,255,0.6); }
+    .btn-outline {
+      background: transparent; color: #2B5BA8; border: 2px solid #2B5BA8; border-radius: 12px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 700; min-height: 48px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+    }
+    .icon-btn {
+      width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.14);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; flex-shrink: 0;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .chip {
+      padding: 10px 18px; border-radius: 50px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; min-height: 44px; flex-shrink: 0; scroll-snap-align: center;
+      transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
 
-    .card-hover { transition: all 0.4s cubic-bezier(.22,1,.36,1); }
-    .card-hover:hover { transform: translateY(-8px); box-shadow: 0 28px 56px rgba(0,0,0,0.14) !important; }
+    /* Hover effects only for real mouse/trackpad users — avoids "stuck" hover after a tap */
+    @media (hover: hover) and (pointer: fine) {
+      .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(43,91,168,0.45); }
+      .btn-wa:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(37,211,102,0.4); }
+      .btn-ghost:hover { background: rgba(255,255,255,0.22); transform: translateY(-3px); border-color: rgba(255,255,255,0.6); }
+      .btn-outline:hover { background: #2B5BA8; color: #fff; }
+      .icon-btn:hover { background: rgba(255,255,255,0.26); }
+      .card-hover:hover { transform: translateY(-8px); box-shadow: 0 28px 56px rgba(0,0,0,0.14) !important; }
+      .tilt-card:hover { transform: perspective(800px) rotateX(-3deg) rotateY(5deg) translateY(-4px); box-shadow: 12px 24px 48px rgba(0,0,0,0.15); }
+      .shine-card:hover::before { left: 150%; }
+      .neon-hover:hover { box-shadow: 0 0 0 1px #C9A84C, 0 0 20px rgba(201,168,76,0.2), 0 8px 32px rgba(0,0,0,0.12) !important; }
+      .img-thumb:hover { transform: scale(1.06); border-color: #C9A84C; }
+      .zoom-img:hover { transform: scale(1.07); }
+      .lift:hover { transform: translateY(-6px); }
+      .pill-hover:hover { background: #2B5BA8 !important; color: #fff !important; }
+      .nav-link:hover { background: var(--nav-hover); }
+    }
+    /* Touch feedback */
+    .btn-primary:active, .btn-wa:active, .btn-ghost:active, .btn-outline:active, .icon-btn:active, .chip:active, .press:active { transform: scale(0.96); }
+    .card-hover:active, .lift:active { transform: scale(0.985); }
 
-    .story-ring { 
+    .card-hover { transition: transform 0.4s cubic-bezier(.22,1,.36,1), box-shadow 0.4s cubic-bezier(.22,1,.36,1); }
+
+    .story-ring {
       background: linear-gradient(135deg, #2B5BA8, #C9A84C);
       padding: 3px; border-radius: 50%;
       box-shadow: 0 0 0 0 rgba(201,168,76,0.5);
@@ -257,7 +365,7 @@ const GlobalStyles = () => (
       0%,100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
       50% { box-shadow: 0 0 0 6px rgba(201,168,76,0.25), 0 0 20px rgba(43,91,168,0.2); }
     }
-    .story-ring-inner { background: #F5F0E8; border-radius: 50%; padding: 3px; }
+    .story-ring-inner { background: #F5F0E8; border-radius: 50%; padding: 3px; width: 100%; height: 100%; }
 
     .progress-bar-fill {
       height: 100%;
@@ -271,8 +379,8 @@ const GlobalStyles = () => (
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
       background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4);
-      backdrop-filter: blur(10px); border-radius: 50px;
-      padding: 8px 18px; color: #C9A84C; font-size: 12px; font-weight: 700;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 50px;
+      padding: 8px 18px; color: #D9BC68; font-size: 12px; font-weight: 700;
       letter-spacing: 2px; text-transform: uppercase;
     }
 
@@ -290,10 +398,27 @@ const GlobalStyles = () => (
 
     .display-heading {
       font-family: 'Cormorant Garamond', serif;
-      font-weight: 700; line-height: 1.02; color: #0D0D0D;
+      font-weight: 700; line-height: 1.04; color: #0D0D0D; letter-spacing: -0.3px;
     }
+    .section-sub { max-width: 560px; margin: 18px auto 0; color: #5f6470; font-size: 16px; line-height: 1.8; }
 
     .ticker-inner { display: flex; width: max-content; animation: marquee 28s linear infinite; }
+
+    /* Horizontal swipe rows (chips, story circles) */
+    .h-scroll {
+      display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-padding-inline: 16px;
+    }
+    .h-scroll::-webkit-scrollbar { display: none; }
+    /* Center when everything fits, start-aligned when it overflows (no clipped first item) */
+    .h-scroll > :first-child { margin-left: auto; }
+    .h-scroll > :last-child { margin-right: auto; }
+    .h-scroll-fade { position: relative; }
+    .h-scroll-fade::after {
+      content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 36px; pointer-events: none;
+      background: linear-gradient(90deg, rgba(255,255,255,0), var(--fade-bg, #fff));
+    }
+    @media (min-width: 1024px) { .h-scroll-fade::after { display: none; } }
 
     /* ── GLASSMORPHISM SYSTEM ── */
     .glass-card {
@@ -304,7 +429,7 @@ const GlobalStyles = () => (
       border-radius: 20px;
     }
     .glass-card-light {
-      background: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.86);
       backdrop-filter: blur(24px) saturate(200%);
       -webkit-backdrop-filter: blur(24px) saturate(200%);
       border: 1px solid rgba(255,255,255,0.9);
@@ -315,7 +440,7 @@ const GlobalStyles = () => (
       background: rgba(12,15,26,0.6);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 16px;
     }
     .glass-gold {
@@ -338,47 +463,54 @@ const GlobalStyles = () => (
       100% { transform: translateY(-10vh) scale(1); opacity: 0; }
     }
 
-    /* ── TILT CARD ── */
     .tilt-card { transition: transform 0.3s ease, box-shadow 0.3s ease; transform-style: preserve-3d; }
-    .tilt-card:hover { transform: perspective(800px) rotateX(-3deg) rotateY(5deg) translateY(-4px); box-shadow: 12px 24px 48px rgba(0,0,0,0.15); }
 
-    /* ── SHINE EFFECT ON CARDS ── */
     .shine-card { position: relative; overflow: hidden; }
     .shine-card::before {
       content: ''; position: absolute; top: -50%; left: -100%; width: 60%; height: 200%;
       background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
       transition: left 0.6s ease; pointer-events: none; z-index: 1;
     }
-    .shine-card:hover::before { left: 150%; }
-
-    /* ── NEON BORDER ON HOVER ── */
     .neon-hover { transition: all 0.3s ease; }
-    .neon-hover:hover { box-shadow: 0 0 0 1px #C9A84C, 0 0 20px rgba(201,168,76,0.2), 0 8px 32px rgba(0,0,0,0.12); }
-
-    /* ── MOBILE RESPONSIVE ── */
-    @media (max-width: 768px) {
-      .hero-stat-row { flex-wrap: wrap; gap: 10px !important; }
-      .hero-stat-card { min-width: calc(50% - 5px) !important; padding: 12px 14px !important; }
-      .section-label { font-size: 10px !important; letter-spacing: 3px !important; }
-    }
-    @media (max-width: 480px) {
-      .hero-stat-card { min-width: 100% !important; }
-    }
+    .zoom-img { transition: transform 0.6s ease; }
+    .lift { transition: transform 0.3s ease; }
 
     .hero-stat-card {
-      background: rgba(255,255,255,0.92); backdrop-filter: blur(24px) saturate(200%);
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(24px) saturate(200%); -webkit-backdrop-filter: blur(24px) saturate(200%);
       border-radius: 18px; padding: 16px 20px;
       border: 1px solid rgba(255,255,255,0.95);
       box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
-      min-width: 130px;
+      min-width: 0; flex: 1 1 0;
+    }
+    /* Laptop screens with limited height (e.g. 1366×768, 1280×720) — keep the whole hero visible */
+    @media (min-width: 1024px) and (max-height: 820px) {
+      .hero-desk-badge { margin-top: 0 !important; margin-bottom: 18px !important; }
+      .hero-desk-divider { margin-top: 18px !important; margin-bottom: 14px !important; }
+      .hero-desk-desc { font-size: 15px !important; line-height: 1.7 !important; }
+      .hero-desk-cta { margin-top: 24px !important; }
+      .hero-stat-row { margin-top: 26px !important; }
+      .hero-stat-card { padding: 11px 14px !important; }
+      .hero-stat-card .hs-icon { display: none; }
+    }
+    @media (min-width: 1024px) and (max-height: 680px) {
+      .hero-stat-row { display: none !important; }
     }
     .img-thumb {
       border-radius: 10px; overflow: hidden; cursor: pointer;
       transition: all 0.3s ease; border: 2px solid rgba(255,255,255,0.2);
     }
-    .img-thumb:hover { transform: scale(1.06); border-color: #C9A84C; }
     .img-thumb.active { border-color: #C9A84C; box-shadow: 0 0 0 2px #C9A84C; }
-    input, select, textarea { font-family: 'DM Sans', sans-serif; }
+    input, select, textarea { font-family: 'DM Sans', sans-serif; font-size: 16px; }
+
+    @media (max-width: 768px) {
+      .section-label { font-size: 10px !important; letter-spacing: 3px !important; }
+      .section-sub { font-size: 15px; line-height: 1.7; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+      .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; }
+    }
   `}</style>
 );
 
@@ -406,72 +538,173 @@ const Ticker = () => {
 };
 
 /* ─────────────────────────── STICKY HEADER ─────────────────────────── */
+const NAV_LINKS = [
+  { label: "Overview", id: "section-overview", icon: Home },
+  { label: "Progress", id: "section-progress", icon: TrendingUp },
+  { label: "Stories", id: "section-stories", icon: Star },
+  { label: "Gallery", id: "section-gallery", icon: Award },
+  { label: "Locations", id: "section-locations", icon: MapPin },
+  { label: "Contact", id: "section-contact", icon: Phone },
+];
+
 const StickyHeader = () => {
-  const isMobile = useIsMobile();
+  const width = useWindowWidth();
+  const isMobile = width <= 768;
+  const useDrawer = width < 960;
   const [scrolled, setScrolled] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [active, setActive] = useState("");
+  useLockBodyScroll(menuOpen);
+  const drawerSwipe = useSwipe({ onRight: () => setMenuOpen(false) });
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 60);
+    const fn = () => {
+      setScrolled(window.scrollY > 60);
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(total > 0 ? Math.min(1, window.scrollY / total) : 0);
+    };
     fn(); window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  const links = [
-    { label: "Overview", id: "section-overview" },
-    { label: "Progress", id: "section-progress" },
-    { label: "Stories", id: "section-stories" },
-    { label: "Gallery", id: "section-gallery" },
-    { label: "Locations", id: "section-locations" },
-    { label: "Contact", id: "section-contact" },
-  ];
-  const goTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
+  // Highlight the section currently on screen
+  useEffect(() => {
+    const els = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(Boolean);
+    if (!els.length) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) setActive(e.target.id); });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const h = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [menuOpen]);
+
+  useEffect(() => { if (!useDrawer) setMenuOpen(false); }, [useDrawer]);
+
+  const goTo = (id) => {
+    setMenuOpen(false);
+    // let the body unlock before scrolling
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 10);
+  };
+
+  const fg = scrolled ? colors.black : "#fff";
+  const brand = scrolled ? colors.darkBlue : "#fff";
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1500, transition: "all 0.3s ease",
-      background: scrolled ? "rgba(245,240,232,0.95)" : "rgba(12,15,26,0.45)",
-      backdropFilter: "blur(20px)",
-      borderBottom: scrolled ? "1px solid rgba(43,91,168,0.12)" : "1px solid rgba(255,255,255,0.08)",
-    }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "12px 16px" : "14px 28px" }}>
-        <div>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? 18 : 22, color: scrolled ? colors.darkBlue : "#fff", lineHeight: 1 }}>ShineOne Estate</div>
-          {!isMobile && <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: scrolled ? "#666" : "rgba(255,255,255,0.65)", marginTop: 3 }}>We Build Your Vision</div>}
-        </div>
-
-        {!isMobile ? (
-          <nav style={{ display: "flex", gap: 6 }}>
-            {links.map((l) => (
-              <button key={l.id} onClick={() => goTo(l.id)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 14px", borderRadius: 8, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14,
-                  color: scrolled ? colors.black : "#fff",
-                  transition: "all 0.2s ease" }}
-                onMouseEnter={(e) => { e.target.style.background = scrolled ? "rgba(43,91,168,0.08)" : "rgba(255,255,255,0.15)"; }}
-                onMouseLeave={(e) => { e.target.style.background = "none"; }}
-              >{l.label}</button>
-            ))}
-          </nav>
-        ) : (
-          <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: colors.darkBlue }}>
-            <div style={{ width: 22, height: 2, background: colors.darkBlue, marginBottom: 5, borderRadius: 2, transition: "all 0.3s", transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
-            <div style={{ width: 22, height: 2, background: colors.darkBlue, marginBottom: 5, borderRadius: 2, opacity: menuOpen ? 0 : 1, transition: "all 0.3s" }} />
-            <div style={{ width: 22, height: 2, background: colors.darkBlue, borderRadius: 2, transition: "all 0.3s", transform: menuOpen ? "rotate(-45deg) translate(5px, -5px)" : "none" }} />
+    <>
+      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1500, transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+        background: scrolled ? "rgba(245,240,232,0.94)" : "linear-gradient(to bottom, rgba(12,15,26,0.7), rgba(12,15,26,0.25))",
+        backdropFilter: "blur(18px) saturate(160%)", WebkitBackdropFilter: "blur(18px) saturate(160%)",
+        borderBottom: scrolled ? "1px solid rgba(43,91,168,0.12)" : "1px solid rgba(255,255,255,0.06)",
+        boxShadow: scrolled ? "0 6px 24px rgba(13,13,13,0.06)" : "none",
+        paddingTop: "env(safe-area-inset-top)",
+      }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: isMobile ? "10px 16px" : "12px 28px", minHeight: isMobile ? 60 : 68 }}>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="ShineOne Estate — back to top"
+            style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: isMobile ? 34 : 38, height: isMobile ? 34 : 38, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: `linear-gradient(135deg, ${colors.darkBlue}, ${colors.gold})`, color: "#fff", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? 17 : 19, boxShadow: "0 4px 14px rgba(43,91,168,0.3)" }}>S1</span>
+            <span>
+              <span style={{ display: "block", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? 19 : 22, color: brand, lineHeight: 1, transition: "color 0.3s" }}>ShineOne Estate</span>
+              <span style={{ display: "block", fontSize: isMobile ? 9 : 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: scrolled ? colors.subtle : "rgba(255,255,255,0.7)", marginTop: 3, transition: "color 0.3s" }}>We Build Your Vision</span>
+            </span>
           </button>
-        )}
-      </div>
-      {isMobile && menuOpen && (
-        <div style={{ background: "rgba(245,240,232,0.98)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(43,91,168,0.1)", padding: "12px 16px", animation: "slide-up 0.2s ease" }}>
-          {links.map((l) => (
-            <button key={l.id} onClick={() => goTo(l.id)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "12px 8px", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 15, color: colors.black, borderBottom: "1px solid rgba(43,91,168,0.06)" }}>{l.label}</button>
-          ))}
+
+          {!useDrawer ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <nav aria-label="Main" style={{ display: "flex", gap: 2 }}>
+                {NAV_LINKS.map((l) => {
+                  const isActive = active === l.id;
+                  return (
+                    <button key={l.id} onClick={() => goTo(l.id)} className="nav-link" aria-current={isActive ? "true" : undefined}
+                      style={{ "--nav-hover": scrolled ? "rgba(43,91,168,0.08)" : "rgba(255,255,255,0.14)", background: "none", border: "none", cursor: "pointer", padding: "9px 13px", borderRadius: 10, fontWeight: isActive ? 700 : 500, fontSize: 14,
+                        color: isActive ? (scrolled ? colors.darkBlue : colors.gold) : fg, position: "relative", transition: "background 0.2s ease, color 0.2s ease" }}>
+                      {l.label}
+                      <span style={{ position: "absolute", left: 13, right: 13, bottom: 4, height: 2, borderRadius: 2, background: scrolled ? colors.darkBlue : colors.gold, transform: `scaleX(${isActive ? 1 : 0})`, transition: "transform 0.3s cubic-bezier(.22,1,.36,1)" }} />
+                    </button>
+                  );
+                })}
+              </nav>
+              <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 18px", minHeight: 42, fontSize: 14, borderRadius: 11 }}>
+                <Phone size={16} /> Call Now
+              </a>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <a href={`tel:${PHONE}`} aria-label="Call ShineOne Estate" className="icon-btn press"
+                style={{ background: scrolled ? colors.darkBlue : "rgba(255,255,255,0.14)", borderColor: scrolled ? colors.darkBlue : "rgba(255,255,255,0.22)" }}>
+                <Phone size={18} color="#fff" />
+              </a>
+              <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} className="icon-btn press"
+                style={{ background: scrolled ? "rgba(43,91,168,0.08)" : "rgba(255,255,255,0.14)", borderColor: scrolled ? "rgba(43,91,168,0.18)" : "rgba(255,255,255,0.22)" }}>
+                <span style={{ position: "relative", width: 20, height: 14, display: "block" }}>
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} style={{ position: "absolute", left: 0, width: i === 1 ? 14 : 20, height: 2, borderRadius: 2, background: scrolled ? colors.darkBlue : "#fff", top: i * 6, transition: "all 0.3s ease" }} />
+                  ))}
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
+        {/* Scroll progress */}
+        <div style={{ position: "absolute", left: 0, bottom: -1, height: 2, width: `${progress * 100}%`, background: `linear-gradient(90deg, ${colors.darkBlue}, ${colors.gold})`, transition: "width 0.1s linear", opacity: scrolled ? 1 : 0 }} />
+      </header>
+
+      {/* Mobile / tablet drawer */}
+      {useDrawer && menuOpen && (
+        <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1600, background: "rgba(12,15,26,0.55)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", animation: "fade-in 0.25s ease" }}>
+          <aside role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()} {...drawerSwipe.handlers}
+            style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(86vw, 360px)", background: colors.cream, boxShadow: "-20px 0 60px rgba(0,0,0,0.25)",
+              display: "flex", flexDirection: "column", animation: "slide-in-right 0.35s cubic-bezier(.22,1,.36,1)",
+              padding: "calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))", overflowY: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 24, color: colors.darkBlue, lineHeight: 1 }}>ShineOne Estate</div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: colors.subtle, marginTop: 4 }}>Gurugram · Since day one</div>
+              </div>
+              <button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="icon-btn press" style={{ background: "rgba(43,91,168,0.08)", borderColor: "rgba(43,91,168,0.15)" }}>
+                <X size={20} color={colors.darkBlue} />
+              </button>
+            </div>
+            <nav aria-label="Main" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {NAV_LINKS.map((l, i) => {
+                const Icon = l.icon; const isActive = active === l.id;
+                return (
+                  <button key={l.id} onClick={() => goTo(l.id)} className="press"
+                    style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", background: isActive ? "rgba(43,91,168,0.09)" : "transparent", border: "none", cursor: "pointer",
+                      padding: "14px 12px", borderRadius: 14, fontWeight: isActive ? 700 : 600, fontSize: 16, color: isActive ? colors.darkBlue : colors.black,
+                      animation: `slide-up 0.4s cubic-bezier(.22,1,.36,1) ${0.04 * i + 0.05}s both`, transition: "transform 0.15s ease" }}>
+                    <span style={{ width: 38, height: 38, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? colors.darkBlue : "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", flexShrink: 0 }}>
+                      <Icon size={17} color={isActive ? "#fff" : colors.darkBlue} />
+                    </span>
+                    <span style={{ flex: 1 }}>{l.label}</span>
+                    <ChevronRight size={18} color={colors.subtle} />
+                  </button>
+                );
+              })}
+            </nav>
+            <div style={{ marginTop: "auto", paddingTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+              <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", justifyContent: "center", padding: "0 18px", fontSize: 15 }}><Phone size={17} /> +91 93109 94032</a>
+              <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", justifyContent: "center", padding: "0 18px", fontSize: 15 }}><MessageCircle size={17} /> Chat on WhatsApp</a>
+              <div style={{ textAlign: "center", fontSize: 12, color: colors.subtle, marginTop: 6 }}>Swipe right to close</div>
+            </div>
+          </aside>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
 /* ─────────────────────────── HERO ─────────────────────────── */
 const Hero = () => {
+  const isCompact = useIsCompact();
   const isMobile = useIsMobile();
   const reduced = useReducedMotion();
   const folderImages = useBackendMedia();
@@ -480,12 +713,16 @@ const Hero = () => {
   const [textPhase, setTextPhase] = useState(0); // for cycling headline words
 
   const headlines = ["Vision", "Dream", "Future", "Legacy"];
+  const count = carousel?.length || 0;
+  const go = (i) => setCurrent(((i % count) + count) % count);
+  const swipe = useSwipe({ onLeft: () => { go(current + 1); vibrate(); }, onRight: () => { go(current - 1); vibrate(); } });
 
+  // Auto-advance; restarts after every manual change so a swipe never gets "double skipped"
   useEffect(() => {
-    if (reduced || !carousel?.length) return;
-    const t = setInterval(() => setCurrent((p) => (p + 1) % carousel.length), 4000);
-    return () => clearInterval(t);
-  }, [carousel, reduced]);
+    if (reduced || count < 2) return;
+    const t = setTimeout(() => setCurrent((p) => (p + 1) % count), 5000);
+    return () => clearTimeout(t);
+  }, [current, count, reduced]);
 
   useEffect(() => {
     const t = setInterval(() => setTextPhase((p) => (p + 1) % headlines.length), 2800);
@@ -499,128 +736,125 @@ const Hero = () => {
     { value: "2027", label: "MET City\nHandover", icon: "🏗️" },
   ];
 
-  if (isMobile) {
-    // MOBILE: Full-screen image with strong bottom overlay
-    const bg = carousel?.[current] || projectData.images[0];
+  if (isCompact) {
+    // PHONE / TABLET: full-bleed swipeable photo with content anchored to the bottom
     return (
-      <div style={{ position: "relative", height: "100svh", overflow: "hidden", background: "#0a0a0a" }}>
+      <section aria-label="Introduction" {...swipe.handlers}
+        style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: colors.navy, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
         {(carousel || projectData.images).map((src, i) => (
-          <img key={i} src={src} alt="" loading={i === 0 ? "eager" : "lazy"}
+          <img key={i} src={src} alt="" loading={i === 0 ? "eager" : "lazy"} draggable={false}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center",
-              opacity: i === current ? 1 : 0, transition: "opacity 1.4s ease", filter: "brightness(0.45)" }} />
+              opacity: i === current ? 1 : 0, transform: i === current ? "scale(1)" : "scale(1.06)", transition: "opacity 1.2s ease, transform 6s ease", filter: "brightness(0.55)" }} />
         ))}
-        {/* Strong bottom gradient */}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.7) 45%, rgba(0,0,0,0.1) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(12,15,26,0.98) 0%, rgba(12,15,26,0.78) 40%, rgba(12,15,26,0.15) 75%, rgba(12,15,26,0.45) 100%)" }} />
 
         {/* Content */}
-        <div style={{ position: "absolute", bottom: 110, left: 0, right: 0, padding: "0 20px", zIndex: 5 }}>
-          <div className="hero-badge" style={{ marginBottom: 20 }}>
+        <div style={{ position: "relative", zIndex: 5, width: "100%", maxWidth: 640, margin: "0 auto", padding: `calc(96px + env(safe-area-inset-top)) ${isMobile ? 20 : 32}px 28px` }}>
+          <div className="hero-badge" style={{ marginBottom: 18, fontSize: 11, padding: "7px 14px", letterSpacing: 1.6 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.gold, animation: "glow-pulse 2s infinite" }} />
             Premium Real Estate · Gurugram
           </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: "3.6rem", color: "#fff", lineHeight: 1.0, marginBottom: 10 }}>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? "clamp(2.6rem, 12vw, 3.6rem)" : "4.4rem", color: "#fff", lineHeight: 1.0, marginBottom: 12 }}>
             We Build<br />
             <span key={textPhase} style={{ color: colors.gold, fontStyle: "italic", display: "inline-block", animation: "slide-up 0.5s cubic-bezier(.22,1,.36,1) both" }}>
               Your {headlines[textPhase]}
             </span>
           </h1>
-          <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 14, lineHeight: 1.75, marginBottom: 24, fontWeight: 400 }}>
+          <p style={{ color: "rgba(255,255,255,0.8)", fontSize: isMobile ? 15 : 17, lineHeight: 1.7, marginBottom: 22, fontWeight: 400 }}>
             Plots · Flats · Floors · Construction<br />Sector 4, 9, 42, 46 & Reliance MET City
           </p>
-          <div style={{ display: "flex", gap: 10 }}>
-            <a href="tel:+919310994032" style={{ textDecoration: "none", flex: 1 }}>
-              <button className="btn-primary" style={{ width: "100%", padding: "14px 16px", fontSize: 15, justifyContent: "center" }}>
-                <Phone size={17} /> Call Now
-              </button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 14px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
+              <Phone size={18} /> Call Now
             </a>
-            <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: "none", flex: 1 }}>
-              <button className="btn-wa" style={{ width: "100%", padding: "14px 16px", fontSize: 15, justifyContent: "center" }}>
-                <MessageCircle size={17} /> WhatsApp
-              </button>
+            <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 14px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
+              <MessageCircle size={18} /> WhatsApp
             </a>
           </div>
           {/* Glass stat pills */}
-          <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-            {heroStats.slice(0,3).map((s,i) => (
-              <div key={i} className="glass-dark" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, flex: "1 1 auto" }}>
-                <span style={{ fontSize: 18 }}>{s.icon}</span>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.value}</div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{s.label.replace("\n"," ")}</div>
-                </div>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 3 : 4}, 1fr)`, gap: 8, marginTop: 14 }}>
+            {heroStats.slice(0, isMobile ? 3 : 4).map((s, i) => (
+              <div key={i} className="glass-dark" style={{ padding: "10px 8px", textAlign: "center", borderRadius: 14 }}>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.7)", marginTop: 4, lineHeight: 1.3 }}>{s.label.replace("\n", " ")}</div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Dots */}
-        <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 5, display: "flex", gap: 6 }}>
-          {(carousel||[]).map((_,i) => (
-            <div key={i} onClick={() => setCurrent(i)} style={{ width: i===current?20:6, height: 6, borderRadius: 3, background: i===current?colors.gold:"rgba(255,255,255,0.4)", cursor:"pointer", transition:"all 0.3s ease" }} />
-          ))}
+          {/* Dots + scroll cue */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
+            <div style={{ display: "flex", gap: 2, marginLeft: -8 }} role="tablist" aria-label="Hero photos">
+              {(carousel || []).map((_, i) => (
+                <button key={i} onClick={() => go(i)} aria-label={`Photo ${i + 1}`} aria-selected={i === current} role="tab"
+                  style={{ background: "none", border: "none", padding: "10px 4px", cursor: "pointer" }}>
+                  <span style={{ display: "block", width: i === current ? 22 : 7, height: 7, borderRadius: 4, background: i === current ? colors.gold : "rgba(255,255,255,0.45)", transition: "all 0.3s ease" }} />
+                </button>
+              ))}
+            </div>
+            <button onClick={() => document.getElementById("section-overview")?.scrollIntoView({ behavior: "smooth" })} aria-label="Scroll to projects"
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 0" }}>
+              Explore
+              <span style={{ width: 20, height: 30, borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.55)", display: "flex", justifyContent: "center", paddingTop: 5 }}>
+                <span style={{ width: 3, height: 7, borderRadius: 2, background: colors.gold, animation: "scroll-cue 1.6s ease-in-out infinite" }} />
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
   // DESKTOP: Split layout — bold left panel + image showcase right
-  const bg = carousel?.[current] || projectData.images[0];
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#0C0F1A", overflow: "hidden", position: "relative", minHeight: 600 }}>
+    <section aria-label="Introduction" style={{ display: "flex", minHeight: "100vh", background: "#0C0F1A", overflow: "hidden", position: "relative" }}>
 
       {/* ── LEFT PANEL ── */}
-      <div style={{ width: "52%", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 52px 0 56px", position: "relative", zIndex: 5, flexShrink: 0 }}>
+      <div style={{ width: "52%", display: "flex", flexDirection: "column", justifyContent: "center", padding: "96px clamp(28px, 4vw, 52px) 40px clamp(28px, 4.5vw, 64px)", position: "relative", zIndex: 5, flexShrink: 0 }}>
 
         {/* Subtle background texture */}
         <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 80%, rgba(43,91,168,0.18) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(201,168,76,0.1) 0%, transparent 50%)", pointerEvents: "none" }} />
 
         {/* Animated badge — pushed down from top */}
-        <div className="hero-badge" style={{ width: "fit-content", marginBottom: 28, marginTop: 24, animation: "slide-up 0.6s ease 0.2s both", opacity: 0 }}>
+        <div className="hero-badge hero-desk-badge" style={{ width: "fit-content", marginBottom: 28, marginTop: 24, animation: "slide-up 0.6s ease 0.2s both", opacity: 0 }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: colors.gold, animation: "glow-pulse 1.8s ease-in-out infinite" }} />
           Premium Real Estate · Gurugram
         </div>
 
         {/* Main heading — massive bold serif */}
         <div style={{ animation: "slide-up 0.7s ease 0.35s both", opacity: 0 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: "clamp(3.2rem, 5.5vw, 6rem)", color: "#FFFFFF", lineHeight: 0.95, marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: "clamp(3rem, min(5.5vw, 10vh), 6rem)", color: "#FFFFFF", lineHeight: 0.95, marginBottom: 4 }}>
             We Build
           </h1>
-          <div style={{ overflow: "hidden", height: "clamp(3.5rem, 6vw, 6.8rem)", display: "flex", alignItems: "center" }}>
-            <h1 key={textPhase} style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(3.4rem, 6vw, 6.8rem)", color: colors.gold, lineHeight: 0.95, animation: "slide-up 0.4s cubic-bezier(.22,1,.36,1) both", whiteSpace: "nowrap" }}>
+          <div style={{ overflow: "hidden", height: "clamp(3.3rem, min(6vw, 11vh), 6.8rem)", display: "flex", alignItems: "center" }}>
+            <h1 key={textPhase} style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(3.2rem, min(6vw, 11vh), 6.8rem)", color: colors.gold, lineHeight: 0.95, animation: "slide-up 0.4s cubic-bezier(.22,1,.36,1) both", whiteSpace: "nowrap" }}>
               Your {headlines[textPhase]}
             </h1>
           </div>
         </div>
 
         {/* Divider */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 28, marginBottom: 24, animation: "slide-up 0.7s ease 0.5s both", opacity: 0 }}>
+        <div className="hero-desk-divider" style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 28, marginBottom: 24, animation: "slide-up 0.7s ease 0.5s both", opacity: 0 }}>
           <div style={{ height: 1, width: 48, background: "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4))" }} />
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Gurugram</span>
+          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.62)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Gurugram</span>
           <div style={{ height: 1, flex: 1, background: "linear-gradient(90deg, rgba(255,255,255,0.4), rgba(255,255,255,0))" }} />
         </div>
 
         {/* Description */}
-        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 17, lineHeight: 1.85, maxWidth: 440, fontWeight: 400, animation: "slide-up 0.7s ease 0.6s both", opacity: 0 }}>
+        <p className="hero-desk-desc" style={{ color: "rgba(255,255,255,0.75)", fontSize: 17, lineHeight: 1.85, maxWidth: 460, fontWeight: 400, animation: "slide-up 0.7s ease 0.6s both", opacity: 0 }}>
           Plots · Flats · Floors · Construction across<br />Sector 4, 9, 42, 46 & Reliance MET City.<br />
           <span style={{ color: colors.gold, fontWeight: 600 }}>Transparent builds. On-time delivery.</span>
         </p>
 
         {/* CTA buttons */}
-        <div style={{ display: "flex", gap: 12, marginTop: 36, flexWrap: "wrap", animation: "slide-up 0.7s ease 0.75s both", opacity: 0 }}>
-          <a href="tel:+919310994032" style={{ textDecoration: "none" }}>
-            <button className="btn-primary" style={{ padding: "15px 28px", fontSize: 15 }}>
-              <Phone size={18} /> Call Now
-            </button>
+        <div className="hero-desk-cta" style={{ display: "flex", gap: 12, marginTop: 36, flexWrap: "wrap", animation: "slide-up 0.7s ease 0.75s both", opacity: 0 }}>
+          <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 26px", minHeight: 52, fontSize: 15 }}>
+            <Phone size={18} /> Call Now
           </a>
-          <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-            <button className="btn-wa" style={{ padding: "15px 28px", fontSize: 15 }}>
-              <MessageCircle size={18} /> WhatsApp
-            </button>
+          <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 26px", minHeight: 52, fontSize: 15 }}>
+            <MessageCircle size={18} /> WhatsApp
           </a>
-          <a href="mailto:parveen@shineoneestate.co.in" style={{ textDecoration: "none" }}>
-            <button className="btn-ghost" style={{ padding: "15px 22px", fontSize: 15 }}>
-              <MailIcon color="#fff" size={18} /> Email
-            </button>
+          <a href={`mailto:${EMAIL}`} className="btn-ghost" style={{ textDecoration: "none", padding: "0 22px", minHeight: 52, fontSize: 15 }}>
+            <MailIcon color="#fff" size={18} /> Email
           </a>
         </div>
 
@@ -628,9 +862,9 @@ const Hero = () => {
         <div className="hero-stat-row" style={{ display: "flex", gap: 12, marginTop: 44, animation: "slide-up 0.7s ease 0.9s both", opacity: 0 }}>
           {heroStats.map((s, i) => (
             <div key={i} className="hero-stat-card" style={{ animationDelay: `${0.9 + i * 0.08}s` }}>
-              <div style={{ fontSize: 22 }}>{s.icon}</div>
+              <div className="hs-icon" style={{ fontSize: 22 }}>{s.icon}</div>
               <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, color: colors.darkBlue, lineHeight: 1, marginTop: 6 }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: "#888", marginTop: 4, lineHeight: 1.4, fontWeight: 600 }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: colors.muted, marginTop: 4, lineHeight: 1.4, fontWeight: 600, whiteSpace: "pre-line" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -674,7 +908,7 @@ const Hero = () => {
                 <TrendingUp size={16} color="#fff" />
               </div>
               <div>
-                <div style={{ fontSize: 10, color: "#999", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Sector 42</div>
+                <div style={{ fontSize: 10, color: colors.subtle, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Sector 42</div>
                 <div style={{ fontSize: 13, fontWeight: 800, color: colors.darkBlue, lineHeight: 1.2 }}>On Schedule ✓</div>
               </div>
             </div>
@@ -682,7 +916,7 @@ const Hero = () => {
               <div className="progress-bar-fill" style={{ width: "78%" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#888", fontWeight: 600 }}>78% Complete</span>
+              <span style={{ fontSize: 11, color: colors.subtle, fontWeight: 600 }}>78% Complete</span>
               <span style={{ fontSize: 11, color: colors.darkBlue, fontWeight: 700 }}>June 2026</span>
             </div>
           </div>
@@ -695,7 +929,7 @@ const Hero = () => {
               {[1,2,3,4,5].map(s => <Star key={s} size={14} color={colors.gold} fill={colors.gold} />)}
             </div>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>Trusted Builder</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>Premium Quality</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)", marginTop: 2 }}>Premium Quality</div>
           </div>
         </div>
 
@@ -720,25 +954,27 @@ const Hero = () => {
         {/* ── Thumbnail strip ── */}
         <div style={{ position: "absolute", bottom: 24, left: 0, right: 0, zIndex: 5, display: "flex", gap: 8, justifyContent: "center", padding: "0 20px" }}>
           {(carousel || []).slice(0, 6).map((src, i) => (
-            <div key={i} onClick={() => setCurrent(i)}
+            <button key={i} onClick={() => setCurrent(i)} aria-label={`Show photo ${i + 1}`}
               style={{
+                padding: 0, background: "none",
                 width: 52, height: 38, borderRadius: 10, overflow: "hidden", cursor: "pointer", flexShrink: 0,
                 border: i === current ? `2px solid ${colors.gold}` : "2px solid rgba(255,255,255,0.15)",
                 transition: "all 0.3s cubic-bezier(.22,1,.36,1)",
                 transform: i === current ? "scale(1.12) translateY(-4px)" : "scale(1)",
                 boxShadow: i === current ? `0 8px 24px rgba(201,168,76,0.5)` : "none",
               }}>
-              <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", filter: i === current ? "none" : "brightness(0.5)" }} />
-            </div>
+              <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: i === current ? "none" : "brightness(0.5)" }} />
+            </button>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
 /* ─────────────────────────── STATS ROW ─────────────────────────── */
 const StatsRow = () => {
+  const isMobile = useIsMobile();
   const { ref, visible } = useReveal();
   const c1 = useCountUp(3, 1200, visible);
   const c2 = useCountUp(14400, 1500, visible);
@@ -746,23 +982,26 @@ const StatsRow = () => {
   const c4 = useCountUp(78, 1800, visible);
 
   const stats = [
-    { value: c1, suffix: "+", label: "Completed Projects", icon: <CheckCircle size={24} color={colors.gold} /> },
-    { value: c2.toLocaleString(), suffix: "", label: "Sq. Ft. Delivered", icon: <Home size={24} color={colors.gold} /> },
-    { value: c3, suffix: "", label: "Active Sectors", icon: <MapPin size={24} color={colors.gold} /> },
-    { value: c4, suffix: "%", label: "Sector 42 Progress", icon: <TrendingUp size={24} color={colors.gold} /> },
+    { value: c1, suffix: "+", label: "Completed Projects", icon: <CheckCircle size={isMobile ? 20 : 24} color={colors.gold} /> },
+    { value: c2.toLocaleString("en-IN"), suffix: "", label: "Sq. Ft. Delivered", icon: <Home size={isMobile ? 20 : 24} color={colors.gold} /> },
+    { value: c3, suffix: "", label: "Active Sectors", icon: <MapPin size={isMobile ? 20 : 24} color={colors.gold} /> },
+    { value: c4, suffix: "%", label: "Sector 42 Progress", icon: <TrendingUp size={isMobile ? 20 : 24} color={colors.gold} /> },
   ];
 
   return (
-    <div ref={ref} style={{ background: colors.darkBlue, padding: "40px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 2 }}>
-        {stats.map((s, i) => (
-          <div key={i} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", padding: "28px 16px", borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none", position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0, background: i % 2 === 0 ? "rgba(43,91,168,0.04)" : "rgba(201,168,76,0.03)", borderRadius: 0, pointerEvents: "none" }} />
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>{s.icon}</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{s.value}{s.suffix}</div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 6, letterSpacing: 0.5, fontWeight: 500 }}>{s.label}</div>
-          </div>
-        ))}
+    <div ref={ref} style={{ background: `linear-gradient(135deg, ${colors.darkBlue} 0%, #1f4a8f 100%)`, padding: isMobile ? "20px 12px" : "36px 24px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: isMobile ? 0 : 2 }}>
+        {stats.map((s, i) => {
+          const divider = isMobile ? { borderRight: i % 2 === 0 ? "1px solid rgba(255,255,255,0.12)" : "none", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.12)" : "none" }
+            : { borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.12)" : "none" };
+          return (
+            <div key={i} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", padding: isMobile ? "18px 8px" : "26px 16px", ...divider }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: isMobile ? 8 : 12 }}>{s.icon}</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 32 : 42, fontWeight: 700, color: "#fff", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{s.value}{s.suffix}</div>
+              <div style={{ fontSize: isMobile ? 12 : 13, color: "rgba(255,255,255,0.78)", marginTop: 6, letterSpacing: 0.4, fontWeight: 500 }}>{s.label}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -777,14 +1016,14 @@ const QuickSnapshot = () => {
   const ongoing = projectData.projects.filter((p) => p.status.toLowerCase().includes("ongoing"));
 
   return (
-    <section id="section-overview" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: colors.cream }}>
+    <section id="section-overview" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: colors.cream }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 64 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 40 : 64 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Projects Overview</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
             Built with<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>precision & pride</em>
           </h2>
-          <p style={{ maxWidth: 520, margin: "20px auto 0", color: "#555", fontSize: 16, lineHeight: 1.8 }}>
+          <p className="section-sub">
             A snapshot of every development — from foundation to handover — across Gurugram's most sought-after sectors.
           </p>
         </div>
@@ -795,9 +1034,9 @@ const QuickSnapshot = () => {
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#16a34a" }} />
             <span style={{ fontWeight: 600, fontSize: 15, color: "#16a34a", textTransform: "uppercase", letterSpacing: 1 }}>Completed & Delivered</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 16 }}>
             {completed.map((p, i) => (
-              <div key={i} className={`card-hover shine-card reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, background: "#fff", borderRadius: 20, padding: "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", position: "relative", overflow: "hidden" }}>
+              <div key={i} className={`card-hover shine-card reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, background: "#fff", borderRadius: 20, padding: isMobile ? "22px" : "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", position: "relative", overflow: "hidden" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(43,91,168,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Home size={20} color={colors.darkBlue} />
@@ -805,11 +1044,11 @@ const QuickSnapshot = () => {
                   <span className="tag-pill" style={{ background: "#dcfce7", color: "#16a34a" }}>DELIVERED</span>
                 </div>
                 <h3 style={{ fontSize: 20, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.darkBlue, marginBottom: 6 }}>{p.name}</h3>
-                <p style={{ fontSize: 13, color: "#888", fontWeight: 500 }}>{p.area}</p>
+                <p style={{ fontSize: 13, color: colors.subtle, fontWeight: 500 }}>{p.area}</p>
                 <div style={{ marginTop: 16, height: 4, background: "#f0f0f0", borderRadius: 2 }}>
                   <div style={{ height: "100%", width: "100%", background: "#16a34a", borderRadius: 2 }} />
                 </div>
-                <p style={{ fontSize: 12, color: "#aaa", marginTop: 8 }}>100% Complete</p>
+                <p style={{ fontSize: 12, color: colors.subtle, marginTop: 8 }}>100% Complete</p>
               </div>
             ))}
           </div>
@@ -823,25 +1062,25 @@ const QuickSnapshot = () => {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 16 }}>
             {ongoing.map((p, i) => (
-              <div key={i} className={`card-hover reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${(i + 3) * 0.1}s`, background: "#fff", borderRadius: 16, padding: "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
+              <div key={i} className={`card-hover reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${(i + 3) * 0.1}s`, background: "#fff", borderRadius: 20, padding: isMobile ? "22px" : "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 20 }}>
                   <div>
                     <h3 style={{ fontSize: 22, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.darkBlue }}>{p.name}</h3>
-                    <p style={{ fontSize: 13, color: "#888", marginTop: 4, fontWeight: 500 }}>{p.area}</p>
+                    <p style={{ fontSize: 13, color: colors.subtle, marginTop: 4, fontWeight: 500 }}>{p.area}</p>
                   </div>
                   <span className="tag-pill" style={{ background: "#fef3c7", color: "#92400e" }}>
                     {p.stage ? p.stage.toUpperCase() : "ONGOING"}
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: "#666" }}>Completion</span>
+                  <span style={{ fontSize: 13, color: colors.muted }}>Completion</span>
                   <span style={{ fontSize: 20, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.darkBlue }}>{p.progress || 0}%</span>
                 </div>
                 <div style={{ height: 8, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}>
                   <div className="progress-bar-fill" style={{ width: `${p.progress || 0}%` }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                  <span style={{ fontSize: 13, color: "#888" }}>ETA</span>
+                  <span style={{ fontSize: 13, color: colors.subtle }}>ETA</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: colors.darkBlue }}>{p.eta || "TBD"}</span>
                 </div>
               </div>
@@ -856,6 +1095,8 @@ const QuickSnapshot = () => {
 /* ─────────────────────────── PROGRESS TIMELINE ─────────────────────────── */
 const ProgressTimeline = () => {
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const chipRow = useRef(null);
   const { ref, visible } = useReveal();
   const [selectedProject, setSelectedProject] = useState(projectData.projects[0].name);
   const project = projectData.projects.find((p) => p.name === selectedProject) || projectData.projects[0];
@@ -880,41 +1121,56 @@ const ProgressTimeline = () => {
     return "pending";
   });
 
-  const stageColors = { completed: { bg: "#dcfce7", border: "#16a34a", text: "#16a34a", label: "Completed" }, ongoing: { bg: "#fef3c7", border: colors.gold, text: "#92400e", label: "In Progress" }, pending: { bg: "#f9fafb", border: "#e5e7eb", text: "#9ca3af", label: "Pending" } };
+  const selectProject = (name, el) => {
+    setSelectedProject(name);
+    vibrate();
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  };
+  const projectIdx = projectData.projects.findIndex((p) => p.name === selectedProject);
+  const swipe = useSwipe({
+    onLeft: () => { const n = projectData.projects[projectIdx + 1]; if (n) selectProject(n.name, chipRow.current?.children[projectIdx + 1]); },
+    onRight: () => { const n = projectData.projects[projectIdx - 1]; if (n) selectProject(n.name, chipRow.current?.children[projectIdx - 1]); },
+  });
+
+  const stageColors = { completed: { bg: "#dcfce7", border: "#16a34a", text: "#16a34a", label: "Completed" }, ongoing: { bg: "#fef3c7", border: colors.gold, text: "#92400e", label: "In Progress" }, pending: { bg: "#f9fafb", border: "#e5e7eb", text: "#6b7280", label: "Pending" } };
 
   return (
-    <div id="section-progress" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: "#fff" }}>
+    <div id="section-progress" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#fff" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Construction Progress</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
             Track every<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>milestone</em>
           </h2>
         </div>
 
         {/* Project selector */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
-          {projectData.projects.map((p, i) => (
-            <button key={i} onClick={() => setSelectedProject(p.name)}
-              style={{ padding: "10px 20px", borderRadius: 50, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, cursor: "pointer",
-                background: selectedProject === p.name ? colors.darkBlue : "transparent",
-                color: selectedProject === p.name ? "#fff" : colors.darkBlue,
-                border: `2px solid ${colors.darkBlue}`, transition: "all 0.25s ease" }}>
-              {p.name}
-            </button>
-          ))}
+        <div className={`h-scroll-fade reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", marginBottom: isMobile ? 24 : 40, marginLeft: isMobile ? -16 : 0, marginRight: isMobile ? -16 : 0 }}>
+          <div ref={chipRow} className="h-scroll" role="tablist" aria-label="Choose a project" style={{ gap: 10, padding: isMobile ? "4px 16px 8px" : "4px 0 8px" }}>
+            {projectData.projects.map((p, i) => {
+              const on = selectedProject === p.name;
+              return (
+                <button key={i} role="tab" aria-selected={on} onClick={(e) => selectProject(p.name, e.currentTarget)} className="chip"
+                  style={{ background: on ? colors.darkBlue : "#fff", color: on ? "#fff" : colors.darkBlue,
+                    border: `2px solid ${on ? colors.darkBlue : "rgba(43,91,168,0.25)"}`, boxShadow: on ? "0 8px 20px rgba(43,91,168,0.3)" : "none" }}>
+                  {p.name}
+                  {p.status === "Ongoing" && <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: on ? colors.gold : "#f59e0b", marginLeft: 8, verticalAlign: "middle" }} />}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Progress display */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s", background: colors.cream, borderRadius: 24, padding: isMobile ? "24px" : "48px", marginBottom: 40 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.darkBlue }}>{selectedProject}</h3>
-              <p style={{ fontSize: 13, color: "#888", marginTop: 4 }}>{project.status} {project.eta ? `· ETA: ${project.eta}` : ""}</p>
+        <div {...swipe.handlers} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s", background: colors.cream, borderRadius: 24, padding: isMobile ? "22px 20px" : "44px 48px", marginBottom: isMobile ? 20 : 32, border: "1px solid rgba(43,91,168,0.08)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 20 }}>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 24 : 30, fontWeight: 700, color: colors.darkBlue, lineHeight: 1.1 }}>{selectedProject}</h3>
+              <p style={{ fontSize: 13, color: colors.subtle, marginTop: 4 }}>{project.status} {project.eta ? `· ETA: ${project.eta}` : ""}</p>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 52, fontWeight: 700, color: colors.darkBlue, lineHeight: 1 }}>{progress}<span style={{ fontSize: 24 }}>%</span></div>
-              <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>Overall Completion</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 44 : 56, fontWeight: 700, color: colors.darkBlue, lineHeight: 1 }}>{progress}<span style={{ fontSize: 24 }}>%</span></div>
+              <div style={{ fontSize: 12, color: colors.subtle, marginTop: 4 }}>Overall Completion</div>
             </div>
           </div>
           <div style={{ height: 12, background: "rgba(43,91,168,0.1)", borderRadius: 6, overflow: "hidden" }}>
@@ -923,18 +1179,18 @@ const ProgressTimeline = () => {
         </div>
 
         {/* Stages grid */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(6, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : isTablet ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: isMobile ? 10 : 12 }}>
           {stages.map((stage, idx) => {
             const s = stageStatuses[idx]; const c = stageColors[s];
             return (
               <div key={stage} className={`reveal${visible ? " visible" : ""}`}
-                style={{ transitionDelay: `${idx * 0.07}s`, background: c.bg, border: `1.5px solid ${c.border}`, borderRadius: 16, padding: "20px 14px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+                style={{ transitionDelay: `${idx * 0.07}s`, background: c.bg, border: `1.5px solid ${c.border}`, borderRadius: 16, padding: isMobile ? "16px 10px" : "20px 14px", textAlign: "center", position: "relative", overflow: "visible" }}>
                 <div style={{ width: 36, height: 36, borderRadius: "50%", background: c.border, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
                   {s === "completed" ? <CheckCircle size={18} color="#fff" /> : s === "ongoing" ? <Clock size={18} color="#fff" /> : <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{stage}</div>
                 <div style={{ fontSize: 11, color: c.text, opacity: 0.8, marginTop: 4 }}>{c.label}</div>
-                {idx < stages.length - 1 && !isMobile && (
+                {idx < stages.length - 1 && !isMobile && !isTablet && (
                   <div style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", zIndex: 1 }}>
                     <ArrowRight size={14} color={c.border} />
                   </div>
@@ -951,6 +1207,7 @@ const ProgressTimeline = () => {
 /* ─────────────────────────── STORIES VIEWER ─────────────────────────── */
 const StoriesViewer = () => {
   const isMobile = useIsMobile();
+  const finePointer = useFinePointer();
   const { ref, visible } = useReveal();
   const folderImages = useBackendMedia();
   const [openStory, setOpenStory] = useState({ open: false, folder: "", images: [], idx: 0 });
@@ -958,21 +1215,23 @@ const StoriesViewer = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [currentDuration, setCurrentDuration] = useState(4000);
   const [isAnimating, setIsAnimating] = useState(false);
-  const touchRef = useRef({ startX: 0, endX: 0 });
+  const [dragY, setDragY] = useState(0);
+  const touchRef = useRef(null);
   const animTimer = useRef(null);
   const rafRef = useRef(null);
+  const elapsedRef = useRef(0);
   useLockBodyScroll(openStory.open);
 
   const DEFAULT_DURATION = 4000;
-  const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
 
   const open = (folder) => {
     const imgs = folderImages[folder] || [];
     if (!imgs.length) return;
+    elapsedRef.current = 0;
     setOpenStory({ open: true, folder, images: imgs, idx: 0 });
-    setProgress(0); setIsPaused(false); setCurrentDuration(DEFAULT_DURATION);
+    setProgress(0); setIsPaused(false); setCurrentDuration(DEFAULT_DURATION); setDragY(0);
   };
-  const close = () => { setOpenStory({ open: false, folder: "", images: [], idx: 0 }); setProgress(0); setIsPaused(false); setCurrentDuration(DEFAULT_DURATION); };
+  const close = () => { setOpenStory({ open: false, folder: "", images: [], idx: 0 }); setProgress(0); setIsPaused(false); setCurrentDuration(DEFAULT_DURATION); setDragY(0); };
 
   const showIndex = (newIdx) => {
     if (!openStory.open) return;
@@ -980,16 +1239,22 @@ const StoriesViewer = () => {
     if (newIdx >= openStory.images.length) return close();
     setIsAnimating(true);
     if (animTimer.current) clearTimeout(animTimer.current);
-    animTimer.current = setTimeout(() => { setOpenStory((s) => ({ ...s, idx: newIdx })); setProgress(0); setIsAnimating(false); }, 200);
+    animTimer.current = setTimeout(() => { elapsedRef.current = 0; setOpenStory((s) => ({ ...s, idx: newIdx })); setProgress(0); setIsAnimating(false); }, 160);
   };
   const next = () => { if (!openStory.open) return; const ni = openStory.idx + 1; if (ni >= openStory.images.length) return close(); showIndex(ni); };
-  const prev = () => { if (!openStory.open) return; const pi = openStory.idx - 1; if (pi < 0) { setProgress(0); return; } showIndex(pi); };
+  const prev = () => { if (!openStory.open) return; const pi = openStory.idx - 1; if (pi < 0) { elapsedRef.current = 0; setProgress(0); return; } showIndex(pi); };
 
+  // Progress timer — pausing keeps the elapsed time so "hold to pause" resumes where it left off
   useEffect(() => {
     if (!openStory.open || isPaused) return;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    const start = Date.now();
-    const run = () => { const p = Math.min(1, (Date.now() - start) / currentDuration); setProgress(p); if (p >= 1) next(); else rafRef.current = requestAnimationFrame(run); };
+    const start = Date.now() - elapsedRef.current;
+    const run = () => {
+      elapsedRef.current = Date.now() - start;
+      const p = Math.min(1, elapsedRef.current / currentDuration);
+      setProgress(p);
+      if (p >= 1) next(); else rafRef.current = requestAnimationFrame(run);
+    };
     rafRef.current = requestAnimationFrame(run);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [openStory.open, openStory.idx, isPaused, currentDuration]);
@@ -998,27 +1263,47 @@ const StoriesViewer = () => {
 
   useEffect(() => {
     if (!openStory.open) return;
-    const h = (e) => { if (e.key === "Escape") close(); if (e.key === "ArrowRight" || e.key === "Enter") next(); if (e.key === "ArrowLeft") prev(); };
+    const h = (e) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight" || e.key === "Enter") next();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === " ") { e.preventDefault(); setIsPaused((p) => !p); }
+    };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [openStory.open, openStory.idx]);
 
-  const handleTouchStart = (e) => { touchRef.current.startX = (e.touches ? e.touches[0].clientX : e.clientX); setIsPaused(true); };
-  const handleTouchMove = (e) => { touchRef.current.endX = (e.touches ? e.touches[0].clientX : e.clientX); };
-  const handleTouchEnd = () => { const dx = touchRef.current.endX - touchRef.current.startX; if (Math.abs(dx) > 40) { if (dx > 0) prev(); else next(); } touchRef.current.startX = 0; touchRef.current.endX = 0; setIsPaused(false); };
-
-  const tap = (e) => { const rect = e.currentTarget.getBoundingClientRect(); const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left; if (x < rect.width / 2) prev(); else next(); };
+  // Touch: tap left/right third = prev/next, horizontal swipe = prev/next, hold = pause, swipe down = close
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY, time: Date.now(), dy: 0 };
+    setIsPaused(true);
+  };
+  const onTouchMove = (e) => {
+    if (!touchRef.current) return;
+    const t = e.touches[0];
+    const dy = t.clientY - touchRef.current.y;
+    const dx = t.clientX - touchRef.current.x;
+    if (dy > 0 && Math.abs(dy) > Math.abs(dx)) { touchRef.current.dy = dy; setDragY(dy); }
+  };
+  const onTouchEnd = (e) => {
+    const st = touchRef.current; touchRef.current = null;
+    if (!st) return;
+    e.preventDefault(); // stop the synthetic click (otherwise a tap would advance twice)
+    const t = e.changedTouches[0];
+    const dx = t.clientX - st.x; const dy = t.clientY - st.y; const held = Date.now() - st.time;
+    setIsPaused(false);
+    if (dy > 110 && Math.abs(dy) > Math.abs(dx)) { close(); return; }
+    setDragY(0);
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { if (dx > 0) prev(); else next(); return; }
+    if (held < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      if (t.clientX < window.innerWidth * 0.33) prev(); else next();
+    }
+  };
 
   const storyFolders = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]
     .map((d) => Object.keys(folderImages).find((k) => k.toLowerCase() === d)).filter(Boolean);
 
-  const sectorLabels = {
-    "sec 4": "Sector 4",
-    "sec 9": "Sector 9",
-    "sec 46": "Sector 46",
-    "sec 42": "Sector 42",
-    "reliance met city": "Reliance MET",
-  };
   const sectorSubtitles = {
     "sec 4": "Residential Project",
     "sec 9": "Residential Development",
@@ -1027,102 +1312,116 @@ const StoriesViewer = () => {
     "reliance met city": "New Launch",
   };
 
+  const current = openStory.images[openStory.idx];
+  const currentIsVideo = /\.(mp4|webm|ogg|mov)$/i.test(String(current));
+  const ringSize = isMobile ? 82 : 108;
+
   return (
-    <div id="section-stories" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: `linear-gradient(160deg, ${colors.cream} 0%, #EDE8DF 100%)`, position: "relative", overflow: "hidden" }}>
+    <div id="section-stories" ref={ref} style={{ padding: isMobile ? "60px 0" : "clamp(72px, 8vw, 100px) 28px", background: `linear-gradient(160deg, ${colors.cream} 0%, #EDE8DF 100%)`, position: "relative", overflow: "hidden" }}>
       {/* Decorative blobs */}
       <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(43,91,168,0.05)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(201,168,76,0.07)", pointerEvents: "none" }} />
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 28 : 56, padding: isMobile ? "0 16px" : 0 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Live Site Stories</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
             See the work<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>in progress</em>
           </h2>
-          <p style={{ maxWidth: 520, margin: "20px auto 0", color: "#555", fontSize: 16, lineHeight: 1.8 }}>
-            Real on-site updates from every sector — captured as they happen.
+          <p className="section-sub">
+            Real on-site updates from every sector — tap a circle to watch.
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: isMobile ? 20 : 32, overflowX: "auto", paddingBottom: 16, justifyContent: storyFolders.length <= 5 ? "center" : "flex-start" }}>
+        <div className="h-scroll" style={{ gap: isMobile ? 12 : 32, padding: isMobile ? "8px 20px 16px" : "8px 0 16px", scrollPaddingInline: isMobile ? 20 : 0 }}>
           {storyFolders.map((folder, i) => {
-            const label = sectorLabels[folder.toLowerCase()] || folder;
+            const label = folderLabel(folder);
             const isNew = folder.toLowerCase() === "reliance met city";
             return (
-              <div key={folder} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", cursor: "pointer", minWidth: isMobile ? 90 : 110, flexShrink: 0, transition: "transform 0.3s ease" }}
-                onClick={() => open(folder)}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-6px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}>
+              <button key={folder} className={`lift press reveal${visible ? " visible" : ""}`} onClick={() => open(folder)} aria-label={`Watch ${label} stories`}
+                style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", cursor: "pointer", width: ringSize + 26, flexShrink: 0, background: "none", border: "none", padding: 0, scrollSnapAlign: "start" }}>
                 <div style={{ position: "relative", marginBottom: 10 }}>
                   {isNew && (
-                    <div style={{ position: "absolute", top: -4, right: -4, background: "#16a34a", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 7px", borderRadius: 20, zIndex: 3, animation: "pulse-green 2s infinite", letterSpacing: 0.5 }}>NEW</div>
+                    <div style={{ position: "absolute", top: -4, right: 0, background: "#16a34a", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 7px", borderRadius: 20, zIndex: 3, animation: "pulse-green 2s infinite", letterSpacing: 0.5 }}>NEW</div>
                   )}
-                  <div className="story-ring" style={{ width: isMobile ? 88 : 108, height: isMobile ? 88 : 108, margin: "0 auto" }}>
+                  <div className="story-ring" style={{ width: ringSize, height: ringSize, margin: "0 auto" }}>
                     <div className="story-ring-inner">
-                      <img src={(folderImages[folder] || [])[0] || projectData.images[0]} loading="lazy" alt={folder}
-                        style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block", transition: "transform 0.35s ease" }}
-                        onMouseEnter={(e) => { e.target.style.transform = "scale(1.08)"; }}
-                        onMouseLeave={(e) => { e.target.style.transform = "scale(1)"; }} />
+                      <img src={(folderImages[folder] || [])[0] || projectData.images[0]} loading="lazy" alt="" className="zoom-img"
+                        style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block" }} />
                     </div>
                   </div>
                 </div>
-                <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 700, color: colors.black }}>{label}</div>
-                <div style={{ fontSize: 10, color: colors.darkBlue, opacity: 0.7, marginTop: 2, fontWeight: 600 }}>{sectorSubtitles[folder.toLowerCase()] || ""}</div>
-                <div style={{ fontSize: 10, color: "#aaa", marginTop: 1 }}>{(folderImages[folder] || []).length} updates</div>
-              </div>
+                <div style={{ fontSize: isMobile ? 12.5 : 13, fontWeight: 700, color: colors.black, lineHeight: 1.25 }}>{label}</div>
+                <div style={{ fontSize: 10.5, color: colors.darkBlue, marginTop: 2, fontWeight: 600 }}>{sectorSubtitles[folder.toLowerCase()] || ""}</div>
+                <div style={{ fontSize: 10.5, color: colors.subtle, marginTop: 1 }}>{(folderImages[folder] || []).length} updates</div>
+              </button>
             );
           })}
         </div>
 
         {/* FULLSCREEN STORY VIEWER */}
         {openStory.open && (
-          <div onClick={tap} onMouseDown={() => setIsPaused(true)} onMouseUp={() => setIsPaused(false)}
-            onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
-            style={{ position: "fixed", inset: 0, background: "#000", zIndex: 2000, display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {/* Progress bars */}
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 16px 0", display: "flex", gap: 4, zIndex: 5 }}>
-              {openStory.images.map((_, i) => (
-                <div key={i} style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.25)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", background: "#fff", width: i < openStory.idx ? "100%" : i === openStory.idx ? `${progress * 100}%` : "0%", transition: "width 100ms linear" }} />
+          <div role="dialog" aria-modal="true" aria-label={`${folderLabel(openStory.folder)} stories`}
+            onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+            onMouseDown={() => finePointer && setIsPaused(true)} onMouseUp={() => finePointer && setIsPaused(false)}
+            style={{ position: "fixed", inset: 0, background: `rgba(0,0,0,${1 - Math.min(dragY / 400, 0.6)})`, zIndex: 2000, display: "flex", justifyContent: "center", alignItems: "center", animation: "fade-in 0.2s ease", touchAction: "none", userSelect: "none", WebkitUserSelect: "none" }}>
+            <div style={{ position: "absolute", inset: 0, transform: `translateY(${dragY}px) scale(${1 - Math.min(dragY / 2000, 0.1)})`, transition: dragY ? "none" : "transform 0.25s ease", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/* Progress bars */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "calc(10px + env(safe-area-inset-top)) 12px 0", display: "flex", gap: 4, zIndex: 5, maxWidth: 640, margin: "0 auto" }}>
+                {openStory.images.map((_, i) => (
+                  <div key={i} style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.3)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", background: "#fff", width: i < openStory.idx ? "100%" : i === openStory.idx ? `${progress * 100}%` : "0%" }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Header */}
+              <div style={{ position: "absolute", top: "calc(24px + env(safe-area-inset-top))", left: 0, right: 0, maxWidth: 640, margin: "0 auto", padding: "0 12px", display: "flex", alignItems: "center", gap: 12, zIndex: 6 }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(255,255,255,0.85)", flexShrink: 0 }}>
+                  <img src={openStory.images[0]} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
                 </div>
-              ))}
-            </div>
-
-            {/* Header */}
-            <div style={{ position: "absolute", top: 20, left: 16, display: "flex", alignItems: "center", gap: 12, zIndex: 5 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(255,255,255,0.8)" }}>
-                <img src={openStory.images[0]} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#fff" }}>{folderLabel(openStory.folder)}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>{openStory.idx + 1} / {openStory.images.length}{isPaused && !dragY ? " · Paused" : ""}</div>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); close(); }} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); close(); }} aria-label="Close stories" className="icon-btn">
+                  <X size={20} color="#fff" />
+                </button>
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#fff" }}>{openStory.folder}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)" }}>{openStory.idx + 1} / {openStory.images.length}</div>
+
+              {/* Media */}
+              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "calc(76px + env(safe-area-inset-top)) 0 calc(44px + env(safe-area-inset-bottom))" }}>
+                <div style={{ opacity: isAnimating ? 0 : 1, transition: "opacity 160ms ease", maxWidth: isMobile ? "100%" : 600, width: "100%", height: "100%", borderRadius: isMobile ? 0 : 14, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {currentIsVideo ? (
+                    <video key={current} src={current} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
+                      playsInline autoPlay preload="metadata" muted
+                      onLoadedMetadata={(e) => { const d = e.target.duration; elapsedRef.current = 0; setCurrentDuration(d > 0 && isFinite(d) ? d * 1000 : DEFAULT_DURATION); setProgress(0); }}
+                      onEnded={next} />
+                  ) : (
+                    <img key={current} src={current} alt={`${folderLabel(openStory.folder)} update ${openStory.idx + 1}`} draggable={false}
+                      style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }} />
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop prev/next arrows & click zones */}
+              {!isMobile && (
+                <>
+                  <div style={{ position: "absolute", left: 0, top: 90, bottom: 40, width: "35%", cursor: "pointer", zIndex: 4 }} onClick={prev} />
+                  <div style={{ position: "absolute", right: 0, top: 90, bottom: 40, width: "35%", cursor: "pointer", zIndex: 4 }} onClick={next} />
+                  <button onClick={prev} aria-label="Previous" className="icon-btn" style={{ position: "absolute", left: "max(16px, calc(50% - 360px))", top: "50%", transform: "translateY(-50%)", zIndex: 5, width: 48, height: 48, opacity: openStory.idx === 0 ? 0.35 : 1 }}>
+                    <ChevronLeft size={22} color="#fff" />
+                  </button>
+                  <button onClick={next} aria-label="Next" className="icon-btn" style={{ position: "absolute", right: "max(16px, calc(50% - 360px))", top: "50%", transform: "translateY(-50%)", zIndex: 5, width: 48, height: 48 }}>
+                    <ChevronRight size={22} color="#fff" />
+                  </button>
+                </>
+              )}
+
+              {/* Gesture hint */}
+              <div style={{ position: "absolute", bottom: "calc(14px + env(safe-area-inset-bottom))", left: 0, right: 0, textAlign: "center", color: "rgba(255,255,255,0.6)", fontSize: 11.5, letterSpacing: 0.3, zIndex: 5, pointerEvents: "none" }}>
+                {isMobile ? "Tap to skip · Hold to pause · Swipe down to close" : "← → to navigate · Space to pause · Esc to close"}
               </div>
             </div>
-
-            {/* Close button */}
-            <button onClick={(e) => { e.stopPropagation(); close(); }}
-              style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "50%", width: 44, height: 44, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
-              <X size={20} color="#fff" />
-            </button>
-
-            {/* Media */}
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 16px 40px", boxSizing: "border-box" }}>
-              <div style={{ opacity: isAnimating ? 0 : 1, transition: "opacity 200ms ease", maxWidth: isMobile ? "100%" : 600, width: "100%", maxHeight: "100%", borderRadius: 12, overflow: "hidden", background: "#111" }}>
-                {/\.(mp4|webm|ogg)$/i.test(String(openStory.images[openStory.idx])) ? (
-                  <video key={openStory.images[openStory.idx]} src={openStory.images[openStory.idx]} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
-                    controls={!isMobile} playsInline autoPlay preload="metadata" muted
-                    onLoadedMetadata={(e) => { const d = e.target.duration; setCurrentDuration(d > 0 ? d * 1000 : DEFAULT_DURATION); setProgress(0); }}
-                    onEnded={next} />
-                ) : (
-                  <img key={openStory.images[openStory.idx]} src={openStory.images[openStory.idx]} alt="" loading="lazy"
-                    style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000", maxHeight: "80vh" }}
-                    onLoad={() => setCurrentDuration(DEFAULT_DURATION)} />
-                )}
-              </div>
-            </div>
-
-            {/* Nav zones */}
-            <div style={{ position: "absolute", left: 0, top: 80, bottom: 40, width: "30%", cursor: "w-resize" }} onClick={(e) => { e.stopPropagation(); prev(); }} />
-            <div style={{ position: "absolute", right: 0, top: 80, bottom: 40, width: "30%", cursor: "e-resize" }} onClick={(e) => { e.stopPropagation(); next(); }} />
           </div>
         )}
       </div>
@@ -1139,7 +1438,8 @@ const ImageGallery = () => {
   const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
 
   const [lightbox, setLightbox] = useState({ open: false, src: "", folder: "", index: 0, items: [] });
-  const [touchStart, setTouchStart] = useState(null);
+  const thumbsRef = useRef(null);
+  useLockBodyScroll(lightbox.open);
 
   const completedFolders = ["sec 4", "sec 9", "sec 46"];
   const ongoingFolders = ["sec 42", "reliance met city"];
@@ -1168,6 +1468,13 @@ const ImageGallery = () => {
   const close = () => setLightbox({ open: false, src: "", folder: "", index: 0, items: [] });
   const goNext = () => { const n = (lightbox.index + 1) % lightbox.items.length; setLightbox((s) => ({ ...s, index: n, src: s.items[n] })); };
   const goPrev = () => { const p = (lightbox.index - 1 + lightbox.items.length) % lightbox.items.length; setLightbox((s) => ({ ...s, index: p, src: s.items[p] })); };
+  const goTo = (i) => setLightbox((s) => ({ ...s, index: i, src: s.items[i] }));
+  const lbSwipe = useSwipe({ onLeft: () => { goNext(); vibrate(); }, onRight: () => { goPrev(); vibrate(); }, onDown: close });
+
+  useEffect(() => {
+    if (!lightbox.open) return;
+    thumbsRef.current?.children[lightbox.index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [lightbox.open, lightbox.index]);
 
   useEffect(() => {
     if (!lightbox.open) return;
@@ -1181,26 +1488,29 @@ const ImageGallery = () => {
     if (!items.length) return null;
     const key = normalize(folder);
     return (
-      <div className={`card-hover shine-card neon-hover reveal${visible ? " visible" : ""}`}
-        style={{ transitionDelay: `${delay}s`, background: "#fff", borderRadius: 20, overflow: "hidden", cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.06)", border: "1px solid rgba(43,91,168,0.06)" }}
-        onClick={() => openImg(folder, items[0], 0, items)}>
+      <div role="button" tabIndex={0} aria-label={`Open ${folderLabel(folder)} gallery, ${items.length} photos`}
+        className={`card-hover shine-card neon-hover reveal${visible ? " visible" : ""}`}
+        style={{ transitionDelay: `${delay}s`, background: "#fff", borderRadius: 20, overflow: "hidden", cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.06)", border: "1px solid rgba(43,91,168,0.08)" }}
+        onClick={() => openImg(folder, items[0], 0, items)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImg(folder, items[0], 0, items); } }}>
         <div style={{ position: "relative", overflow: "hidden", aspectRatio: "4/3" }}>
           {isNew && (
             <div style={{ position: "absolute", top: 12, right: 12, background: "#16a34a", color: "#fff", fontSize: 10, fontWeight: 800, padding: "4px 10px", borderRadius: 20, zIndex: 3, animation: "pulse-green 2s infinite", letterSpacing: 0.5 }}>NEW LAUNCH</div>
           )}
-          <img src={items[0]} alt={folder} loading="lazy"
-            style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.6s ease" }}
-            onMouseEnter={(e) => { e.target.style.transform = "scale(1.07)"; }}
-            onMouseLeave={(e) => { e.target.style.transform = "scale(1)"; }} />
+          <img src={items[0]} alt={folderLabel(folder)} loading="lazy" className="zoom-img"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <div style={{ position: "absolute", top: 12, left: 12, zIndex: 2, background: "rgba(12,15,26,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
+            📷 {items.length}
+          </div>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)" }} />
           <div style={{ position: "absolute", bottom: 14, left: 16, right: 16 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#fff" }}>{folder}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>{folderLabel(folder)}</div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 3, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{projectSubtitle[key] || ""}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{items.length} photos</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.66)", marginTop: 2 }}>{items.length} photos</div>
           </div>
         </div>
         <div style={{ padding: "16px 18px" }}>
-          <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6 }}>{projectDesc[key] || "Construction project."}</p>
+          <p style={{ fontSize: 13, color: colors.muted, lineHeight: 1.6 }}>{projectDesc[key] || "Construction project."}</p>
           <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 6, color: colors.darkBlue, fontSize: 13, fontWeight: 600 }}>
             View Gallery <ArrowRight size={14} />
           </div>
@@ -1210,11 +1520,11 @@ const ImageGallery = () => {
   };
 
   return (
-    <div id="section-gallery" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: "#fff" }}>
+    <div id="section-gallery" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#fff" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Photo Gallery</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>Every project,<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>documented</em></h2>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>Every project,<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>documented</em></h2>
         </div>
 
         <div style={{ marginBottom: 48 }}>
@@ -1222,7 +1532,7 @@ const ImageGallery = () => {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#16a34a" }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", letterSpacing: 2, textTransform: "uppercase" }}>Completed & Delivered</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(260px, 1fr))", gap: isMobile ? 16 : 20 }}>
             {completedResolved.map((f, i) => <GalleryFolder key={f} folder={f} delay={i * 0.1} />)}
           </div>
         </div>
@@ -1232,7 +1542,7 @@ const ImageGallery = () => {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: colors.gold, animation: "pulse-ring 2s infinite" }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: "#92400e", letterSpacing: 2, textTransform: "uppercase" }}>Active Construction</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: isMobile ? 16 : 20 }}>
             {ongoingResolved.map((f, i) => <GalleryFolder key={f} folder={f} isNew={f.toLowerCase() === "reliance met city"} delay={(i + 3) * 0.1} />)}
           </div>
         </div>
@@ -1240,29 +1550,50 @@ const ImageGallery = () => {
 
       {/* Lightbox */}
       {lightbox.open && (
-        <div onClick={close}
-          onTouchStart={(e) => setTouchStart(e.touches[0].clientX)}
-          onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - touchStart; if (Math.abs(dx) > 50) { if (dx < 0) goNext(); else goPrev(); } setTouchStart(null); }}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1500, animation: "fade-in 0.2s ease" }}>
-          <div style={{ maxWidth: isMobile ? "96%" : 1100, width: "95%", position: "relative" }} onClick={(e) => e.stopPropagation()}>
-            <img src={lightbox.src} alt="" loading="lazy"
-              style={{ width: "100%", height: "auto", maxHeight: "85vh", objectFit: "contain", borderRadius: 16, display: "block" }} />
-            <div style={{ position: "absolute", top: 14, left: 14, glass: true, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(10px)", color: "#fff", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
-              {lightbox.folder} · {lightbox.index + 1}/{lightbox.items.length}
+        <div role="dialog" aria-modal="true" aria-label={`${folderLabel(lightbox.folder)} photos`} onClick={close} {...lbSwipe.handlers}
+          style={{ position: "fixed", inset: 0, background: "rgba(5,7,14,0.96)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", flexDirection: "column", zIndex: 2000, animation: "fade-in 0.2s ease",
+            padding: "env(safe-area-inset-top) 0 env(safe-area-inset-bottom)" }}>
+          {/* Top bar */}
+          <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: isMobile ? "12px 14px" : "18px 24px", color: "#fff" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 20 : 24, fontWeight: 700, lineHeight: 1.1 }}>{folderLabel(lightbox.folder)}</div>
+              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Photo {lightbox.index + 1} of {lightbox.items.length}</div>
             </div>
-            <button onClick={close} style={{ position: "absolute", top: 12, right: 12, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "50%", width: 44, height: 44, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <X size={20} color="#fff" />
-            </button>
-            {!isMobile && (
+            <button onClick={close} aria-label="Close gallery" className="icon-btn"><X size={20} color="#fff" /></button>
+          </div>
+
+          {/* Image stage */}
+          <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "0 8px" : "0 84px" }}>
+            <img key={lightbox.src} src={lightbox.src} alt={`${folderLabel(lightbox.folder)} — ${lightbox.index + 1} of ${lightbox.items.length}`} onClick={(e) => e.stopPropagation()} draggable={false}
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: isMobile ? 10 : 14, display: "block", animation: "fade-in 0.25s ease", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+            {lightbox.items.length > 1 && (
               <>
-                <button onClick={goPrev} style={{ position: "absolute", left: -22, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.95)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
-                  <ChevronLeft size={20} color={colors.black} />
+                <button onClick={(e) => { e.stopPropagation(); goPrev(); }} aria-label="Previous photo" className="icon-btn"
+                  style={{ position: "absolute", left: isMobile ? 12 : 20, top: "50%", transform: "translateY(-50%)", width: isMobile ? 40 : 52, height: isMobile ? 40 : 52, background: isMobile ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.12)" }}>
+                  <ChevronLeft size={isMobile ? 20 : 24} color="#fff" />
                 </button>
-                <button onClick={goNext} style={{ position: "absolute", right: -22, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.95)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
-                  <ChevronRight size={20} color={colors.black} />
+                <button onClick={(e) => { e.stopPropagation(); goNext(); }} aria-label="Next photo" className="icon-btn"
+                  style={{ position: "absolute", right: isMobile ? 12 : 20, top: "50%", transform: "translateY(-50%)", width: isMobile ? 40 : 52, height: isMobile ? 40 : 52, background: isMobile ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.12)" }}>
+                  <ChevronRight size={isMobile ? 20 : 24} color="#fff" />
                 </button>
               </>
             )}
+          </div>
+
+          {/* Thumbnails */}
+          <div onClick={(e) => e.stopPropagation()} style={{ padding: isMobile ? "12px 0 8px" : "16px 0 12px" }}>
+            <div ref={thumbsRef} className="h-scroll" style={{ gap: 8, padding: "4px 14px" }}>
+              {lightbox.items.map((src, i) => (
+                <button key={i} onClick={() => goTo(i)} aria-label={`Photo ${i + 1}`}
+                  style={{ flexShrink: 0, width: isMobile ? 56 : 72, height: isMobile ? 42 : 52, padding: 0, borderRadius: 8, overflow: "hidden", cursor: "pointer",
+                    border: i === lightbox.index ? `2px solid ${colors.gold}` : "2px solid transparent", opacity: i === lightbox.index ? 1 : 0.55, transition: "all 0.2s ease", background: "#111" }}>
+                  <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </button>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.55)", fontSize: 11.5, marginTop: 8 }}>
+              {isMobile ? "Swipe to browse · Swipe down to close" : "Use ← → keys · Esc to close"}
+            </div>
           </div>
         </div>
       )}
@@ -1350,6 +1681,13 @@ const GurugramLocations = () => {
   ];
 
   const az = zones[activeZone];
+  const zoneRow = useRef(null);
+  const pickZone = (i) => {
+    const n = Math.max(0, Math.min(zones.length - 1, i));
+    setActiveZone(n);
+    zoneRow.current?.children[n]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  };
+  const zoneSwipe = useSwipe({ onLeft: () => { pickZone(activeZone + 1); vibrate(); }, onRight: () => { pickZone(activeZone - 1); vibrate(); } });
 
   const coverageList = [
     "Sector 4", "Sector 9", "Sector 42", "Sector 46",
@@ -1361,42 +1699,41 @@ const GurugramLocations = () => {
   return (
     <div ref={ref} style={{ background: "#fff" }}>
       {/* ── MAIN ZONES SECTION ── */}
-      <div style={{ padding: isMobile ? "64px 16px" : "100px 28px" }}>
+      <div style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
 
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
             <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Our Service Area</div>
-            <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
+            <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
               Our Projects Across<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>Gurugram</em>
             </h2>
-            <p style={{ maxWidth: 560, margin: "20px auto 0", color: "#666", fontSize: 16, lineHeight: 1.8 }}>
+            <p className="section-sub">
               From established residential sectors to emerging investment zones — serving clients across all major micro-markets in Gurugram.
             </p>
           </div>
 
-          {/* Zone tab selector */}
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.1s", display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
-            {zones.map((z, i) => (
-              <button key={i} onClick={() => setActiveZone(i)}
-                style={{
-                  padding: isMobile ? "8px 14px" : "10px 18px",
-                  borderRadius: 50, fontFamily: "'DM Sans', sans-serif",
-                  fontSize: isMobile ? 12 : 13, fontWeight: 700, cursor: "pointer",
-                  transition: "all 0.3s cubic-bezier(.22,1,.36,1)",
-                  background: i === activeZone ? z.color : "transparent",
-                  color: i === activeZone ? "#fff" : "#555",
-                  border: `2px solid ${i === activeZone ? z.color : "rgba(0,0,0,0.1)"}`,
-                  boxShadow: i === activeZone ? `0 8px 24px ${z.color}40` : "none",
-                  transform: i === activeZone ? "translateY(-2px)" : "none",
-                }}>
-                <span style={{ marginRight: 6 }}>{z.icon}</span>{z.name}
-              </button>
-            ))}
+          {/* Zone tab selector — swipeable on touch */}
+          <div className={`h-scroll-fade reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.1s", marginBottom: isMobile ? 20 : 40, marginLeft: isMobile ? -16 : 0, marginRight: isMobile ? -16 : 0 }}>
+            <div ref={zoneRow} className={isMobile ? "h-scroll" : undefined} role="tablist" aria-label="Gurugram zones" style={{ display: "flex", gap: 8, padding: isMobile ? "6px 16px 10px" : "6px 0 10px", flexWrap: isMobile ? "nowrap" : "wrap", justifyContent: isMobile ? "flex-start" : "center" }}>
+              {zones.map((z, i) => {
+                const on = i === activeZone;
+                return (
+                  <button key={i} role="tab" aria-selected={on} onClick={() => pickZone(i)} className="chip"
+                    style={{ fontSize: isMobile ? 13 : 13.5, padding: isMobile ? "9px 14px" : "10px 18px",
+                      background: on ? z.color : "#fff", color: on ? "#fff" : colors.muted,
+                      border: `2px solid ${on ? z.color : "rgba(0,0,0,0.09)"}`,
+                      boxShadow: on ? `0 8px 24px ${z.color}40` : "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <span style={{ marginRight: 6 }}>{z.icon}</span>{z.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Active zone card */}
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s" }}>
-            <div style={{
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s" }} {...zoneSwipe.handlers}>
+            <div key={activeZone} style={{
+              animation: "fade-in 0.35s ease",
               background: `linear-gradient(135deg, ${az.color}08 0%, ${az.color}04 100%)`,
               border: `1.5px solid ${az.color}25`,
               borderRadius: 28, overflow: "hidden",
@@ -1404,7 +1741,7 @@ const GurugramLocations = () => {
             }}>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 0 }}>
                 {/* Left info */}
-                <div style={{ padding: isMobile ? "32px 24px" : "52px 48px", borderRight: isMobile ? "none" : `1px solid ${az.color}20` }}>
+                <div style={{ padding: isMobile ? "26px 20px" : "clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px)", borderRight: isMobile ? "none" : `1px solid ${az.color}20` }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                     <div style={{ width: 56, height: 56, borderRadius: 16, background: az.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
                       {az.icon}
@@ -1414,10 +1751,10 @@ const GurugramLocations = () => {
                       <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: colors.black, lineHeight: 1.15 }}>{az.name}</h3>
                     </div>
                   </div>
-                  <p style={{ fontSize: 15, color: "#555", lineHeight: 1.85, marginBottom: 32 }}>{az.description}</p>
+                  <p style={{ fontSize: isMobile ? 14.5 : 15, color: colors.muted, lineHeight: 1.8, marginBottom: isMobile ? 22 : 32 }}>{az.description}</p>
 
                   {/* Highlights */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
                     {az.highlights.map((h, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", borderRadius: 12, padding: "10px 14px", border: `1px solid ${az.color}18`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: az.color, flexShrink: 0 }} />
@@ -1428,8 +1765,8 @@ const GurugramLocations = () => {
                 </div>
 
                 {/* Right sectors */}
-                <div style={{ padding: isMobile ? "0 24px 32px" : "52px 48px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: "#aaa", marginBottom: 20 }}>Areas Covered</div>
+                <div style={{ padding: isMobile ? "0 20px 26px" : "clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: colors.subtle, marginBottom: 20 }}>Areas Covered</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {az.sectors.map((s, i) => (
                       <div key={i} style={{
@@ -1451,7 +1788,7 @@ const GurugramLocations = () => {
                       <MapPin size={16} color={az.color} />
                       <span style={{ fontSize: 13, fontWeight: 700, color: colors.black }}>Serving clients across this zone</span>
                     </div>
-                    <p style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
+                    <p style={{ fontSize: 13, color: colors.subtle, lineHeight: 1.6 }}>
                       We work with buyers and investors across all major residential and investment zones in Gurugram. Get in touch to discuss your requirements.
                     </p>
                   </div>
@@ -1460,19 +1797,23 @@ const GurugramLocations = () => {
             </div>
           </div>
 
+          {isMobile && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, fontSize: 12, color: colors.subtle }}>
+              {zones.map((_, i) => <span key={i} style={{ width: i === activeZone ? 16 : 6, height: 6, borderRadius: 3, background: i === activeZone ? az.color : "rgba(0,0,0,0.15)", transition: "all 0.3s ease" }} />)}
+            </div>
+          )}
+
           {/* Coverage pill cloud */}
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.3s", marginTop: 56, textAlign: "center" }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: "#aaa", marginBottom: 20 }}>Key Areas We Work In</div>
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.3s", marginTop: isMobile ? 40 : 56, textAlign: "center" }}>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: colors.subtle, marginBottom: 20 }}>Key Areas We Work In</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
               {coverageList.map((a, i) => (
-                <div key={i} style={{ padding: "7px 16px", borderRadius: 50, background: colors.cream, border: "1px solid rgba(43,91,168,0.15)", fontSize: 13, fontWeight: 600, color: colors.darkBlue, transition: "all 0.2s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.darkBlue; e.currentTarget.style.color = "#fff"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = colors.cream; e.currentTarget.style.color = colors.darkBlue; }}>
+                <div key={i} className="pill-hover" style={{ padding: "7px 14px", borderRadius: 50, background: colors.cream, border: "1px solid rgba(43,91,168,0.15)", fontSize: isMobile ? 12.5 : 13, fontWeight: 600, color: colors.darkBlue, transition: "all 0.2s" }}>
                   {a}
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: 13, color: "#aaa", marginTop: 20, fontStyle: "italic" }}>
+            <p style={{ fontSize: 13, color: colors.subtle, marginTop: 20, fontStyle: "italic" }}>
               Serving clients across major residential and investment zones in Gurugram
             </p>
           </div>
@@ -1497,21 +1838,21 @@ const WhyGurugram = () => {
   ];
 
   return (
-    <div ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: "#0C0F1A" }}>
+    <div ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#0C0F1A" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 64 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 40 : 64 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16, color: "rgba(201,168,76,0.85)" }}>
             <span style={{ background: colors.gold }} /> Why Invest Here
           </div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem", color: "#fff" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)", color: "#fff" }}>
             Why <em style={{ color: colors.gold, fontStyle: "italic" }}>Gurugram</em>
           </h2>
-          <p style={{ maxWidth: 520, margin: "20px auto 0", color: "rgba(255,255,255,0.5)", fontSize: 16, lineHeight: 1.85 }}>
+          <p style={{ maxWidth: 520, margin: "20px auto 0", color: "rgba(255,255,255,0.66)", fontSize: 16, lineHeight: 1.85 }}>
             India's Millennium City — a convergence of world-class infrastructure, corporate investment, and real estate opportunity.
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(280px, 1fr))", gap: isMobile ? 12 : 20 }}>
           {reasons.map((r, i) => (
             <div key={i} className={`tilt-card reveal${visible ? " visible" : ""}`}
               style={{
@@ -1519,38 +1860,34 @@ const WhyGurugram = () => {
                 background: "rgba(255,255,255,0.04)",
                 backdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 20, padding: "28px",
+                borderRadius: 20, padding: isMobile ? "22px" : "28px",
                 cursor: "default",
               }}>
               <div style={{ fontSize: 32, marginBottom: 16 }}>{r.icon}</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
                 <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.gold, lineHeight: 1 }}>{r.stat}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.statLabel}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.statLabel}</div>
               </div>
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 10 }}>{r.title}</h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.8 }}>{r.desc}</p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>{r.desc}</p>
             </div>
           ))}
         </div>
 
         {/* Bottom CTA strip */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.5s", marginTop: 56, textAlign: "center", padding: "36px 28px", background: "rgba(201,168,76,0.08)", borderRadius: 20, border: "1px solid rgba(201,168,76,0.2)" }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.5s", marginTop: isMobile ? 36 : 56, textAlign: "center", padding: isMobile ? "28px 18px" : "36px 28px", background: "rgba(201,168,76,0.08)", borderRadius: 20, border: "1px solid rgba(201,168,76,0.2)" }}>
           <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
             Ready to invest in Gurugram?
           </div>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 24 }}>
+          <p style={{ color: "rgba(255,255,255,0.66)", fontSize: 14, marginBottom: 24 }}>
             Speak to our team about ongoing projects, site visits, and investment options.
           </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="tel:+919310994032" style={{ textDecoration: "none" }}>
-              <button className="btn-primary" style={{ padding: "14px 28px", fontSize: 15 }}>
-                <Phone size={17} /> Call Now
-              </button>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "auto auto", gap: 10, justifyContent: "center" }}>
+            <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 24px", fontSize: 15, justifyContent: "center" }}>
+              <Phone size={17} /> Call Now
             </a>
-            <a href="https://wa.me/919310994032?text=Hi%2C%20I%27m%20interested%20in%20investing%20in%20Gurugram." target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-              <button className="btn-wa" style={{ padding: "14px 28px", fontSize: 15 }}>
-                <MessageCircle size={17} /> WhatsApp Us
-              </button>
+            <a href={`${WA_URL}?text=Hi%2C%20I%27m%20interested%20in%20investing%20in%20Gurugram.`} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 24px", fontSize: 15, justifyContent: "center" }}>
+              <MessageCircle size={17} /> WhatsApp
             </a>
           </div>
         </div>
@@ -1568,17 +1905,17 @@ const ContactSection = () => {
   try { profileImg = require("./data/Profile/my_img.jpeg"); } catch (e) {}
 
   return (
-    <div id="section-contact" ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: "#fff" }}>
+    <div id="section-contact" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#fff" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Get in Touch</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.5rem" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
             Let's build your<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>dream together</em>
           </h2>
         </div>
 
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", background: "linear-gradient(145deg, rgba(245,240,232,0.95), rgba(235,228,215,0.9))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.8)", borderRadius: 28, padding: isMobile ? "36px 24px" : "56px 64px", maxWidth: 520, width: "100%", textAlign: "center", position: "relative", overflow: "hidden", boxShadow: "0 20px 60px rgba(43,91,168,0.12)" }}>
+          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", background: "linear-gradient(145deg, rgba(245,240,232,0.95), rgba(235,228,215,0.9))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.8)", borderRadius: 28, padding: isMobile ? "32px 20px" : "56px 64px", maxWidth: 520, width: "100%", textAlign: "center", position: "relative", overflow: "hidden", boxShadow: "0 20px 60px rgba(43,91,168,0.12)" }}>
             <div style={{ position: "absolute", top: -30, left: -30, width: 160, height: 160, borderRadius: "50%", background: "rgba(43,91,168,0.06)" }} />
             <div style={{ position: "absolute", bottom: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(201,168,76,0.1)" }} />
 
@@ -1594,27 +1931,22 @@ const ContactSection = () => {
               </div>
             )}
 
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.black, marginBottom: 4 }}>Parveen Chawla</h3>
-            <p style={{ fontSize: 14, color: "#888", marginBottom: 32, fontWeight: 500 }}>Founder · ShineOne Estate</p>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.black, marginBottom: 4, position: "relative" }}>Parveen Chawla</h3>
+            <p style={{ fontSize: 14, color: colors.subtle, marginBottom: isMobile ? 24 : 32, fontWeight: 500, position: "relative" }}>Founder · ShineOne Estate</p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <a href="tel:9310994032" style={{ textDecoration: "none" }}>
-                <button className="btn-primary" style={{ width: "100%", padding: "14px 20px", fontSize: 15, justifyContent: "center" }}>
-                  <Phone size={18} /> +91 93109 94032
-                </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+              <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", width: "100%", padding: "0 20px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
+                <Phone size={18} /> +91 93109 94032
               </a>
-              <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-                <button className="btn-wa" style={{ width: "100%", padding: "14px 20px", fontSize: 15, justifyContent: "center" }}>
-                  <MessageCircle size={18} /> WhatsApp Chat
-                </button>
+              <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", width: "100%", padding: "0 20px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
+                <MessageCircle size={18} /> WhatsApp Chat
               </a>
-              <a href="mailto:parveen@shineoneestate.co.in" style={{ textDecoration: "none" }}>
-                <button style={{ width: "100%", padding: "14px 20px", fontSize: 15, background: "transparent", border: `2px solid ${colors.darkBlue}`, borderRadius: 10, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, color: colors.darkBlue, transition: "all 0.25s ease" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.darkBlue; e.currentTarget.style.color = "#fff"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = colors.darkBlue; }}>
-                  <MailIcon color="currentColor" size={18} /> parveen@shineoneestate.co.in
-                </button>
+              <a href={`mailto:${EMAIL}`} className="btn-outline" style={{ textDecoration: "none", width: "100%", padding: "0 16px", minHeight: 52, fontSize: isMobile ? 14 : 15, overflowWrap: "anywhere" }}>
+                <MailIcon color="currentColor" size={18} /> {EMAIL}
               </a>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 18, fontSize: 12.5, color: colors.subtle, position: "relative" }}>
+              <Clock size={14} /> Usually replies within minutes · Site visits on working days
             </div>
           </div>
         </div>
@@ -1626,36 +1958,31 @@ const ContactSection = () => {
 /* ─────────────────────────── FOOTER ─────────────────────────── */
 const Footer = () => {
   const isMobile = useIsMobile();
+  const isCompact = useIsCompact();
   return (
-    <footer style={{ background: "#0D0D0D", color: colors.cream, padding: isMobile ? "56px 16px 120px" : "80px 28px 120px" }}>
+    <footer style={{ background: "#0D0D0D", color: colors.cream, padding: isCompact ? "56px 20px calc(100px + env(safe-area-inset-bottom))" : "80px 28px 40px" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr 1fr", gap: 40, marginBottom: 48 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr 1fr", gap: isMobile ? 36 : 40, marginBottom: isMobile ? 36 : 48 }}>
           <div>
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, fontWeight: 700, color: colors.gold, marginBottom: 8 }}>ShineOne Estate</div>
-            <div style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 20 }}>We Build Your Vision</div>
-            <p style={{ fontSize: 14, lineHeight: 1.9, color: "rgba(255,255,255,0.6)", maxWidth: 360 }}>
+            <div style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>We Build Your Vision</div>
+            <p style={{ fontSize: 14, lineHeight: 1.9, color: "rgba(255,255,255,0.72)", maxWidth: 360 }}>
               Premium residential development focused on transparent construction, quality materials and timely delivery across Gurugram's key sectors.
             </p>
-            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <a href="tel:+919310994032" style={{ textDecoration: "none" }}>
-                <button style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, color: "#fff", fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, transition: "background 0.2s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.18)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}>
-                  <Phone size={14} /> Call
-                </button>
+            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+              <a href={`tel:${PHONE}`} className="press" style={{ textDecoration: "none", background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: "0 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 8, color: "#fff", fontSize: 13.5, fontWeight: 600, transition: "transform 0.15s" }}>
+                <Phone size={15} /> Call
               </a>
-              <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-                <button style={{ background: "rgba(37,211,102,0.15)", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, color: "#25D366", fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, transition: "background 0.2s" }}>
-                  <MessageCircle size={14} /> WhatsApp
-                </button>
+              <a href={WA_URL} target="_blank" rel="noreferrer" className="press" style={{ textDecoration: "none", background: "rgba(37,211,102,0.15)", borderRadius: 10, padding: "0 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 8, color: "#4ade80", fontSize: 13.5, fontWeight: 600, transition: "transform 0.15s" }}>
+                <MessageCircle size={15} /> WhatsApp
               </a>
             </div>
           </div>
 
           <div>
-            <h4 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 20 }}>Projects</h4>
+            <h4 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>Projects</h4>
             {[["Sector 4", "Completed"], ["Sector 9", "Completed"], ["Sector 46", "Completed"], ["Sector 42", "Ongoing"], ["Reliance MET City", "NEW"]].map(([name, status]) => (
-              <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <span style={{ fontSize: 14, color: "rgba(255,255,255,0.75)" }}>{name}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: status === "Completed" ? "#4ade80" : status === "NEW" ? colors.gold : "#fbbf24", letterSpacing: 0.5 }}>{status}</span>
               </div>
@@ -1663,7 +1990,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 20 }}>Contact</h4>
+            <h4 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>Contact</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {[
                 { icon: <Phone size={15} />, text: "+91 93109 94032", href: "tel:+919310994032" },
@@ -1684,7 +2011,7 @@ const Footer = () => {
         </div>
 
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>© 2026 ShineOne Estate · Built with transparency and trust.</span>
+          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>© 2026 ShineOne Estate · Built with transparency and trust.</span>
          
         </div>
       </div>
@@ -1692,29 +2019,33 @@ const Footer = () => {
   );
 };
 
-/* ─────────────────────────── STICKY CTA ─────────────────────────── */
+/* ─────────────────────────── STICKY CTA (phones & tablets) ─────────────────────────── */
 const StickyCTA = () => {
-  const isMobile = useIsMobile();
+  const isCompact = useIsCompact();
   const [visible, setVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVisible(true), 2000); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    // Appears once the hero (which has its own buttons) is scrolled past
+    const fn = () => setVisible(window.scrollY > window.innerHeight * 0.6);
+    fn(); window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+  if (!isCompact) return null;
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 500, background: "rgba(13,13,13,0.97)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.1)", padding: isMobile ? "12px 12px calc(12px + env(safe-area-inset-bottom))" : "14px 24px", display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap",
-      transform: visible ? "translateY(0)" : "translateY(100%)", transition: "transform 0.5s cubic-bezier(.22,1,.36,1)" }}>
-      <a href="tel:+919310994032" style={{ textDecoration: "none", flex: isMobile ? "1 1 100%" : "0 0 auto" }}>
-        <button className="btn-primary" style={{ width: isMobile ? "100%" : "auto", padding: isMobile ? "13px 20px" : "12px 24px", fontSize: 14, justifyContent: "center" }}>
-          <Phone size={16} /> Call Now
-        </button>
-      </a>
-      <a href="https://wa.me/919310994032" target="_blank" rel="noreferrer" style={{ textDecoration: "none", flex: isMobile ? "1 1 45%" : "0 0 auto" }}>
-        <button className="btn-wa" style={{ width: "100%", padding: isMobile ? "13px 16px" : "12px 24px", fontSize: 14, justifyContent: "center" }}>
-          <MessageCircle size={16} /> WhatsApp
-        </button>
-      </a>
-      <a href="mailto:parveen@shineoneestate.co.in" style={{ textDecoration: "none", flex: isMobile ? "1 1 45%" : "0 0 auto" }}>
-        <button style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 10, cursor: "pointer", padding: isMobile ? "13px 16px" : "12px 24px", fontSize: 14, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", transition: "background 0.2s" }}>
-          <MailIcon color="#fff" size={16} /> Email
-        </button>
-      </a>
+    <div role="region" aria-label="Quick contact" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 500, background: "rgba(13,13,13,0.94)", backdropFilter: "blur(20px) saturate(160%)", WebkitBackdropFilter: "blur(20px) saturate(160%)",
+      borderTop: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)",
+      padding: "10px 12px calc(10px + env(safe-area-inset-bottom))",
+      transform: visible ? "translateY(0)" : "translateY(110%)", transition: "transform 0.45s cubic-bezier(.22,1,.36,1)" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr 52px", gap: 8 }}>
+        <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 12px", fontSize: 15, justifyContent: "center", boxShadow: "none" }}>
+          <Phone size={17} /> Call
+        </a>
+        <a href={`${WA_URL}?text=${encodeURIComponent("Hi, I'm interested in a ShineOne Estate project.")}`} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 12px", fontSize: 15, justifyContent: "center", boxShadow: "none" }}>
+          <MessageCircle size={17} /> WhatsApp
+        </a>
+        <a href={`mailto:${EMAIL}`} aria-label="Email us" className="btn-ghost" style={{ textDecoration: "none", justifyContent: "center", padding: 0, background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.2)" }}>
+          <MailIcon color="#fff" size={19} />
+        </a>
+      </div>
     </div>
   );
 };
@@ -1729,9 +2060,9 @@ const PageLoader = ({ onDone }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    // Count 0→100 over ~1.6s
+    // Count 0→100 over ~0.9s
     const start = Date.now();
-    const dur = 1600;
+    const dur = 900;
     const tick = () => {
       const p = Math.min((Date.now() - start) / dur, 1);
       const ease = 1 - Math.pow(1 - p, 3);
@@ -1739,7 +2070,7 @@ const PageLoader = ({ onDone }) => {
       if (p < 1) requestAnimationFrame(tick);
       else {
         setPhase(1);
-        setTimeout(() => { setPhase(2); setTimeout(onDone, 500); }, 700);
+        setTimeout(() => { setPhase(2); onDone(); }, 450);
       }
     };
     requestAnimationFrame(tick);
@@ -1754,7 +2085,7 @@ const PageLoader = ({ onDone }) => {
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       opacity: phase === 1 ? 0 : 1,
       transform: phase === 1 ? "scale(1.04)" : "scale(1)",
-      transition: "opacity 0.6s ease, transform 0.6s ease",
+      transition: "opacity 0.45s ease, transform 0.45s ease",
       pointerEvents: phase === 1 ? "none" : "all",
     }}>
       {/* Spinning ring */}
@@ -1779,7 +2110,7 @@ const PageLoader = ({ onDone }) => {
       <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, fontWeight: 700, color: "#fff", letterSpacing: 1, marginBottom: 8 }}>
         ShineOne <span style={{ color: colors.gold, fontStyle: "italic" }}>Estate</span>
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
         We Build Your Vision
       </div>
 
@@ -1793,7 +2124,7 @@ const PageLoader = ({ onDone }) => {
 
 /* ─────────────────────────── CUSTOM CURSOR ─────────────────────────── */
 const CustomCursor = () => {
-  const isMobile = useIsMobile();
+  const isMobile = !useFinePointer();
   const dot = useRef(null);
   const ring = useRef(null);
   const pos = useRef({ x: 0, y: 0 });
@@ -1882,7 +2213,7 @@ const CustomCursor = () => {
 
 /* ─────────────────────────── WAVE DIVIDER ─────────────────────────── */
 const WaveDivider = ({ topColor = "#fff", bottomColor = "#F5F0E8", flip = false }) => (
-  <div style={{ position: "relative", overflow: "hidden", height: 72, background: bottomColor, marginTop: -1 }}>
+  <div aria-hidden="true" style={{ position: "relative", overflow: "hidden", height: "clamp(32px, 5vw, 72px)", background: bottomColor, marginTop: -1 }}>
     <svg viewBox="0 0 1440 72" preserveAspectRatio="none"
       style={{ position: "absolute", bottom: flip ? "auto" : 0, top: flip ? 0 : "auto", width: "100%", height: "100%", transform: flip ? "scaleY(-1)" : "none" }}>
       <path d="M0,36 C240,72 480,0 720,36 C960,72 1200,0 1440,36 L1440,72 L0,72 Z" fill={topColor} />
@@ -1898,6 +2229,7 @@ const DiagonalDivider = ({ color = "#fff" }) => (
 
 /* ─────────────────────────── SCROLL TO TOP ─────────────────────────── */
 const ScrollToTop = () => {
+  const isCompact = useIsCompact();
   const [visible, setVisible] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -1906,32 +2238,35 @@ const ScrollToTop = () => {
       const scrolled = window.scrollY;
       const total = document.documentElement.scrollHeight - window.innerHeight;
       setProgress(total > 0 ? scrolled / total : 0);
-      setVisible(scrolled > 400);
+      setVisible(scrolled > window.innerHeight * 1.2);
     };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollUp = () => window.scrollTo({ top: 0, behavior: "smooth" });
-  const circumference = 2 * Math.PI * 20;
+  const scrollUp = () => { vibrate(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const size = isCompact ? 46 : 52;
+  const r = size / 2 - 5;
+  const circumference = 2 * Math.PI * r;
 
   return (
-    <button onClick={scrollUp} data-cursor-hover
+    <button onClick={scrollUp} data-cursor-hover aria-label="Back to top"
       style={{
-        position: "fixed", bottom: 90, right: 20, zIndex: 400, width: 52, height: 52,
+        position: "fixed", zIndex: 450, width: size, height: size,
+        bottom: isCompact ? "calc(84px + env(safe-area-inset-bottom))" : 100, right: isCompact ? 14 : 26,
         borderRadius: "50%", border: "none", cursor: "pointer",
         background: colors.darkBlue, boxShadow: "0 8px 24px rgba(43,91,168,0.4)",
         display: "flex", alignItems: "center", justifyContent: "center",
         opacity: visible ? 1 : 0, transform: visible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.8)",
-        transition: "all 0.4s cubic-bezier(.22,1,.36,1)",
-        pointerEvents: visible ? "all" : "none",
+        transition: "opacity 0.4s cubic-bezier(.22,1,.36,1), transform 0.4s cubic-bezier(.22,1,.36,1)",
+        pointerEvents: visible ? "auto" : "none",
       }}>
-      {/* SVG progress ring */}
-      <svg width="52" height="52" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
-        <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" />
-        <circle cx="26" cy="26" r="20" fill="none" stroke={colors.gold} strokeWidth="2.5"
+      <svg width={size} height={size} style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={colors.gold} strokeWidth="2.5"
           strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)}
-          strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.1s linear" }} />
+          strokeLinecap="round" />
       </svg>
       <ChevronLeft size={18} color="#fff" style={{ transform: "rotate(90deg)" }} />
     </button>
@@ -1942,12 +2277,24 @@ const ScrollToTop = () => {
 const WhatsAppWidget = () => {
   const [open, setOpen] = useState(false);
   const [entered, setEntered] = useState(false);
-  const isMobile = useIsMobile();
+  const isCompact = useIsCompact();
+  const boxRef = useRef(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setEntered(true), 3000);
+    const t = setTimeout(() => setEntered(true), 2500);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    const onDown = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onDown); };
+  }, [open]);
+
+  if (isCompact) return null;
 
   const messages = [
     { text: "👋 Hi! Interested in a project?", from: "them", delay: 0 },
@@ -1962,12 +2309,12 @@ const WhatsAppWidget = () => {
   ];
 
   return (
-    <div style={{ position: "fixed", bottom: isMobile ? 90 : 96, right: isMobile ? 12 : 20, zIndex: 450 }}>
+    <div ref={boxRef} style={{ position: "fixed", bottom: 26, right: 24, zIndex: 460 }}>
       {/* Chat panel */}
       {open && (
         <div style={{
           position: "absolute", bottom: 68, right: 0,
-          width: isMobile ? "calc(100vw - 32px)" : 320,
+          width: 330,
           maxHeight: 440,
           background: "#fff", borderRadius: 20,
           boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
@@ -1987,7 +2334,7 @@ const WhatsAppWidget = () => {
                 Online · Typically replies in minutes
               </div>
             </div>
-            <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <button onClick={() => setOpen(false)} aria-label="Close chat" style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
               <X size={18} color="rgba(255,255,255,0.8)" />
             </button>
           </div>
@@ -2029,7 +2376,7 @@ const WhatsAppWidget = () => {
       )}
 
       {/* FAB button */}
-      <button onClick={() => setOpen(!open)} data-cursor-hover
+      <button onClick={() => setOpen(!open)} data-cursor-hover aria-label={open ? "Close WhatsApp chat" : "Open WhatsApp chat"} aria-expanded={open}
         style={{
           width: 58, height: 58, borderRadius: "50%", border: "none", cursor: "pointer",
           background: "linear-gradient(135deg, #25D366, #128C7E)",
@@ -2079,44 +2426,48 @@ const BeforeAfterSlider = () => {
     setSliderX(pct);
   };
 
-  const onMouseMove = (e) => { if (dragging) updateSlider(e.clientX); };
-  const onTouchMove = (e) => { updateSlider(e.touches[0].clientX); };
+  // Pointer events cover mouse, touch and pen. touch-action: pan-y keeps vertical page scrolling
+  // working while a horizontal drag moves the slider.
+  const onPointerDown = (e) => {
+    setDragging(true);
+    updateSlider(e.clientX);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  };
+  const onPointerMove = (e) => { if (dragging) updateSlider(e.clientX); };
   const stop = () => setDragging(false);
-
-  useEffect(() => {
-    window.addEventListener("mouseup", stop);
-    window.addEventListener("touchend", stop);
-    return () => { window.removeEventListener("mouseup", stop); window.removeEventListener("touchend", stop); };
-  }, []);
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowLeft") { e.preventDefault(); setSliderX((x) => Math.max(5, x - 5)); }
+    if (e.key === "ArrowRight") { e.preventDefault(); setSliderX((x) => Math.min(95, x + 5)); }
+  };
 
   return (
-    <div ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: "#0C0F1A" }}>
+    <div ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#0C0F1A" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 52 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 52 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16, color: "rgba(201,168,76,0.9)" }}>
             <span style={{ background: colors.gold }} /> Before & After
           </div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.2rem", color: "#fff" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5vw, 3.2rem)", color: "#fff" }}>
             The transformation<br /><em style={{ color: colors.gold, fontStyle: "italic" }}>speaks for itself</em>
           </h2>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 15, marginTop: 16, lineHeight: 1.8 }}>
-            Drag the slider to reveal the before & after transformation
+          <p style={{ color: "rgba(255,255,255,0.66)", fontSize: 15, marginTop: 16, lineHeight: 1.8 }}>
+            See how our sites go from bare ground to finished homes
           </p>
         </div>
 
         <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s" }}>
           <div ref={containerRef}
-            onMouseMove={onMouseMove} onTouchMove={onTouchMove}
-            onMouseLeave={stop}
-            style={{ position: "relative", borderRadius: 24, overflow: "hidden", userSelect: "none", aspectRatio: isMobile ? "4/3" : "16/7", cursor: dragging ? "grabbing" : "grab", boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
+            onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={stop} onPointerCancel={stop}
+            role="slider" tabIndex={0} aria-label="Before and after comparison" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sliderX)} onKeyDown={onKeyDown}
+            style={{ position: "relative", borderRadius: isMobile ? 18 : 24, overflow: "hidden", userSelect: "none", WebkitUserSelect: "none", touchAction: "pan-y", aspectRatio: isMobile ? "4/3" : "16/7", maxHeight: "72vh", width: "100%", cursor: dragging ? "grabbing" : "ew-resize", boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
 
             {/* AFTER (full background) */}
-            <img src={afterImg} alt="After" loading="lazy"
+            <img src={afterImg} alt="After" loading="lazy" draggable={false}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
 
             {/* BEFORE (clipped left side) */}
             <div style={{ position: "absolute", inset: 0, overflow: "hidden", width: `${sliderX}%` }}>
-              <img src={beforeImg} alt="Before" loading="lazy"
+              <img src={beforeImg} alt="Before" loading="lazy" draggable={false}
                 style={{ width: `${10000 / sliderX}%`, maxWidth: "none", height: "100%", objectFit: "cover", objectPosition: "center" }} />
             </div>
 
@@ -2132,15 +2483,15 @@ const BeforeAfterSlider = () => {
             <div style={{ position: "absolute", top: 0, bottom: 0, left: `${sliderX}%`, width: 2, background: "#fff", transform: "translateX(-50%)", boxShadow: "0 0 12px rgba(255,255,255,0.6)" }} />
 
             {/* Drag handle */}
-            <div onMouseDown={(e) => { e.preventDefault(); setDragging(true); }}
-              onTouchStart={() => setDragging(true)}
+            <div aria-hidden="true"
               style={{
                 position: "absolute", top: "50%", left: `${sliderX}%`,
                 transform: "translate(-50%, -50%)",
                 width: 48, height: 48, borderRadius: "50%",
                 background: "#fff", boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "grab", zIndex: 3, transition: dragging ? "none" : "left 0.05s",
+                cursor: "grab", zIndex: 3, transition: dragging ? "none" : "left 0.25s cubic-bezier(.22,1,.36,1)",
+                pointerEvents: "none",
                 border: `3px solid ${colors.gold}`,
               }}>
               <div style={{ display: "flex", gap: 3 }}>
@@ -2151,8 +2502,8 @@ const BeforeAfterSlider = () => {
           </div>
 
           {/* Hint text */}
-          <div style={{ textAlign: "center", marginTop: 16, color: "rgba(255,255,255,0.35)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}>👆</span> Drag the handle to compare
+          <div style={{ textAlign: "center", marginTop: 16, color: "rgba(255,255,255,0.55)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <span style={{ fontSize: 16, display: "inline-block", animation: "nudge-x 1.6s ease-in-out infinite" }}>👆</span> {isMobile ? "Slide or tap anywhere on the photo" : "Drag, click, or use ← → keys to compare"}
           </div>
         </div>
       </div>
@@ -2178,14 +2529,14 @@ const FAQSection = () => {
   ];
 
   return (
-    <div ref={ref} style={{ padding: isMobile ? "64px 16px" : "100px 28px", background: colors.cream }}>
+    <div ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: colors.cream }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: 56 }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
           <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>FAQ</div>
-          <h2 className="display-heading" style={{ fontSize: isMobile ? "2.2rem" : "3.2rem" }}>
+          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5vw, 3.2rem)" }}>
             Common questions<br /><em style={{ color: colors.darkBlue, fontStyle: "italic" }}>answered</em>
           </h2>
-          <p style={{ color: "#666", fontSize: 15, marginTop: 16, lineHeight: 1.8 }}>
+          <p className="section-sub">
             Everything you need to know before making your decision.
           </p>
         </div>
@@ -2199,8 +2550,8 @@ const FAQSection = () => {
                   border: `1.5px solid ${isOpen ? colors.darkBlue : "rgba(43,91,168,0.1)"}`,
                   boxShadow: isOpen ? "0 8px 32px rgba(43,91,168,0.12)" : "0 2px 8px rgba(0,0,0,0.04)",
                   transition: "all 0.3s ease" }}>
-                <button onClick={() => setOpenIdx(isOpen ? null : i)}
-                  style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer",
+                <button onClick={() => setOpenIdx(isOpen ? null : i)} aria-expanded={isOpen}
+                  style={{ minHeight: 60, width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer",
                     padding: isMobile ? "18px 18px" : "22px 28px",
                     display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: isMobile ? 14 : 16, fontWeight: 700, color: isOpen ? colors.darkBlue : colors.black, lineHeight: 1.4 }}>
@@ -2213,8 +2564,8 @@ const FAQSection = () => {
                     </div>
                   </div>
                 </button>
-                <div style={{ maxHeight: isOpen ? 300 : 0, overflow: "hidden", transition: "max-height 0.45s cubic-bezier(.22,1,.36,1)" }}>
-                  <div style={{ padding: isMobile ? "0 18px 20px" : "0 28px 24px", fontSize: 14, color: "#555", lineHeight: 1.85, borderTop: "1px solid rgba(43,91,168,0.08)" }}>
+                <div style={{ maxHeight: isOpen ? 600 : 0, overflow: "hidden", transition: "max-height 0.45s cubic-bezier(.22,1,.36,1)" }}>
+                  <div style={{ padding: isMobile ? "0 18px 20px" : "0 28px 24px", fontSize: 14, color: colors.muted, lineHeight: 1.85, borderTop: "1px solid rgba(43,91,168,0.08)" }}>
                     <div style={{ paddingTop: 16 }}>{faq.a}</div>
                   </div>
                 </div>
@@ -2224,13 +2575,11 @@ const FAQSection = () => {
         </div>
 
         {/* CTA below FAQ */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.4s", textAlign: "center", marginTop: 48, padding: "36px 28px", background: colors.darkBlue, borderRadius: 20, boxShadow: "0 16px 48px rgba(43,91,168,0.25)" }}>
+        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.4s", textAlign: "center", marginTop: isMobile ? 32 : 48, padding: isMobile ? "28px 20px" : "36px 28px", background: `linear-gradient(135deg, ${colors.darkBlue}, #1f4a8f)`, borderRadius: 20, boxShadow: "0 16px 48px rgba(43,91,168,0.25)" }}>
           <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Still have questions?</div>
-          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, marginBottom: 20 }}>Our team responds within minutes on WhatsApp</p>
-          <a href="https://wa.me/919310994032?text=Hi%2C%20I%20have%20a%20question%20about%20ShineOne%20Estate." target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-            <button className="btn-wa" style={{ padding: "14px 28px", fontSize: 15 }}>
-              <MessageCircle size={18} /> Ask on WhatsApp
-            </button>
+          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, marginBottom: 20 }}>Our team responds within minutes on WhatsApp</p>
+          <a href={`${WA_URL}?text=Hi%2C%20I%20have%20a%20question%20about%20ShineOne%20Estate.`} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 28px", fontSize: 15, justifyContent: "center", width: isMobile ? "100%" : "auto" }}>
+            <MessageCircle size={18} /> Ask on WhatsApp
           </a>
         </div>
       </div>
@@ -2240,13 +2589,23 @@ const FAQSection = () => {
 
 /* ─────────────────────────── APP ─────────────────────────── */
 export default function App() {
-  const [loading, setLoading] = useState(true);
+  // Intro loader plays once per browser session (and never for reduced-motion users)
+  const [loading, setLoading] = useState(() => {
+    try {
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
+      return !sessionStorage.getItem("s1-intro-seen");
+    } catch (e) { return true; }
+  });
+  const finishLoading = () => {
+    try { sessionStorage.setItem("s1-intro-seen", "1"); } catch (e) {}
+    setLoading(false);
+  };
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: colors.cream, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: colors.cream, minHeight: "100vh", overflowX: "clip" }}>
       <GlobalStyles />
       <CustomCursor />
-      {loading && <PageLoader onDone={() => setLoading(false)} />}
+      {loading && <PageLoader onDone={finishLoading} />}
 
       <div style={{ opacity: loading ? 0 : 1, transition: "opacity 0.5s ease 0.1s" }}>
         <StickyHeader />
