@@ -1,29 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Phone,
-  MessageCircle,
-  MapPin,
-  Clock,
-  Award,
-  Home,
-  X,
-  CheckCircle,
-  TrendingUp,
-  Shield,
-  Star,
-  ArrowRight,
-} from "lucide-react";
+import { Phone, MessageCircle, MapPin, X, ChevronLeft, ChevronRight, ArrowUpRight, Plus, Check, Clock } from "lucide-react";
+import audio from "./experience/audioEngine";
+import SiteScene from "./experience/SiteScene";
 
 /* ─────────────────────────── UTILITIES ─────────────────────────── */
-const formatTime = (s = 0) => {
-  if (!isFinite(s)) return "0:00";
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60).toString().padStart(2, "0");
-  return `${m}:${sec}`;
-};
-
 const useWindowWidth = () => {
   const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
   useEffect(() => {
@@ -34,15 +14,9 @@ const useWindowWidth = () => {
   }, []);
   return w;
 };
-
-// Phones / small tablets
 const useIsMobile = () => useWindowWidth() <= 768;
-// Tablets & small laptops in portrait-ish widths
-const useIsTablet = () => { const w = useWindowWidth(); return w > 768 && w < 1024; };
-// Anything below a laptop: gets the touch-first layout (bottom action bar, compact hero)
 const useIsCompact = () => useWindowWidth() < 1024;
 
-// True only for a real mouse/trackpad — touch laptops & tablets don't get hover-only UI
 const useFinePointer = () => {
   const q = "(hover: hover) and (pointer: fine)";
   const [v, setV] = useState(typeof window !== "undefined" && window.matchMedia?.(q).matches);
@@ -55,47 +29,8 @@ const useFinePointer = () => {
   return v;
 };
 
-const useLockBodyScroll = (locked) => {
-  useEffect(() => {
-    if (!locked) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [locked]);
-};
-
-// Horizontal swipe + optional vertical swipe-down detection for touch surfaces.
-// Returns handlers to spread on an element and a ref telling whether the last touch was a swipe
-// (so a following synthetic click can be ignored).
-const useSwipe = ({ onLeft, onRight, onDown, threshold = 45 } = {}) => {
-  const start = useRef(null);
-  const swiped = useRef(false);
-  const onTouchStart = (e) => {
-    const t = e.touches[0];
-    start.current = { x: t.clientX, y: t.clientY, time: Date.now() };
-    swiped.current = false;
-  };
-  const onTouchEnd = (e) => {
-    if (!start.current) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - start.current.x;
-    const dy = t.clientY - start.current.y;
-    start.current = null;
-    if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      swiped.current = true;
-      if (dx < 0) onLeft?.(); else onRight?.();
-    } else if (onDown && dy > threshold * 2 && Math.abs(dy) > Math.abs(dx) * 1.2) {
-      swiped.current = true;
-      onDown();
-    }
-  };
-  return { handlers: { onTouchStart, onTouchEnd }, swiped };
-};
-
-const vibrate = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
-
 const useReducedMotion = () => {
-  const [r, setR] = useState(false);
+  const [r, setR] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const on = () => setR(mq.matches); on();
@@ -105,7 +40,34 @@ const useReducedMotion = () => {
   return r;
 };
 
-const useReveal = (threshold = 0.1) => {
+const useLockBodyScroll = (locked) => {
+  useEffect(() => {
+    if (!locked) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [locked]);
+};
+
+// Horizontal swipe + optional swipe-down for touch surfaces.
+const useSwipe = ({ onLeft, onRight, onDown, threshold = 45 } = {}) => {
+  const start = useRef(null);
+  const onTouchStart = (e) => { const t = e.touches[0]; start.current = { x: t.clientX, y: t.clientY }; };
+  const onTouchEnd = (e) => {
+    if (!start.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.current.x;
+    const dy = t.clientY - start.current.y;
+    start.current = null;
+    if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy) * 1.2) { if (dx < 0) onLeft?.(); else onRight?.(); }
+    else if (onDown && dy > threshold * 2 && Math.abs(dy) > Math.abs(dx) * 1.2) onDown();
+  };
+  return { onTouchStart, onTouchEnd };
+};
+
+const vibrate = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
+
+const useReveal = (threshold = 0.15) => {
   const [visible, setVisible] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -113,35 +75,45 @@ const useReveal = (threshold = 0.1) => {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [threshold]);
   return { ref, visible };
 };
 
-const useCountUp = (target, duration = 1500, start = false) => {
-  const [value, setValue] = useState(0);
+// Mouse drag-to-scroll for horizontal strips (touch already scrolls natively)
+const useDragScroll = () => {
+  const ref = useRef(null);
+  const moved = useRef(false);
   useEffect(() => {
-    if (!start) return;
-    const startTime = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(target * ease));
-      if (progress < 1) requestAnimationFrame(tick);
+    const el = ref.current; if (!el) return;
+    let down = false, sx = 0, sl = 0;
+    const onDown = (e) => { if (e.pointerType !== "mouse" || e.button !== 0) return; down = true; moved.current = false; sx = e.clientX; sl = el.scrollLeft; };
+    const onMove = (e) => {
+      if (!down) return;
+      const dx = e.clientX - sx;
+      if (Math.abs(dx) > 5 && !moved.current) { moved.current = true; el.classList.add("is-dragging"); }
+      if (moved.current) el.scrollLeft = sl - dx;
     };
-    requestAnimationFrame(tick);
-  }, [target, start]);
-  return value;
+    const onUp = () => { if (!down) return; down = false; el.classList.remove("is-dragging"); };
+    const onClick = (e) => { if (moved.current) { e.preventDefault(); e.stopPropagation(); moved.current = false; } };
+    el.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    el.addEventListener("click", onClick, true);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      el.removeEventListener("click", onClick, true);
+    };
+  }, []);
+  return ref;
 };
 
 /* ─────────────────────────── DATA ─────────────────────────── */
-const colors = { cream: "#F5F0E8", lightBlue: "#8FABD4", darkBlue: "#2B5BA8", black: "#0D0D0D", gold: "#C9A84C", navy: "#0C0F1A", muted: "#5f6470", subtle: "#767b85" };
-
 const PHONE = "+919310994032";
 const WA_URL = "https://wa.me/919310994032";
 const EMAIL = "parveen@shineoneestate.co.in";
 
-// Readable names for the media folders
 const FOLDER_LABELS = {
   "sec 4": "Sector 4",
   "sec 9": "Sector 9",
@@ -150,6 +122,7 @@ const FOLDER_LABELS = {
   "reliance met city": "Reliance MET City",
 };
 const folderLabel = (f) => FOLDER_LABELS[String(f || "").toLowerCase().trim()] || f;
+const isVideo = (src) => /\.(mp4|webm|ogg|mov)$/i.test(String(src));
 
 const projectData = {
   name: "ShineOne Estate",
@@ -217,1092 +190,950 @@ const CLOUDINARY_FOLDER_IMAGES = {
 // minute or two. If the server can't be reached the last-known list above is shown instead.
 const MEDIA_API_URL = "https://we-three-api.onrender.com/api/public/shine/media";
 
-const useBackendMedia = () => {
-  const [folderImages, setFolderImages] = useState(CLOUDINARY_FOLDER_IMAGES);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchAll = async () => {
-      try {
-        const res = await fetch(MEDIA_API_URL);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { folders } = await res.json();
+// Fetched once and shared by every chapter that shows photos.
+let mediaRequest = null;
+const loadMedia = () => {
+  if (!mediaRequest) {
+    mediaRequest = fetch(MEDIA_API_URL)
+      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .then(({ folders }) => {
         const names = Object.keys(folders || {});
-        // Every folder empty means the server isn't reading the right account: keep the fallback
-        // rather than blanking the site. Otherwise the server's list is the truth for each folder.
+        // Every folder empty means the server isn't reading the right account: keep the fallback.
         if (!names.some((f) => folders[f].length > 0)) throw new Error("empty");
         const merged = { ...CLOUDINARY_FOLDER_IMAGES };
         names.forEach((folder) => { merged[folder] = folders[folder]; });
-        if (!cancelled) setFolderImages(merged);
-      } catch (err) {
-        // Keeps the last-known hardcoded list.
-      }
-    };
+        return merged;
+      })
+      .catch(() => null);
+  }
+  return mediaRequest;
+};
 
-    fetchAll();
+const useBackendMedia = () => {
+  const [folderImages, setFolderImages] = useState(CLOUDINARY_FOLDER_IMAGES);
+  useEffect(() => {
+    let cancelled = false;
+    loadMedia().then((m) => { if (m && !cancelled) setFolderImages(m); });
     return () => { cancelled = true; };
   }, []);
-
   return folderImages;
 };
 
-/* ─────────────────────────── GLOBAL STYLES ─────────────────────────── */
-const GlobalStyles = () => (
+/* ─────────────────────────── CHAPTERS & SCROLL STORE ─────────────────────────── */
+const CHAPTERS = [
+  { id: "ground", label: "Ground", mood: 0, bg: "dawn", scene: "intro", night: 0.1 },
+  { id: "overview", label: "Projects", mood: 2, bg: "dusk", scene: "overview", night: 0.65 },
+  { id: "progress", label: "Progress", mood: 1, bg: "blueprint", scene: "progress", night: 0.3 },
+  { id: "stories", label: "Live", mood: 1, bg: "night" },
+  { id: "gallery", label: "Gallery", mood: 2, bg: "night" },
+  { id: "transform", label: "Before/After", mood: 2, bg: "ember" },
+  { id: "locations", label: "Gurugram", mood: 3, bg: "night" },
+  { id: "why", label: "Why", mood: 3, bg: "ember" },
+  { id: "faq", label: "FAQ", mood: 3, bg: "night" },
+  { id: "contact", label: "Contact", mood: 0, bg: "close" },
+];
+const SCENE_CHAPTERS = 3; // the first three chapters sit on the live 3D site
+
+const STAGES = ["Foundation", "Structure", "Finishing", "Interior Works", "Final Inspection", "Handover"];
+// Where each stage sits on the 3D build timeline (see SiteScene)
+const STAGE_RANGES = [[0, 0.08], [0.08, 0.53], [0.53, 0.72], [0.72, 0.84], [0.84, 0.92], [0.92, 1.0001]];
+const stageIndexFromP = (p) => Math.max(0, STAGE_RANGES.findIndex(([a, b]) => p >= a && p < b));
+
+const projectStages = (project) => STAGES.map((s, idx) => {
+  const status = project.status.toLowerCase();
+  if (status.includes("completed")) return "completed";
+  if (status.includes("ongoing")) {
+    if (project.stage) {
+      const ci = STAGES.findIndex((st) => st.toLowerCase() === String(project.stage).toLowerCase());
+      if (ci === -1) return "pending";
+      if (idx < ci) return "completed";
+      if (idx === ci) return "ongoing";
+      return "pending";
+    }
+    const fi = STAGES.indexOf("Finishing");
+    if (idx < fi) return "completed";
+    if (idx === fi) return "ongoing";
+    return "pending";
+  }
+  return "pending";
+});
+// 3D build position for a project: complete if delivered, otherwise well into its current stage
+const projectSceneP = (project) => {
+  const st = projectStages(project);
+  if (st.every((x) => x === "completed")) return 1;
+  const cur = st.indexOf("ongoing");
+  if (cur === -1) return 0;
+  const [a, b] = STAGE_RANGES[cur];
+  return a + (Math.min(b, 1) - a) * 0.75;
+};
+const projectPercent = (p) => (p.progress !== undefined ? p.progress : p.status.toLowerCase().includes("completed") ? 100 : 0);
+
+const store = {
+  pos: 0, active: 0, ground: 0, subs: new Set(),
+  set(v) { Object.assign(this, v); this.subs.forEach((f) => f(this)); },
+};
+const useStore = (selector) => {
+  const sel = useRef(selector); sel.current = selector;
+  const [v, setV] = useState(() => selector(store));
+  useEffect(() => {
+    const f = (s) => setV(sel.current(s));
+    store.subs.add(f);
+    f(store);
+    return () => store.subs.delete(f);
+  }, []);
+  return v;
+};
+const goToChapter = (i) => document.getElementById(`ch-${CHAPTERS[i].id}`)?.scrollIntoView({ behavior: "smooth" });
+
+/* ─────────────────────────── STYLES ─────────────────────────── */
+const Styles = () => (
   <style>{`
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-    body { font-family: 'DM Sans', sans-serif; background: #F5F0E8; color: #0D0D0D; overflow-x: hidden; }
-    img, video { max-width: 100%; }
-    button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    button { font-family: inherit; }
-    :focus { outline: none; }
-    :focus-visible { outline: 2.5px solid #C9A84C; outline-offset: 3px; border-radius: 10px; }
-    ::selection { background: rgba(201,168,76,0.35); }
-    [id^="section-"] { scroll-margin-top: 72px; }
-    @media (min-width: 1024px) { ::-webkit-scrollbar { width: 8px; } }
-    ::-webkit-scrollbar-track { background: #F5F0E8; }
-    ::-webkit-scrollbar-thumb { background: #2B5BA8; border-radius: 4px; }
+  :root {
+    --ink: #090c12; --fg: #fff; --fg2: rgba(255,255,255,.74); --fg3: rgba(255,255,255,.52); --line: rgba(255,255,255,.12);
+    --gold: #dcbd6c; --sand: #ecd9b4; --wa: #25D366;
+    --serif: 'Newsreader', Georgia, serif; --mono: 'Google Sans Code', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; --hand: 'Caveat', cursive;
+    --ease: cubic-bezier(.22,1,.36,1);
+    --gutter: clamp(16px, 4vw, 40px);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { background: var(--ink); color: var(--fg); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  img, video { max-width: 100%; display: block; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  a { color: inherit; }
+  button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 12px; }
+  ::selection { background: rgba(220,189,108,.4); }
 
-    .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.75s cubic-bezier(.22,1,.36,1), transform 0.75s cubic-bezier(.22,1,.36,1); }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    .reveal-left { opacity: 0; transform: translateX(-40px); transition: opacity 0.8s cubic-bezier(.22,1,.36,1), transform 0.8s cubic-bezier(.22,1,.36,1); }
-    .reveal-left.visible { opacity: 1; transform: translateX(0); }
-    .reveal-right { opacity: 0; transform: translateX(40px); transition: opacity 0.8s cubic-bezier(.22,1,.36,1), transform 0.8s cubic-bezier(.22,1,.36,1); }
-    .reveal-right.visible { opacity: 1; transform: translateX(0); }
-    @media (max-width: 768px) {
-      .reveal { transform: translateY(20px); transition-duration: 0.55s; }
-    }
+  .xp { position: relative; min-height: 100vh; overflow-x: clip; }
+  .wrap { width: min(1240px, 100% - var(--gutter) * 2); margin-inline: auto; }
 
-    @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-    @keyframes float2 { 0%,100% { transform: translateY(0px) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
-    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(43,91,168,0.4); } 70% { box-shadow: 0 0 0 12px rgba(43,91,168,0); } 100% { box-shadow: 0 0 0 0 rgba(43,91,168,0); } }
-    @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.5); } 70% { box-shadow: 0 0 0 10px rgba(22,163,74,0); } 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); } }
-    @keyframes gradient-x { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-    @keyframes slide-up { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
-    @keyframes slide-up-delay { 0%,30% { opacity:0; transform:translateY(20px); } 100% { opacity:1; transform:translateY(0); } }
-    @keyframes fade-in { from { opacity:0; } to { opacity:1; } }
-    @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    @keyframes hero-img-scale { from { transform: scale(1.08); } to { transform: scale(1); } }
-    @keyframes count-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes glow-pulse { 0%,100% { opacity:0.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.2); } }
-    @keyframes border-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    @keyframes ping { 0% { transform:scale(1); opacity:0.75; } 100% { transform:scale(2.4); opacity:0; } }
-    @keyframes scroll-cue { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }
-    @keyframes nudge-x { 0%,100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+  /* ── Backdrops (cross-faded per chapter) ── */
+  .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--ink); }
+  .bg > div { position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s ease; }
+  .bg > div.on { opacity: 1; }
+  .bg-dawn { background: radial-gradient(ellipse 130vw 120vh at 50% 128%, #f4e3c3 10%, #e2bf8f 22%, #b98763 34%, #7a6070 48%, #3a3c58 64%, #151b2b 82%, #0b0f18 100%); }
+  .bg-dusk { background: radial-gradient(ellipse 120vw 110vh at 78% 120%, #e9b97a 6%, #b0705a 20%, #5b4766 38%, #262b45 58%, #0e1220 80%, #090c12 100%); }
+  .bg-blueprint { background: radial-gradient(ellipse 120vw 120vh at 22% 125%, #b9d0f0 6%, #6e93c9 20%, #33558f 38%, #1a2d55 58%, #0c1428 80%, #080c16 100%); }
+  .bg-night { background: radial-gradient(ellipse 90vw 70vh at 50% -10%, rgba(43,91,168,.28), transparent 70%), radial-gradient(ellipse 80vw 60vh at 100% 110%, rgba(220,189,108,.12), transparent 70%), #090c12; }
+  .bg-close { background: radial-gradient(ellipse 120vw 75vh at 50% 135%, #d9b183 0%, #9a6a55 22%, #4a3c55 45%, #1c2134 68%, #0b0f18 90%); }
+  .bg-ember { background: radial-gradient(ellipse 110vw 90vh at 50% 120%, rgba(214,148,92,.42), rgba(120,70,60,.18) 45%, transparent 75%), radial-gradient(ellipse 70vw 50vh at 0% 0%, rgba(43,91,168,.18), transparent 70%), #0b0c12; }
+  .grain { position: fixed; inset: -50%; z-index: 1; pointer-events: none; opacity: .06; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #2B5BA8 0%, #1a3f7a 100%);
-      color: #fff; border: none; border-radius: 12px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700; letter-spacing: 0.3px;
-      transition: transform 0.28s cubic-bezier(.22,1,.36,1), box-shadow 0.28s ease, background 0.2s ease;
-      display: inline-flex; align-items: center; gap: 8px; min-height: 48px;
-      position: relative; overflow: hidden; box-shadow: 0 6px 18px rgba(43,91,168,0.28);
-    }
-    .btn-wa {
-      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
-      color: #fff; border: none; border-radius: 12px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700; min-height: 48px;
-      transition: transform 0.28s cubic-bezier(.22,1,.36,1), box-shadow 0.28s ease;
-      display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 18px rgba(18,140,126,0.28);
-    }
-    .btn-ghost {
-      background: rgba(255,255,255,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      color: #fff; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 12px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700; min-height: 48px;
-      transition: all 0.28s ease; display: inline-flex; align-items: center; gap: 8px;
-    }
-    .btn-outline {
-      background: transparent; color: #2B5BA8; border: 2px solid #2B5BA8; border-radius: 12px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700; min-height: 48px;
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
-    }
-    .icon-btn {
-      width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-      border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.14);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; flex-shrink: 0;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    .chip {
-      padding: 10px 18px; border-radius: 50px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
-      cursor: pointer; white-space: nowrap; min-height: 44px; flex-shrink: 0; scroll-snap-align: center;
-      transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
-    }
+  .scene-host { position: fixed; inset: 0; z-index: 1; transition: opacity 1s ease, filter 1s ease; }
+  .scene-host.off { opacity: 0; filter: blur(8px); }
+  .scene-fallback { position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.45) saturate(.9); }
 
-    /* Hover effects only for real mouse/trackpad users — avoids "stuck" hover after a tap */
-    @media (hover: hover) and (pointer: fine) {
-      .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(43,91,168,0.45); }
-      .btn-wa:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(37,211,102,0.4); }
-      .btn-ghost:hover { background: rgba(255,255,255,0.22); transform: translateY(-3px); border-color: rgba(255,255,255,0.6); }
-      .btn-outline:hover { background: #2B5BA8; color: #fff; }
-      .icon-btn:hover { background: rgba(255,255,255,0.26); }
-      .card-hover:hover { transform: translateY(-8px); box-shadow: 0 28px 56px rgba(0,0,0,0.14) !important; }
-      .tilt-card:hover { transform: perspective(800px) rotateX(-3deg) rotateY(5deg) translateY(-4px); box-shadow: 12px 24px 48px rgba(0,0,0,0.15); }
-      .shine-card:hover::before { left: 150%; }
-      .neon-hover:hover { box-shadow: 0 0 0 1px #C9A84C, 0 0 20px rgba(201,168,76,0.2), 0 8px 32px rgba(0,0,0,0.12) !important; }
-      .img-thumb:hover { transform: scale(1.06); border-color: #C9A84C; }
-      .zoom-img:hover { transform: scale(1.07); }
-      .lift:hover { transform: translateY(-6px); }
-      .pill-hover:hover { background: #2B5BA8 !important; color: #fff !important; }
-      .nav-link:hover { background: var(--nav-hover); }
-    }
-    /* Touch feedback */
-    .btn-primary:active, .btn-wa:active, .btn-ghost:active, .btn-outline:active, .icon-btn:active, .chip:active, .press:active { transform: scale(0.96); }
-    .card-hover:active, .lift:active { transform: scale(0.985); }
+  main { position: relative; z-index: 2; }
 
-    .card-hover { transition: transform 0.4s cubic-bezier(.22,1,.36,1), box-shadow 0.4s cubic-bezier(.22,1,.36,1); }
+  /* ── Type ── */
+  .mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+  .serif { font-family: var(--serif); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg2); display: inline-flex; align-items: center; gap: 12px; }
+  .eyebrow b { color: var(--fg); font-weight: 700; }
+  .eyebrow i { display: block; width: 28px; height: 1px; background: currentColor; opacity: .6; }
+  .display { font-family: var(--serif); font-weight: 400; letter-spacing: -.02em; line-height: .98; }
+  .display em { font-style: italic; color: var(--sand); }
+  .h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -.02em; line-height: 1.02; font-size: clamp(2.4rem, 5.6vw, 4.6rem); }
+  .h2 em { font-style: italic; color: var(--sand); }
+  .lede { color: var(--fg2); font-size: clamp(15px, 1.25vw, 17px); line-height: 1.7; max-width: 520px; }
+  .hand { font-family: var(--hand); font-weight: 700; }
 
-    .story-ring {
-      background: linear-gradient(135deg, #2B5BA8, #C9A84C);
-      padding: 3px; border-radius: 50%;
-      box-shadow: 0 0 0 0 rgba(201,168,76,0.5);
-      animation: story-glow 2.5s ease-in-out infinite;
-    }
-    @keyframes story-glow {
-      0%,100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
-      50% { box-shadow: 0 0 0 6px rgba(201,168,76,0.25), 0 0 20px rgba(43,91,168,0.2); }
-    }
-    .story-ring-inner { background: #F5F0E8; border-radius: 50%; padding: 3px; width: 100%; height: 100%; }
+  /* Line-mask reveal */
+  .rise { display: block; overflow: hidden; padding-bottom: .06em; }
+  .rise > span { display: block; transform: translateY(105%); transition: transform 1.1s var(--ease); transition-delay: var(--d, 0s); }
+  .in .rise > span, .rise.in > span { transform: none; }
+  .fade-up { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: var(--d, 0s); }
+  .in .fade-up, .fade-up.in { opacity: 1; transform: none; }
 
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #1a3f7a, #2B5BA8, #C9A84C, #2B5BA8);
-      background-size: 300% 100%;
-      animation: shimmer 2.5s linear infinite;
-      border-radius: inherit;
-      transition: width 1.4s cubic-bezier(.22,1,.36,1);
-    }
+  /* ── Glass system (after the reference HUD) ── */
+  .glass { position: relative; background: rgba(0,0,0,.4); -webkit-backdrop-filter: saturate(120%) blur(14px); backdrop-filter: saturate(120%) blur(14px); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.92); }
+  .glass::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: linear-gradient(135deg, rgba(255,255,255,.4), rgba(255,255,255,0) 35% 65%, rgba(255,255,255,.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .panel { position: relative; background: rgba(9,12,20,.46); -webkit-backdrop-filter: blur(18px) saturate(130%); backdrop-filter: blur(18px) saturate(130%); border: 1px solid rgba(255,255,255,.1); border-radius: 24px; }
+  .panel::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: linear-gradient(140deg, rgba(255,255,255,.28), rgba(255,255,255,0) 30% 70%, rgba(255,255,255,.18));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
 
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 50px;
-      padding: 8px 18px; color: #D9BC68; font-size: 12px; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase;
-    }
+  .pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 999px; font-family: var(--sans); font-weight: 600; font-size: 15px; text-decoration: none; white-space: nowrap; transition: transform .25s var(--ease), background .3s, color .3s, box-shadow .3s; }
+  .pill-solid { background: #fff; color: #0b0d12; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .pill-solid:hover { box-shadow: 0 14px 40px rgba(255,255,255,.18); }
+  .pill.glass:hover { background: rgba(0,0,0,.55); }
+  .pill:active { transform: scale(.96); }
+  .wa-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wa); box-shadow: 0 0 0 4px rgba(37,211,102,.18); }
 
-    .tag-pill {
-      display: inline-flex; align-items: center;
-      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
-    }
+  .rule { height: 1px; background: var(--line); border: none; }
 
-    .section-label {
-      font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800;
-      letter-spacing: 4px; text-transform: uppercase; color: #2B5BA8;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .section-label::before { content: ''; display: block; width: 28px; height: 2px; background: linear-gradient(90deg,#2B5BA8,#C9A84C); }
+  /* Rolling digits */
+  .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .roll { display: inline-flex; line-height: 1; font-variant-numeric: tabular-nums; }
+  .roll-digit { display: inline-block; height: 1em; overflow: hidden; }
+  .roll-inner { display: flex; flex-direction: column; transition: transform 1.2s var(--ease); transition-delay: var(--d, 0s); }
+  .roll-inner > span { display: block; height: 1em; line-height: 1; }
 
-    .display-heading {
-      font-family: 'Cormorant Garamond', serif;
-      font-weight: 700; line-height: 1.04; color: #0D0D0D; letter-spacing: -0.3px;
-    }
-    .section-sub { max-width: 560px; margin: 18px auto 0; color: #5f6470; font-size: 16px; line-height: 1.8; }
+  /* ── HUD ── */
+  .hud { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: calc(14px + env(safe-area-inset-top)) var(--gutter) 0; pointer-events: none; transition: opacity .8s ease, transform .8s var(--ease); }
+  .hud.hidden { opacity: 0; transform: translateY(-12px); }
+  .hud > * { pointer-events: auto; }
+  .hud-brand { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px 0 6px; border-radius: 999px; font-family: var(--serif); font-size: 18px; }
+  .hud-mark { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #0b0d12; font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0; }
+  .hud-right { display: flex; align-items: center; gap: 8px; }
+  .hud-icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; transition: background .3s; }
+  .hud-icon:hover { background: rgba(0,0,0,.55); }
+  .hud-cta { height: 44px; padding: 0 18px; border-radius: 999px; display: inline-flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 500; text-decoration: none; }
+  .wave rect { transform-box: fill-box; transform-origin: center; transform: scaleY(.15); transition: transform .38s var(--ease); }
+  .wave.on rect { animation: wave 1.1s ease-in-out infinite; }
+  .wave.on rect:nth-child(2) { animation-delay: .15s; } .wave.on rect:nth-child(3) { animation-delay: .3s; } .wave.on rect:nth-child(4) { animation-delay: .45s; } .wave.on rect:nth-child(5) { animation-delay: .6s; }
+  @keyframes wave { 0%,100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
 
-    .ticker-inner { display: flex; width: max-content; animation: marquee 28s linear infinite; }
+  .menu-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 220px; padding: 8px; border-radius: 18px; display: flex; flex-direction: column;
+    opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s var(--ease); max-height: calc(100svh - 90px); overflow-y: auto; }
+  .menu-drop.open { opacity: 1; transform: none; pointer-events: auto; }
+  .menu-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; font-size: 15px; text-decoration: none; text-align: left; width: 100%; transition: background .2s; }
+  .menu-item:hover, .menu-item.on { background: rgba(255,255,255,.1); }
+  .menu-item .mono { font-size: 11px; color: var(--fg3); width: 22px; }
 
-    /* Horizontal swipe rows (chips, story circles) */
-    .h-scroll {
-      display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
-      -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-padding-inline: 16px;
-    }
-    .h-scroll::-webkit-scrollbar { display: none; }
-    /* Center when everything fits, start-aligned when it overflows (no clipped first item) */
-    .h-scroll > :first-child { margin-left: auto; }
-    .h-scroll > :last-child { margin-right: auto; }
-    .h-scroll-fade { position: relative; }
-    .h-scroll-fade::after {
-      content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 36px; pointer-events: none;
-      background: linear-gradient(90deg, rgba(255,255,255,0), var(--fade-bg, #fff));
-    }
-    @media (min-width: 1024px) { .h-scroll-fade::after { display: none; } }
+  /* Desktop scroll ruler */
+  .ruler { position: absolute; top: calc(14px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: 320px; height: 52px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10% 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10% 90%, transparent); }
+  .ruler.nav { -webkit-mask-image: none; mask-image: none; width: auto; }
+  .ruler-track { position: absolute; top: 0; left: 0; height: 100%; will-change: transform; transition: opacity .25s; }
+  .ruler.nav .ruler-track, .ruler.nav .ruler-ind { opacity: 0; pointer-events: none; }
+  .tick { position: absolute; top: 0; width: 12px; margin-left: -6px; display: flex; flex-direction: column; align-items: center; }
+  .tick i { display: block; width: 1px; height: 8px; background: rgba(255,255,255,.35); }
+  .tick.major i { height: 16px; background: rgba(255,255,255,.65); }
+  .tick span { margin-top: 4px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.62); white-space: nowrap; }
+  .ruler-ind { position: absolute; top: 0; left: 50%; width: 2px; height: 18px; background: #fff; transform: translateX(-50%); transition: opacity .25s; }
+  .ruler-nav { display: flex; gap: 22px; opacity: 0; pointer-events: none; transition: opacity .25s; padding-top: 2px; }
+  .ruler.nav .ruler-nav { opacity: 1; pointer-events: auto; }
+  .ruler-nav button { display: flex; flex-direction: column; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.66); white-space: nowrap; }
+  .ruler-nav button i { display: block; width: 26px; height: 1px; background: rgba(255,255,255,.5); transition: width .2s, background .2s; }
+  .ruler-nav button:hover, .ruler-nav button.on { color: #fff; }
+  .ruler-nav button:hover i, .ruler-nav button.on i { width: 38px; background: #fff; }
+  .ruler-nav button.on i { height: 2px; }
 
-    /* ── GLASSMORPHISM SYSTEM ── */
-    .glass-card {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 20px;
-    }
-    .glass-card-light {
-      background: rgba(255,255,255,0.86);
-      backdrop-filter: blur(24px) saturate(200%);
-      -webkit-backdrop-filter: blur(24px) saturate(200%);
-      border: 1px solid rgba(255,255,255,0.9);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
-    }
-    .glass-dark {
-      background: rgba(12,15,26,0.6);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-    }
-    .glass-gold {
-      background: rgba(201,168,76,0.12);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(201,168,76,0.3);
-      border-radius: 16px;
-    }
+  /* Mobile timeline */
+  .mtl { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 999px; }
+  .mtl-bars { display: flex; gap: 3px; }
+  .mtl-bar { width: 10px; height: 2px; border-radius: 1px; background: rgba(255,255,255,.28); overflow: hidden; }
+  .mtl-bar i { display: block; height: 100%; background: #fff; transform-origin: left; }
+  .mtl-count { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: rgba(255,255,255,.88); font-variant-numeric: tabular-nums; }
 
-    /* ── FLOATING PARTICLES ── */
-    .particle {
-      position: absolute; border-radius: 50%; pointer-events: none;
-      animation: particle-float linear infinite;
-    }
-    @keyframes particle-float {
-      0% { transform: translateY(100vh) scale(0); opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 0.6; }
-      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-    }
+  /* ── Entry gate ── */
+  .gate { position: fixed; inset: 0; z-index: 100; color: #fff; transition: opacity .9s ease, transform 1.2s var(--ease), filter .9s ease; }
+  .gate::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 130vw 120vh at 50% 128%, rgba(244,227,195,.9) 8%, rgba(185,135,99,.8) 26%, rgba(58,60,88,.88) 54%, rgba(11,15,24,.96) 82%); }
+  .gate.leaving { opacity: 0; transform: scale(1.08); filter: blur(10px); pointer-events: none; }
+  .gate > * { position: absolute; }
+  .gate-top { top: calc(18px + env(safe-area-inset-top)); left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .gate-counter { left: var(--gutter); bottom: calc(clamp(24px, 4vh, 40px) + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: 12px; }
+  .gate-count { font-family: var(--mono); font-weight: 700; font-size: clamp(5.5rem, 16.7vh, 11rem); line-height: 1;
+    -webkit-mask-image: linear-gradient(transparent 0%, #000 22% 78%, transparent 100%); mask-image: linear-gradient(transparent 0%, #000 22% 78%, transparent 100%); }
+  .gate-unit { font-size: 12px; color: rgba(255,255,255,.7); padding-bottom: 1.2rem; line-height: 1.6; }
+  .gate-center { inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .gate-center > div { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 34px; opacity: 0; transform: translateY(14px); transition: opacity .8s ease, transform .8s var(--ease); }
+  .gate.ready .gate-center > div { opacity: 1; transform: none; }
+  .gate-note { right: var(--gutter); bottom: calc(clamp(28px, 5vh, 48px) + env(safe-area-inset-bottom)); font-size: 11px; color: rgba(255,255,255,.72); text-align: right; line-height: 1.7; }
+  .hold { position: relative; width: 92px; height: 92px; }
+  .hold-btn { position: absolute; inset: 0; border-radius: 50%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    background: radial-gradient(circle, rgba(255,255,255,0) 0 24%, #fff 48%, rgba(255,255,255,.92) 62%, rgba(255,255,255,.32) 82%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 0 34px 4px rgba(255,255,255,.28); transition: transform .2s var(--ease); }
+  .hold-btn:hover { transform: scale(1.06); }
+  .hold-btn.pressing { transform: scale(.94); }
+  .hold-btn::before, .hold-btn::after { content: ""; position: absolute; top: 50%; left: 50%; width: 130%; height: 130%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,255,255,0) 40%, rgba(255,255,255,.15) 64%, rgba(255,255,255,.85) 86%, #fff 94%, rgba(255,255,255,0) 96%);
+    animation: ripple 2.8s var(--ease) infinite; opacity: 0; }
+  .hold-btn::after { animation-delay: 1.4s; }
+  @keyframes ripple { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.7); } 15% { opacity: .75; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.65); } }
+  .hold-ring { position: absolute; top: 50%; left: 50%; width: 128%; height: 128%; transform: translate(-50%,-50%) rotate(-90deg); overflow: visible; pointer-events: none; }
+  .hold-ring circle { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(255,255,255,.6)); }
+  .hold-label { position: absolute; top: 50%; left: calc(100% + 26px); transform: translateY(-50%); font-family: var(--mono); font-weight: 700; font-size: clamp(1rem, 2.2vw, 1.35rem); line-height: 1.08; text-transform: uppercase; white-space: pre; }
+  .gate-skip { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.75); padding: 12px 16px; border-radius: 999px; transition: background .25s, color .25s; }
+  .gate-skip:hover { background: rgba(255,255,255,.1); color: #fff; }
 
-    .tilt-card { transition: transform 0.3s ease, box-shadow 0.3s ease; transform-style: preserve-3d; }
+  /* ── Chapter: Ground (hero, scroll-scrubbed build) ── */
+  .ground { position: relative; height: 270svh; }
+  .ground-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+  .ground-copy { position: absolute; left: var(--gutter); bottom: clamp(36px, 9vh, 96px); width: min(620px, 50vw); }
+  .ground-copy .display { font-size: clamp(3.2rem, min(7vw, 12.5vh), 7.6rem); margin: 18px 0 22px; white-space: nowrap; }
+  .ground-copy .cycle { display: inline-block; font-style: italic; color: var(--sand); }
+  .ground-actions { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
+  .readout { position: absolute; right: var(--gutter); bottom: clamp(36px, 9vh, 96px); width: 250px; text-align: right; }
+  .readout-num { font-family: var(--mono); font-weight: 700; font-size: clamp(3.6rem, 9vh, 5.6rem); line-height: 1; display: inline-flex; align-items: flex-start; }
+  .readout-num small { font-size: .32em; margin-top: .25em; margin-left: 4px; color: var(--fg2); }
+  .stage-list { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+  .stage-list li { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.42); transition: color .4s; }
+  .stage-list li i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid currentColor; transition: background .4s, box-shadow .4s; }
+  .stage-list li.done { color: rgba(255,255,255,.78); } .stage-list li.done i { background: currentColor; }
+  .stage-list li.now { color: #fff; } .stage-list li.now i { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 4px rgba(220,189,108,.25); }
+  .shimmer { -webkit-text-fill-color: transparent; background-image: linear-gradient(100deg, rgba(255,255,255,.65) 0 35%, #fff 50%, rgba(255,255,255,.65) 65% 100%); background-size: 200%; -webkit-background-clip: text; background-clip: text; animation: shimmer 6s linear infinite; }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  .scroll-pill { position: absolute; left: 50%; bottom: clamp(28px, 5vh, 48px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: 999px;
+    font-family: var(--mono); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; transition: opacity .6s, transform .6s var(--ease); }
+  .scroll-pill.hide { opacity: 0; transform: translate(-50%, 12px); pointer-events: none; }
+  .scroll-pill i { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: bob 2s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }
+  .drag-hint { position: absolute; top: 24vh; right: 18vw; font-size: 26px; color: rgba(255,255,255,.75); transform: rotate(-6deg); transition: opacity .6s; pointer-events: none; }
+  .drag-hint svg { display: block; margin: 4px 0 0 30px; }
 
-    .shine-card { position: relative; overflow: hidden; }
-    .shine-card::before {
-      content: ''; position: absolute; top: -50%; left: -100%; width: 60%; height: 200%;
-      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
-      transition: left 0.6s ease; pointer-events: none; z-index: 1;
-    }
-    .neon-hover { transition: all 0.3s ease; }
-    .zoom-img { transition: transform 0.6s ease; }
-    .lift { transition: transform 0.3s ease; }
+  /* ── Generic chapters ── */
+  .chapter { position: relative; padding: clamp(110px, 16vh, 170px) 0 clamp(80px, 12vh, 140px); }
+  .ch-head { display: flex; flex-direction: column; gap: 20px; margin-bottom: clamp(36px, 6vh, 64px); }
+  .ch-head.center { align-items: center; text-align: center; }
+  .ch-head.center .lede { margin-inline: auto; }
 
-    .hero-stat-card {
-      background: rgba(255,255,255,0.92); backdrop-filter: blur(24px) saturate(200%); -webkit-backdrop-filter: blur(24px) saturate(200%);
-      border-radius: 18px; padding: 16px 20px;
-      border: 1px solid rgba(255,255,255,0.95);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
-      min-width: 0; flex: 1 1 0;
-    }
-    /* Laptop screens with limited height (e.g. 1366×768, 1280×720) — keep the whole hero visible */
-    @media (min-width: 1024px) and (max-height: 820px) {
-      .hero-desk-badge { margin-top: 0 !important; margin-bottom: 18px !important; }
-      .hero-desk-divider { margin-top: 18px !important; margin-bottom: 14px !important; }
-      .hero-desk-desc { font-size: 15px !important; line-height: 1.7 !important; }
-      .hero-desk-cta { margin-top: 24px !important; }
-      .hero-stat-row { margin-top: 26px !important; }
-      .hero-stat-card { padding: 11px 14px !important; }
-      .hero-stat-card .hs-icon { display: none; }
-    }
-    @media (min-width: 1024px) and (max-height: 680px) {
-      .hero-stat-row { display: none !important; }
-    }
-    .img-thumb {
-      border-radius: 10px; overflow: hidden; cursor: pointer;
-      transition: all 0.3s ease; border: 2px solid rgba(255,255,255,0.2);
-    }
-    .img-thumb.active { border-color: #C9A84C; box-shadow: 0 0 0 2px #C9A84C; }
-    input, select, textarea { font-family: 'DM Sans', sans-serif; font-size: 16px; }
+  .half-left { width: min(600px, 48%); }
+  .half-right { width: min(560px, 46%); margin-left: auto; }
 
-    @media (max-width: 768px) {
-      .section-label { font-size: 10px !important; letter-spacing: 3px !important; }
-      .section-sub { font-size: 15px; line-height: 1.7; }
-    }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border-radius: 22px; overflow: hidden; }
+  .stat { background: rgba(9,12,20,.5); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); padding: 22px 22px 20px; }
+  .stat-num { font-family: var(--mono); font-weight: 700; font-size: clamp(2.2rem, 4vw, 3.2rem); line-height: 1; display: flex; align-items: flex-start; }
+  .stat-num small { font-size: .45em; margin-left: 2px; color: var(--sand); }
+  .stat-label { margin-top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg3); }
 
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
-      .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; }
-    }
+  .register { margin-top: 18px; padding: 8px; }
+  .reg-row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 4px 14px; width: 100%; text-align: left; padding: 16px 14px; border-radius: 16px; transition: background .25s; }
+  .reg-row:hover { background: rgba(255,255,255,.06); }
+  .reg-row + .reg-row { border-top: 1px solid rgba(255,255,255,.07); }
+  .reg-idx { font-family: var(--mono); font-size: 11px; color: var(--fg3); }
+  .reg-name { font-family: var(--serif); font-size: 21px; line-height: 1.15; }
+  .reg-meta { grid-column: 2; display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); }
+  .reg-bar { flex: 1; height: 2px; background: rgba(255,255,255,.14); border-radius: 2px; overflow: hidden; max-width: 160px; }
+  .reg-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), #fff); transform-origin: left; transition: transform 1.4s var(--ease); }
+  .tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+  .tag-done { background: rgba(74,222,128,.14); color: #86efac; }
+  .tag-live { background: rgba(220,189,108,.16); color: var(--sand); }
+  .tag-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
+
+  /* Progress chapter */
+  .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding: 2px 2px 6px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; height: 42px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 500; scroll-snap-align: center; display: inline-flex; align-items: center; gap: 8px; transition: background .3s, color .3s; }
+  .chip.on { background: #fff; color: #0b0d12; }
+  .chip.on::after { display: none; }
+  .prog-card { margin-top: 16px; padding: clamp(22px, 3vw, 32px); }
+  .prog-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+  .prog-pct { font-family: var(--mono); font-weight: 700; font-size: clamp(3.4rem, 7vw, 5.4rem); line-height: 1; display: inline-flex; }
+  .prog-pct small { font-size: .32em; margin-top: .3em; color: var(--fg2); }
+  .prog-bar { margin: 22px 0 8px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .prog-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), #fff); transition: width 1.2s var(--ease); }
+  .stage-rows { list-style: none; margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stage-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); transition: background .4s, border-color .4s; }
+  .stage-row .dot { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.4); transition: all .4s; }
+  .stage-row.completed .dot { background: rgba(134,239,172,.18); border-color: transparent; color: #86efac; }
+  .stage-row.ongoing { background: rgba(220,189,108,.1); border-color: rgba(220,189,108,.35); }
+  .stage-row.ongoing .dot { background: var(--gold); border-color: var(--gold); color: #0b0d12; }
+  .stage-row b { display: block; font-weight: 500; font-size: 14px; }
+  .stage-row small { display: block; margin-top: 3px; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg3); }
+
+  /* Stories */
+  .story-row { display: flex; gap: clamp(14px, 3vw, 36px); overflow-x: auto; scrollbar-width: none; padding: 6px var(--gutter) 10px; scroll-padding-inline: var(--gutter); scroll-snap-type: x proximity; }
+  .story-row::-webkit-scrollbar { display: none; }
+  .story-row > :first-child { margin-left: auto; } .story-row > :last-child { margin-right: auto; }
+  .story { flex-shrink: 0; width: clamp(108px, 14vw, 150px); text-align: center; scroll-snap-align: start; }
+  .story-ring { width: clamp(92px, 12vw, 130px); aspect-ratio: 1; margin: 0 auto 14px; border-radius: 50%; padding: 3px; background: conic-gradient(from 210deg, #fff, var(--gold), rgba(255,255,255,.2), #fff); transition: transform .5s var(--ease); position: relative; }
+  .story:hover .story-ring { transform: scale(1.06) rotate(-4deg); }
+  .story-ring > div { width: 100%; height: 100%; border-radius: 50%; padding: 3px; background: var(--ink); }
+  .story-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .story-new { position: absolute; top: 2px; right: 2px; }
+  .story-name { font-family: var(--serif); font-size: 18px; line-height: 1.15; }
+  .story-sub { margin-top: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg3); }
+
+  .viewer { position: fixed; inset: 0; z-index: 120; background: #000; touch-action: none; user-select: none; -webkit-user-select: none; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .viewer-bars { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; gap: 4px; z-index: 5; max-width: 640px; margin: 0 auto; }
+  .viewer-bars div { flex: 1; height: 2px; border-radius: 2px; background: rgba(255,255,255,.3); overflow: hidden; }
+  .viewer-bars i { display: block; height: 100%; background: #fff; }
+  .viewer-head { position: absolute; top: calc(22px + env(safe-area-inset-top)); left: 12px; right: 12px; max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; z-index: 6; }
+  .viewer-hint { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); pointer-events: none; }
+
+  /* Gallery strip */
+  .strip { display: flex; gap: clamp(12px, 2vw, 22px); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; padding: 4px var(--gutter) 8px; scroll-padding-inline: var(--gutter); cursor: grab; overscroll-behavior-x: contain; }
+  .strip::-webkit-scrollbar { display: none; }
+  .strip.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .strip.is-dragging * { pointer-events: none; }
+  .gcard { position: relative; flex-shrink: 0; width: clamp(270px, 38vw, 560px); aspect-ratio: 4 / 5; border-radius: 24px; overflow: hidden; scroll-snap-align: start; text-align: left; background: #111; }
+  .gcard img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--ease); }
+  .gcard:hover img { transform: scale(1.05); }
+  .gcard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.05) 55%, rgba(0,0,0,.45)); }
+  .gcard-top { position: absolute; top: 18px; left: 18px; right: 18px; z-index: 2; display: flex; justify-content: space-between; align-items: center; }
+  .gcard-body { position: absolute; left: 22px; right: 22px; bottom: 22px; z-index: 2; }
+  .gcard-body h3 { font-family: var(--serif); font-weight: 400; font-size: clamp(1.8rem, 3vw, 2.6rem); line-height: 1; }
+  .gcard-body p { margin-top: 10px; color: var(--fg2); font-size: 14px; line-height: 1.6; max-width: 400px; }
+  .gcard-open { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .strip-ctrl { display: flex; align-items: center; gap: 16px; margin-top: 22px; }
+  .strip-track { flex: 1; height: 2px; background: rgba(255,255,255,.14); border-radius: 2px; overflow: hidden; }
+  .strip-track i { display: block; height: 100%; background: #fff; transform-origin: left; }
+
+  .lightbox { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; background: rgba(5,7,12,.96); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); animation: fadeIn .25s ease; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  .lb-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; padding: 0 clamp(8px, 7vw, 96px); }
+  .lb-stage img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 14px; animation: fadeIn .3s ease; }
+  .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+  .thumbs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 12px 14px 4px; justify-content: safe center; }
+  .thumbs::-webkit-scrollbar { display: none; }
+  .thumbs button { flex-shrink: 0; width: 64px; height: 46px; border-radius: 10px; overflow: hidden; opacity: .45; border: 2px solid transparent; transition: opacity .2s, border-color .2s; }
+  .thumbs button.on { opacity: 1; border-color: #fff; }
+  .thumbs img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* Before / after */
+  .ba { position: relative; width: 100%; aspect-ratio: 16 / 8; max-height: 74vh; border-radius: 28px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: ew-resize; box-shadow: 0 40px 100px rgba(0,0,0,.5); }
+  .ba img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .ba-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #fff; box-shadow: 0 0 18px rgba(255,255,255,.8); transform: translateX(-50%); pointer-events: none; }
+  .ba-handle { position: absolute; top: 50%; width: 64px; height: 64px; transform: translate(-50%,-50%); border-radius: 50%; display: grid; place-items: center; pointer-events: none; }
+  .ba-label { position: absolute; top: 18px; padding: 8px 14px; border-radius: 999px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+
+  /* Locations */
+  .zones { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: clamp(16px, 3vw, 40px); align-items: start; }
+  .zones > * { min-width: 0; }
+  .zone-list { display: flex; flex-direction: column; }
+  .zone-btn { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; padding: 16px 6px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.08); color: var(--fg3); transition: color .3s, padding .3s var(--ease); }
+  .zone-btn:hover { color: var(--fg2); }
+  .zone-btn.on { color: #fff; padding-left: 14px; }
+  .zone-btn .mono { font-size: 11px; }
+  .zone-btn b { font-family: var(--serif); font-weight: 400; font-size: 20px; }
+  .zone-btn .zdot { width: 8px; height: 8px; border-radius: 50%; opacity: 0; transition: opacity .3s; }
+  .zone-btn.on .zdot { opacity: 1; }
+  .zone-card { padding: clamp(24px, 3.4vw, 44px); animation: fadeIn .45s ease; }
+  .hl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 26px; }
+  .hl { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.05); font-size: 14px; }
+  .hl i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .sector-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .sector-pills span, .cloud span { padding: 8px 14px; border-radius: 999px; font-size: 13px; border: 1px solid rgba(255,255,255,.14); color: var(--fg2); transition: background .25s, color .25s; }
+  .cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+  .cloud span:hover { background: #fff; color: #0b0d12; }
+
+  /* Why */
+  .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-radius: 26px; overflow: hidden; }
+  .why { background: rgba(10,12,18,.72); padding: clamp(24px, 3vw, 36px); display: flex; flex-direction: column; gap: 14px; min-height: 280px; transition: background .4s; }
+  .why:hover { background: rgba(22,24,32,.8); }
+  .why-stat { font-family: var(--mono); font-weight: 700; font-size: clamp(1.9rem, 3vw, 2.5rem); line-height: 1; color: var(--sand); white-space: nowrap; }
+  .why h3 { font-family: var(--serif); font-weight: 400; font-size: 24px; margin-top: auto; }
+  .why p { color: var(--fg2); font-size: 14.5px; line-height: 1.7; }
+
+  /* FAQ */
+  .faq { border-top: 1px solid var(--line); }
+  .faq-item { border-bottom: 1px solid var(--line); }
+  .faq-q { width: 100%; display: grid; grid-template-columns: 44px 1fr 40px; align-items: center; gap: 12px; padding: 24px 0; text-align: left; }
+  .faq-q .mono { font-size: 11px; color: var(--fg3); }
+  .faq-q b { font-family: var(--serif); font-weight: 400; font-size: clamp(19px, 2vw, 25px); line-height: 1.25; }
+  .faq-plus { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: transform .45s var(--ease), background .3s; }
+  .faq-item.open .faq-plus { transform: rotate(45deg); background: #fff; color: #0b0d12; }
+  .faq-a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s var(--ease); }
+  .faq-item.open .faq-a { grid-template-rows: 1fr; }
+  .faq-a > div { overflow: hidden; }
+  .faq-a p { padding: 0 52px 26px 56px; color: var(--fg2); line-height: 1.8; font-size: 15.5px; }
+
+  /* Contact */
+  .contact-card { display: grid; grid-template-columns: auto 1fr; gap: clamp(20px, 4vw, 48px); align-items: center; padding: clamp(24px, 4vw, 48px); }
+  .avatar { width: clamp(110px, 14vw, 170px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; padding: 3px; background: conic-gradient(from 200deg, #fff, var(--gold), rgba(255,255,255,.2), #fff); }
+  .avatar img, .avatar div { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .contact-actions { display: grid; grid-template-columns: repeat(3, auto); gap: 10px; margin-top: 24px; justify-content: start; }
+  .foot { margin-top: clamp(64px, 10vh, 120px); padding-top: 36px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; }
+  .foot h4 { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg3); margin-bottom: 14px; }
+  .foot-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 14px; color: var(--fg2); }
+  .foot a { text-decoration: none; }
+  .foot-base { margin-top: 36px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg3); }
+
+  /* Mobile action bar */
+  .actionbar { position: fixed; left: max(12px, calc(50% - 280px)); right: max(12px, calc(50% - 280px)); bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 55; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px; border-radius: 999px; transition: transform .5s var(--ease), opacity .5s; }
+  .actionbar.hide { transform: translateY(140%); opacity: 0; pointer-events: none; }
+  .actionbar .pill { min-height: 46px; }
+
+  .icon-circle { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; transition: background .3s, transform .25s var(--ease); }
+  .icon-circle:active { transform: scale(.92); }
+
+  /* Hover only for real pointers */
+  @media (hover: none) {
+    .gcard:hover img, .story:hover .story-ring, .hold-btn:hover { transform: none; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 1023px) {
+    .half-left, .half-right { width: 100%; margin-left: 0; }
+    .zones { grid-template-columns: 1fr; }
+    .zone-list { display: none; }
+    .why-grid { grid-template-columns: 1fr 1fr; }
+    .foot { grid-template-columns: 1fr 1fr; }
+    .foot > :first-child { grid-column: 1 / -1; }
+    .ruler { display: none; }
+    .scene-chapter { padding-top: 58svh; }
+  }
+  @media (min-width: 1024px) { .zone-chips, .mtl-wrap { display: none !important; } }
+  @media (max-width: 767px) {
+    .ground-copy { left: var(--gutter); right: var(--gutter); width: auto; bottom: calc(26px + env(safe-area-inset-bottom)); }
+    .ground-copy .display { font-size: clamp(3rem, 15vw, 4.4rem); margin: 14px 0 14px; }
+    .ground-copy .lede { font-size: 14.5px; }
+    .ground-actions { display: grid; grid-template-columns: 1fr 1fr; margin-top: 20px; }
+    .readout { top: auto; bottom: calc(100% - 100svh + 26px); left: auto; right: var(--gutter); width: auto; display: none; }
+    .ground-copy .readout-m { display: flex !important; width: fit-content; }
+    .readout-num { font-size: 2.6rem; }
+    .stage-list { display: none; }
+    .readout .now-stage { display: block !important; }
+    .scroll-pill { display: none; }
+    .drag-hint { display: none; }
+    .ground-pin::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 62%; background: linear-gradient(to top, rgba(9,12,18,.92), rgba(9,12,18,.55) 55%, transparent); pointer-events: none; z-index: -1; }
+    .why-grid { grid-template-columns: 1fr; }
+    .why { min-height: 0; }
+    .stage-rows { grid-template-columns: 1fr; }
+    .contact-card { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .contact-actions { grid-template-columns: 1fr; width: 100%; }
+    .faq-q { grid-template-columns: 30px 1fr 40px; padding: 20px 0; }
+    .faq-a p { padding: 0 8px 22px 42px; font-size: 15px; }
+    .foot { grid-template-columns: 1fr; }
+    .ba { aspect-ratio: 4 / 4.4; border-radius: 22px; }
+    .hud-cta { display: none !important; }
+    .hud .hud-brand > span:last-child { display: none; }
+    .hud .hud-brand { padding: 0 5px; }
+    .gcard { width: 82vw; }
+    .hold-label { top: calc(100% + 30px); left: 50%; transform: translateX(-50%); text-align: center; font-size: 1.05rem; }
+    .gate-center > div { gap: 96px; }
+    .gate-note { left: var(--gutter); right: auto; text-align: left; bottom: auto; top: calc(70px + env(safe-area-inset-top)); }
+    .chapter { padding-bottom: 110px; }
+  }
+  @media (min-width: 1024px) and (max-height: 760px) {
+    .ground-copy .display { margin: 12px 0 14px; }
+    .ground-actions { margin-top: 18px; }
+    .stage-list { gap: 6px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+    .rise > span, .fade-up { transform: none !important; opacity: 1 !important; }
+  }
   `}</style>
 );
 
-/* ─────────────────────────── MAIL ICON ─────────────────────────── */
-const MailIcon = ({ color = "currentColor", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
-    <rect x="3" y="5" width="18" height="14" rx="2" />
-    <path d="M3 7l9 6 9-6" />
-  </svg>
+/* ─────────────────────────── SMALL PIECES ─────────────────────────── */
+const DIGITS = Array.from({ length: 10 }, (_, d) => <span key={d}>{d}</span>);
+const RollingNumber = ({ value, className = "", stagger = 0.06 }) => {
+  const str = String(value);
+  return (
+    <span className={`roll ${className}`}>
+      <span className="sr-only">{str}</span>
+      {str.split("").map((ch, i) => {
+        const key = str.length - i;
+        return /\d/.test(ch) ? (
+          <span key={key} className="roll-digit" aria-hidden="true">
+            <span className="roll-inner" style={{ transform: `translateY(${-Number(ch)}em)`, "--d": `${(str.length - i) * stagger}s` }}>{DIGITS}</span>
+          </span>
+        ) : <span key={key} aria-hidden="true">{ch}</span>;
+      })}
+    </span>
+  );
+};
+
+const Rise = ({ children, d = 0 }) => <span className="rise"><span style={{ "--d": `${d}s` }}>{children}</span></span>;
+
+const ChapterHead = ({ n, label, title, lede, center = false, visible }) => (
+  <div className={`ch-head ${center ? "center" : ""} ${visible ? "in" : ""}`}>
+    <span className="eyebrow fade-up"><b>{String(n).padStart(2, "0")}</b><i />{label}</span>
+    <h2 className="h2">{title}</h2>
+    {lede && <p className="lede fade-up" style={{ "--d": ".25s" }}>{lede}</p>}
+  </div>
 );
 
-/* ─────────────────────────── TICKER ─────────────────────────── */
-const Ticker = () => {
-  const items = ["✦ 3 Completed Projects", "✦ 5700 Sq. Ft. Delivered", "✦ Sector 42 — 78% Complete", "✦ Reliance MET City — Now Launching", "✦ Quality Certified Materials", "✦ RERA Registered"];
-  const doubled = [...items, ...items];
+const WhatsAppIcon = ({ size = 18 }) => <MessageCircle size={size} />;
+
+const Brand = ({ onClick }) => (
+  <button className="hud-brand glass" onClick={onClick} aria-label="ShineOne Estate — back to top">
+    <span className="hud-mark">S1</span>
+    <span>ShineOne Estate</span>
+  </button>
+);
+
+const SoundButton = () => {
+  const [on, setOn] = useState(audio.enabled);
+  useEffect(() => audio.subscribe(setOn), []);
   return (
-    <div style={{ background: colors.darkBlue, padding: "10px 0", overflow: "hidden" }}>
-      <div className="ticker-inner" style={{ gap: 0 }}>
-        {doubled.map((item, i) => (
-          <span key={i} style={{ color: "#fff", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", padding: "0 28px", opacity: 0.95 }}>{item}</span>
-        ))}
+    <button className="hud-icon glass" onClick={() => audio.toggle()} aria-pressed={on} aria-label={on ? "Mute background sound" : "Play background sound"} title={on ? "Sound on" : "Sound off"}>
+      <svg className={`wave ${on ? "on" : ""}`} width="20" height="16" viewBox="0 0 20 16" fill="#fff" aria-hidden="true">
+        {[1, 5, 9, 13, 17].map((x, i) => <rect key={i} x={x - 1} y={[5, 2, 0, 3, 6][i]} width="2" height={[6, 12, 16, 10, 4][i]} rx="1" />)}
+      </svg>
+    </button>
+  );
+};
+
+/* ─────────────────────────── ENTRY GATE ─────────────────────────── */
+const HOLD_MS = 1150;
+const EntryGate = ({ onEnter }) => {
+  const [count, setCount] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [hold, setHold] = useState(0);
+  const [pressing, setPressing] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const h = useRef({ raf: 0, value: 0, active: false, last: 0, done: false });
+
+  // Loader: counts up while fonts and the 3D site get ready
+  useEffect(() => {
+    let raf, fontsReady = false;
+    const t0 = performance.now();
+    (document.fonts?.ready || Promise.resolve()).then(() => { fontsReady = true; });
+    const tick = (now) => {
+      const linear = Math.min(1, (now - t0) / 1700);
+      const eased = 1 - Math.pow(1 - linear, 2.2);
+      const cap = fontsReady || now - t0 > 4000 ? 100 : 92;
+      const v = Math.min(cap, Math.round(eased * 100));
+      setCount(v);
+      if (v >= 100) { setReady(true); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const finish = (withSound) => {
+    if (h.current.done) return;
+    h.current.done = true;
+    cancelAnimationFrame(h.current.raf);
+    if (withSound) { audio.enable(); audio.holdEnd(); audio.breakGround(); vibrate([12, 40, 24]); }
+    else audio.holdEnd();
+    setLeaving(true);
+    setTimeout(onEnter, 950);
+  };
+
+  const step = (now) => {
+    const s = h.current;
+    const dt = now - (s.last || now); s.last = now;
+    s.value = s.active ? Math.min(1, s.value + dt / HOLD_MS) : Math.max(0, s.value - dt / (HOLD_MS * 0.45));
+    setHold(s.value);
+    audio.holdUpdate(s.value);
+    if (s.value >= 1) { finish(true); return; }
+    if (s.active || s.value > 0) s.raf = requestAnimationFrame(step);
+  };
+  const begin = (e) => {
+    if (!ready || h.current.done) return;
+    if (e?.pointerType) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {} }
+    const s = h.current;
+    if (s.active) return;
+    s.active = true; s.last = 0;
+    setPressing(true);
+    audio.holdStart();
+    vibrate(10);
+    cancelAnimationFrame(s.raf);
+    s.raf = requestAnimationFrame(step);
+  };
+  const release = () => {
+    const s = h.current;
+    if (!s.active || s.done) return;
+    s.active = false; s.last = 0;
+    setPressing(false);
+    audio.holdEnd();
+    cancelAnimationFrame(s.raf);
+    s.raf = requestAnimationFrame(step);
+  };
+
+  const C = 2 * Math.PI * 48;
+  return (
+    <div className={`gate ${ready ? "ready" : ""} ${leaving ? "leaving" : ""}`} role="dialog" aria-modal="true" aria-label="Enter ShineOne Estate">
+      <div className="gate-top">
+        <span className="hud-brand glass" style={{ pointerEvents: "none" }}><span className="hud-mark">S1</span><span>ShineOne Estate</span></span>
+        <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.75)" }}>Gurugram</span>
+      </div>
+
+      <div className="gate-center">
+        <div>
+          <div className="hold">
+            <button className={`hold-btn ${pressing ? "pressing" : ""}`} aria-label="Press and hold to enter with sound"
+              onPointerDown={begin} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}
+              onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); begin(); } }}
+              onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") release(); }}
+              onContextMenu={(e) => e.preventDefault()} />
+            <svg className="hold-ring" viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="48" strokeDasharray={C} strokeDashoffset={C * (1 - hold)} style={{ opacity: hold > 0 ? 1 : 0 }} />
+            </svg>
+            <div className="hold-label" aria-hidden="true">{"Hold to\nbreak ground"}</div>
+          </div>
+          <button className="gate-skip" onClick={() => finish(false)}>Enter without sound</button>
+        </div>
+      </div>
+
+      <div className="gate-note mono">Sound on<br />for the full site experience</div>
+
+      <div className="gate-counter" aria-live="polite">
+        <span className="gate-count"><RollingNumber value={String(count).padStart(2, "0")} stagger={0} /></span>
+        <span className="gate-unit mono">Loading<br />the site</span>
       </div>
     </div>
   );
 };
 
-/* ─────────────────────────── STICKY HEADER ─────────────────────────── */
-const NAV_LINKS = [
-  { label: "Overview", id: "section-overview", icon: Home },
-  { label: "Progress", id: "section-progress", icon: TrendingUp },
-  { label: "Stories", id: "section-stories", icon: Star },
-  { label: "Gallery", id: "section-gallery", icon: Award },
-  { label: "Locations", id: "section-locations", icon: MapPin },
-  { label: "Contact", id: "section-contact", icon: Phone },
-];
-
-const StickyHeader = () => {
-  const width = useWindowWidth();
-  const isMobile = width <= 768;
-  const useDrawer = width < 960;
-  const [scrolled, setScrolled] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [active, setActive] = useState("");
-  useLockBodyScroll(menuOpen);
-  const drawerSwipe = useSwipe({ onRight: () => setMenuOpen(false) });
-
-  useEffect(() => {
-    const fn = () => {
-      setScrolled(window.scrollY > 60);
-      const total = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(total > 0 ? Math.min(1, window.scrollY / total) : 0);
-    };
-    fn(); window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
-  // Highlight the section currently on screen
-  useEffect(() => {
-    const els = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(Boolean);
-    if (!els.length) return;
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) setActive(e.target.id); });
-    }, { rootMargin: "-45% 0px -50% 0px" });
-    els.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const h = (e) => { if (e.key === "Escape") setMenuOpen(false); };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [menuOpen]);
-
-  useEffect(() => { if (!useDrawer) setMenuOpen(false); }, [useDrawer]);
-
-  const goTo = (id) => {
-    setMenuOpen(false);
-    // let the body unlock before scrolling
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 10);
-  };
-
-  const fg = scrolled ? colors.black : "#fff";
-  const brand = scrolled ? colors.darkBlue : "#fff";
-
+/* ─────────────────────────── HUD ─────────────────────────── */
+const Ruler = () => {
+  const pos = useStore((s) => Math.round(s.pos * 100) / 100);
+  const active = useStore((s) => s.active);
+  const [nav, setNav] = useState(false);
+  const GAP = 120;
+  const ticks = [];
+  CHAPTERS.forEach((c, i) => {
+    ticks.push(<div key={`M${i}`} className="tick major" style={{ left: i * GAP }}><i /><span>{c.label}</span></div>);
+    if (i < CHAPTERS.length - 1) for (let k = 1; k < 6; k++) ticks.push(<div key={`m${i}-${k}`} className="tick" style={{ left: i * GAP + (k * GAP) / 6 }}><i /></div>);
+  });
   return (
-    <>
-      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1500, transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
-        background: scrolled ? "rgba(245,240,232,0.94)" : "linear-gradient(to bottom, rgba(12,15,26,0.7), rgba(12,15,26,0.25))",
-        backdropFilter: "blur(18px) saturate(160%)", WebkitBackdropFilter: "blur(18px) saturate(160%)",
-        borderBottom: scrolled ? "1px solid rgba(43,91,168,0.12)" : "1px solid rgba(255,255,255,0.06)",
-        boxShadow: scrolled ? "0 6px 24px rgba(13,13,13,0.06)" : "none",
-        paddingTop: "env(safe-area-inset-top)",
-      }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: isMobile ? "10px 16px" : "12px 28px", minHeight: isMobile ? 60 : 68 }}>
-          <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="ShineOne Estate — back to top"
-            style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0, display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: isMobile ? 34 : 38, height: isMobile ? 34 : 38, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-              background: `linear-gradient(135deg, ${colors.darkBlue}, ${colors.gold})`, color: "#fff", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? 17 : 19, boxShadow: "0 4px 14px rgba(43,91,168,0.3)" }}>S1</span>
-            <span>
-              <span style={{ display: "block", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? 19 : 22, color: brand, lineHeight: 1, transition: "color 0.3s" }}>ShineOne Estate</span>
-              <span style={{ display: "block", fontSize: isMobile ? 9 : 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: scrolled ? colors.subtle : "rgba(255,255,255,0.7)", marginTop: 3, transition: "color 0.3s" }}>We Build Your Vision</span>
-            </span>
-          </button>
-
-          {!useDrawer ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <nav aria-label="Main" style={{ display: "flex", gap: 2 }}>
-                {NAV_LINKS.map((l) => {
-                  const isActive = active === l.id;
-                  return (
-                    <button key={l.id} onClick={() => goTo(l.id)} className="nav-link" aria-current={isActive ? "true" : undefined}
-                      style={{ "--nav-hover": scrolled ? "rgba(43,91,168,0.08)" : "rgba(255,255,255,0.14)", background: "none", border: "none", cursor: "pointer", padding: "9px 13px", borderRadius: 10, fontWeight: isActive ? 700 : 500, fontSize: 14,
-                        color: isActive ? (scrolled ? colors.darkBlue : colors.gold) : fg, position: "relative", transition: "background 0.2s ease, color 0.2s ease" }}>
-                      {l.label}
-                      <span style={{ position: "absolute", left: 13, right: 13, bottom: 4, height: 2, borderRadius: 2, background: scrolled ? colors.darkBlue : colors.gold, transform: `scaleX(${isActive ? 1 : 0})`, transition: "transform 0.3s cubic-bezier(.22,1,.36,1)" }} />
-                    </button>
-                  );
-                })}
-              </nav>
-              <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 18px", minHeight: 42, fontSize: 14, borderRadius: 11 }}>
-                <Phone size={16} /> Call Now
-              </a>
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <a href={`tel:${PHONE}`} aria-label="Call ShineOne Estate" className="icon-btn press"
-                style={{ background: scrolled ? colors.darkBlue : "rgba(255,255,255,0.14)", borderColor: scrolled ? colors.darkBlue : "rgba(255,255,255,0.22)" }}>
-                <Phone size={18} color="#fff" />
-              </a>
-              <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} className="icon-btn press"
-                style={{ background: scrolled ? "rgba(43,91,168,0.08)" : "rgba(255,255,255,0.14)", borderColor: scrolled ? "rgba(43,91,168,0.18)" : "rgba(255,255,255,0.22)" }}>
-                <span style={{ position: "relative", width: 20, height: 14, display: "block" }}>
-                  {[0, 1, 2].map((i) => (
-                    <span key={i} style={{ position: "absolute", left: 0, width: i === 1 ? 14 : 20, height: 2, borderRadius: 2, background: scrolled ? colors.darkBlue : "#fff", top: i * 6, transition: "all 0.3s ease" }} />
-                  ))}
-                </span>
-              </button>
-            </div>
-          )}
-        </div>
-        {/* Scroll progress */}
-        <div style={{ position: "absolute", left: 0, bottom: -1, height: 2, width: `${progress * 100}%`, background: `linear-gradient(90deg, ${colors.darkBlue}, ${colors.gold})`, transition: "width 0.1s linear", opacity: scrolled ? 1 : 0 }} />
-      </header>
-
-      {/* Mobile / tablet drawer */}
-      {useDrawer && menuOpen && (
-        <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1600, background: "rgba(12,15,26,0.55)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", animation: "fade-in 0.25s ease" }}>
-          <aside role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()} {...drawerSwipe.handlers}
-            style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(86vw, 360px)", background: colors.cream, boxShadow: "-20px 0 60px rgba(0,0,0,0.25)",
-              display: "flex", flexDirection: "column", animation: "slide-in-right 0.35s cubic-bezier(.22,1,.36,1)",
-              padding: "calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))", overflowY: "auto" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <div>
-                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 24, color: colors.darkBlue, lineHeight: 1 }}>ShineOne Estate</div>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: colors.subtle, marginTop: 4 }}>Gurugram · Since day one</div>
-              </div>
-              <button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="icon-btn press" style={{ background: "rgba(43,91,168,0.08)", borderColor: "rgba(43,91,168,0.15)" }}>
-                <X size={20} color={colors.darkBlue} />
-              </button>
-            </div>
-            <nav aria-label="Main" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {NAV_LINKS.map((l, i) => {
-                const Icon = l.icon; const isActive = active === l.id;
-                return (
-                  <button key={l.id} onClick={() => goTo(l.id)} className="press"
-                    style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", background: isActive ? "rgba(43,91,168,0.09)" : "transparent", border: "none", cursor: "pointer",
-                      padding: "14px 12px", borderRadius: 14, fontWeight: isActive ? 700 : 600, fontSize: 16, color: isActive ? colors.darkBlue : colors.black,
-                      animation: `slide-up 0.4s cubic-bezier(.22,1,.36,1) ${0.04 * i + 0.05}s both`, transition: "transform 0.15s ease" }}>
-                    <span style={{ width: 38, height: 38, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? colors.darkBlue : "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", flexShrink: 0 }}>
-                      <Icon size={17} color={isActive ? "#fff" : colors.darkBlue} />
-                    </span>
-                    <span style={{ flex: 1 }}>{l.label}</span>
-                    <ChevronRight size={18} color={colors.subtle} />
-                  </button>
-                );
-              })}
-            </nav>
-            <div style={{ marginTop: "auto", paddingTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", justifyContent: "center", padding: "0 18px", fontSize: 15 }}><Phone size={17} /> +91 93109 94032</a>
-              <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", justifyContent: "center", padding: "0 18px", fontSize: 15 }}><MessageCircle size={17} /> Chat on WhatsApp</a>
-              <div style={{ textAlign: "center", fontSize: 12, color: colors.subtle, marginTop: 6 }}>Swipe right to close</div>
-            </div>
-          </aside>
-        </div>
-      )}
-    </>
+    <nav className={`ruler ${nav ? "nav" : ""}`} aria-label="Chapters" onMouseEnter={() => setNav(true)} onMouseLeave={() => setNav(false)} onFocus={() => setNav(true)} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setNav(false); }}>
+      <div className="ruler-track" style={{ transform: `translateX(${160 - pos * GAP}px)` }} aria-hidden="true">{ticks}</div>
+      <div className="ruler-ind" aria-hidden="true" />
+      <div className="ruler-nav">
+        {CHAPTERS.map((c, i) => (
+          <button key={c.id} className={i === active ? "on" : ""} onClick={() => goToChapter(i)} aria-current={i === active ? "true" : undefined}><i />{c.label}</button>
+        ))}
+      </div>
+    </nav>
   );
 };
 
-/* ─────────────────────────── HERO ─────────────────────────── */
-const Hero = () => {
-  const isCompact = useIsCompact();
-  const isMobile = useIsMobile();
-  const reduced = useReducedMotion();
-  const folderImages = useBackendMedia();
-  const carousel = (folderImages?.["Caraousel"] || folderImages?.["caraousel"]) || projectData.images;
-  const [current, setCurrent] = useState(0);
-  const [textPhase, setTextPhase] = useState(0); // for cycling headline words
+const MobileTimeline = ({ onOpen }) => {
+  const pos = useStore((s) => Math.round(s.pos * 50) / 50);
+  const active = useStore((s) => s.active);
+  return (
+    <button className="mtl glass mtl-wrap" onClick={onOpen} aria-label={`Chapter ${active + 1} of ${CHAPTERS.length}: ${CHAPTERS[active].label}. Open chapter list`}>
+      <span className="mtl-bars" aria-hidden="true">
+        {CHAPTERS.map((c, i) => (
+          <span key={c.id} className="mtl-bar"><i style={{ transform: `scaleX(${Math.max(0, Math.min(1, pos - i))})` }} /></span>
+        ))}
+      </span>
+      <span className="mtl-count">{String(active + 1).padStart(2, "0")}/{CHAPTERS.length}</span>
+    </button>
+  );
+};
 
-  const headlines = ["Vision", "Dream", "Future", "Legacy"];
-  const count = carousel?.length || 0;
-  const go = (i) => setCurrent(((i % count) + count) % count);
-  const swipe = useSwipe({ onLeft: () => { go(current + 1); vibrate(); }, onRight: () => { go(current - 1); vibrate(); } });
-
-  // Auto-advance; restarts after every manual change so a swipe never gets "double skipped"
+const Hud = ({ hidden }) => {
+  const [open, setOpen] = useState(false);
+  const active = useStore((s) => s.active);
+  const boxRef = useRef(null);
   useEffect(() => {
-    if (reduced || count < 2) return;
-    const t = setTimeout(() => setCurrent((p) => (p + 1) % count), 5000);
-    return () => clearTimeout(t);
-  }, [current, count, reduced]);
+    if (!open) return;
+    const onDown = (e) => { if (!boxRef.current?.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("pointerdown", onDown); window.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const go = (i) => { setOpen(false); goToChapter(i); };
 
+  return (
+    <header className={`hud ${hidden ? "hidden" : ""}`}>
+      <Brand onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
+      <Ruler />
+      <div className="hud-right" ref={boxRef} style={{ position: "relative" }}>
+        <MobileTimeline onOpen={() => setOpen((o) => !o)} />
+        <SoundButton />
+        <a className="hud-cta glass" href={`${WA_URL}?text=${encodeURIComponent("Hi, I'd like to book a site visit.")}`} target="_blank" rel="noreferrer">
+          <span className="wa-dot" /> Book a site visit
+        </a>
+        <button className="hud-icon glass" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? "Close menu" : "Open menu"}>
+          {open ? <X size={18} /> : (
+            <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><rect y="0" width="18" height="1.6" rx=".8" fill="#fff" /><rect y="5.2" width="12" height="1.6" rx=".8" fill="#fff" /><rect y="10.4" width="18" height="1.6" rx=".8" fill="#fff" /></svg>
+          )}
+        </button>
+        <div className={`menu-drop glass ${open ? "open" : ""}`} role="menu">
+          {CHAPTERS.map((c, i) => (
+            <button key={c.id} role="menuitem" className={`menu-item ${i === active ? "on" : ""}`} onClick={() => go(i)}>
+              <span className="mono">{String(i + 1).padStart(2, "0")}</span>{c.label}
+            </button>
+          ))}
+          <hr className="rule" style={{ margin: "6px 8px" }} />
+          <a role="menuitem" className="menu-item" href={`tel:${PHONE}`}><Phone size={16} /> +91 93109 94032</a>
+          <a role="menuitem" className="menu-item" href={WA_URL} target="_blank" rel="noreferrer"><span className="wa-dot" /> WhatsApp</a>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const ActionBar = () => {
+  const active = useStore((s) => s.active);
+  const ground = useStore((s) => s.ground > 0.96);
+  const show = active > 0 || ground;
+  return (
+    <div className={`actionbar glass ${show ? "" : "hide"}`} role="region" aria-label="Quick contact">
+      <a className="pill pill-solid" href={`tel:${PHONE}`}><Phone size={17} /> Call</a>
+      <a className="pill" href={`${WA_URL}?text=${encodeURIComponent("Hi, I'm interested in a ShineOne Estate project.")}`} target="_blank" rel="noreferrer" style={{ color: "#fff" }}><span className="wa-dot" /> WhatsApp</a>
+    </div>
+  );
+};
+
+/* ─────────────────────────── 01 GROUND ─────────────────────────── */
+const headlines = ["Vision", "Dream", "Future", "Legacy"];
+const GroundChapter = ({ entered, dragHandlers }) => {
+  const stage = useStore((s) => stageIndexFromP(s.ground));
+  const pct = useStore((s) => Math.round(s.ground * 100));
+  const started = useStore((s) => s.ground > 0.015);
+  const finePointer = useFinePointer();
+  const [phase, setPhase] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setTextPhase((p) => (p + 1) % headlines.length), 2800);
+    const t = setInterval(() => setPhase((p) => (p + 1) % headlines.length), 2800);
     return () => clearInterval(t);
   }, []);
 
-  const heroStats = [
-    { value: "3+", label: "Completed\nProjects", icon: "🏠" },
-    { value: "14K+", label: "Sq. Ft.\nDelivered", icon: "📐" },
-    { value: "78%", label: "Sector 42\nProgress", icon: "📊" },
-    { value: "2027", label: "MET City\nHandover", icon: "🏗️" },
-  ];
-
-  if (isCompact) {
-    // PHONE / TABLET: full-bleed swipeable photo with content anchored to the bottom
-    return (
-      <section aria-label="Introduction" {...swipe.handlers}
-        style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: colors.navy, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-        {(carousel || projectData.images).map((src, i) => (
-          <img key={i} src={src} alt="" loading={i === 0 ? "eager" : "lazy"} draggable={false}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center",
-              opacity: i === current ? 1 : 0, transform: i === current ? "scale(1)" : "scale(1.06)", transition: "opacity 1.2s ease, transform 6s ease", filter: "brightness(0.55)" }} />
-        ))}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(12,15,26,0.98) 0%, rgba(12,15,26,0.78) 40%, rgba(12,15,26,0.15) 75%, rgba(12,15,26,0.45) 100%)" }} />
-
-        {/* Content */}
-        <div style={{ position: "relative", zIndex: 5, width: "100%", maxWidth: 640, margin: "0 auto", padding: `calc(96px + env(safe-area-inset-top)) ${isMobile ? 20 : 32}px 28px` }}>
-          <div className="hero-badge" style={{ marginBottom: 18, fontSize: 11, padding: "7px 14px", letterSpacing: 1.6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.gold, animation: "glow-pulse 2s infinite" }} />
-            Premium Real Estate · Gurugram
-          </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: isMobile ? "clamp(2.6rem, 12vw, 3.6rem)" : "4.4rem", color: "#fff", lineHeight: 1.0, marginBottom: 12 }}>
-            We Build<br />
-            <span key={textPhase} style={{ color: colors.gold, fontStyle: "italic", display: "inline-block", animation: "slide-up 0.5s cubic-bezier(.22,1,.36,1) both" }}>
-              Your {headlines[textPhase]}
-            </span>
-          </h1>
-          <p style={{ color: "rgba(255,255,255,0.8)", fontSize: isMobile ? 15 : 17, lineHeight: 1.7, marginBottom: 22, fontWeight: 400 }}>
-            Plots · Flats · Floors · Construction<br />Sector 4, 9, 42, 46 & Reliance MET City
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 14px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
-              <Phone size={18} /> Call Now
-            </a>
-            <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 14px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
-              <MessageCircle size={18} /> WhatsApp
-            </a>
-          </div>
-          {/* Glass stat pills */}
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 3 : 4}, 1fr)`, gap: 8, marginTop: 14 }}>
-            {heroStats.slice(0, isMobile ? 3 : 4).map((s, i) => (
-              <div key={i} className="glass-dark" style={{ padding: "10px 8px", textAlign: "center", borderRadius: 14 }}>
-                <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.7)", marginTop: 4, lineHeight: 1.3 }}>{s.label.replace("\n", " ")}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Dots + scroll cue */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
-            <div style={{ display: "flex", gap: 2, marginLeft: -8 }} role="tablist" aria-label="Hero photos">
-              {(carousel || []).map((_, i) => (
-                <button key={i} onClick={() => go(i)} aria-label={`Photo ${i + 1}`} aria-selected={i === current} role="tab"
-                  style={{ background: "none", border: "none", padding: "10px 4px", cursor: "pointer" }}>
-                  <span style={{ display: "block", width: i === current ? 22 : 7, height: 7, borderRadius: 4, background: i === current ? colors.gold : "rgba(255,255,255,0.45)", transition: "all 0.3s ease" }} />
-                </button>
-              ))}
-            </div>
-            <button onClick={() => document.getElementById("section-overview")?.scrollIntoView({ behavior: "smooth" })} aria-label="Scroll to projects"
-              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 0" }}>
-              Explore
-              <span style={{ width: 20, height: 30, borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.55)", display: "flex", justifyContent: "center", paddingTop: 5 }}>
-                <span style={{ width: 3, height: 7, borderRadius: 2, background: colors.gold, animation: "scroll-cue 1.6s ease-in-out infinite" }} />
-              </span>
-            </button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // DESKTOP: Split layout — bold left panel + image showcase right
   return (
-    <section aria-label="Introduction" style={{ display: "flex", minHeight: "100vh", background: "#0C0F1A", overflow: "hidden", position: "relative" }}>
-
-      {/* ── LEFT PANEL ── */}
-      <div style={{ width: "52%", display: "flex", flexDirection: "column", justifyContent: "center", padding: "96px clamp(28px, 4vw, 52px) 40px clamp(28px, 4.5vw, 64px)", position: "relative", zIndex: 5, flexShrink: 0 }}>
-
-        {/* Subtle background texture */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 80%, rgba(43,91,168,0.18) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(201,168,76,0.1) 0%, transparent 50%)", pointerEvents: "none" }} />
-
-        {/* Animated badge — pushed down from top */}
-        <div className="hero-badge hero-desk-badge" style={{ width: "fit-content", marginBottom: 28, marginTop: 24, animation: "slide-up 0.6s ease 0.2s both", opacity: 0 }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: colors.gold, animation: "glow-pulse 1.8s ease-in-out infinite" }} />
-          Premium Real Estate · Gurugram
-        </div>
-
-        {/* Main heading — massive bold serif */}
-        <div style={{ animation: "slide-up 0.7s ease 0.35s both", opacity: 0 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: "clamp(3rem, min(5.5vw, 10vh), 6rem)", color: "#FFFFFF", lineHeight: 0.95, marginBottom: 4 }}>
-            We Build
+    <section id="ch-ground" className="ground" aria-label="ShineOne Estate — introduction" {...dragHandlers}>
+      <div className={`ground-pin ${entered ? "in" : ""}`}>
+        <div className="ground-copy">
+          <span className="readout-m glass fade-up" style={{ "--d": ".1s", display: "none", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 999, marginBottom: 16 }}>
+            <span className="mono" style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", minWidth: "4ch" }}>{pct}%</span>
+            <span style={{ width: 54, height: 2, borderRadius: 2, background: "rgba(255,255,255,.2)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${pct}%`, background: "var(--gold)" }} /></span>
+            <span className="mono shimmer" style={{ fontSize: 11 }}>{pct >= 100 ? "Handover" : STAGES[stage]}</span>
+          </span>
+          <span className="eyebrow fade-up" style={{ "--d": ".2s" }}><b>01</b><i />Premium Real Estate · Gurugram</span>
+          <h1 className="display">
+            <Rise d={0.3}>We build</Rise>
+            <Rise d={0.42}>your <span key={phase} className="cycle" style={{ animation: "fadeIn .6s ease" }}>{headlines[phase]}</span></Rise>
           </h1>
-          <div style={{ overflow: "hidden", height: "clamp(3.3rem, min(6vw, 11vh), 6.8rem)", display: "flex", alignItems: "center" }}>
-            <h1 key={textPhase} style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(3.2rem, min(6vw, 11vh), 6.8rem)", color: colors.gold, lineHeight: 0.95, animation: "slide-up 0.4s cubic-bezier(.22,1,.36,1) both", whiteSpace: "nowrap" }}>
-              Your {headlines[textPhase]}
-            </h1>
+          <p className="lede fade-up" style={{ "--d": ".6s" }}>Plots · Flats · Floors · Construction — Sector 4, 9, 42, 46 & Reliance MET City.</p>
+          <div className="ground-actions fade-up" style={{ "--d": ".75s" }}>
+            <a className="pill pill-solid" href={`tel:${PHONE}`}><Phone size={17} /> Call now</a>
+            <a className="pill glass" href={WA_URL} target="_blank" rel="noreferrer"><span className="wa-dot" /> WhatsApp</a>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="hero-desk-divider" style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 28, marginBottom: 24, animation: "slide-up 0.7s ease 0.5s both", opacity: 0 }}>
-          <div style={{ height: 1, width: 48, background: "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4))" }} />
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.62)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Gurugram</span>
-          <div style={{ height: 1, flex: 1, background: "linear-gradient(90deg, rgba(255,255,255,0.4), rgba(255,255,255,0))" }} />
+        <div className="readout fade-up" style={{ "--d": ".9s" }} aria-live="off">
+          <div className="mono" style={{ fontSize: 11, color: "var(--fg3)" }}>Build progress</div>
+          <div className="readout-num"><RollingNumber value={String(pct).padStart(2, "0")} stagger={0} /><small>%</small></div>
+          <div className="now-stage mono shimmer" style={{ display: "none", fontSize: 12 }}>{STAGES[stage]}</div>
+          <ol className="stage-list">
+            {STAGES.map((s, i) => (
+              <li key={s} className={pct >= 100 || i < stage ? "done" : i === stage ? "now" : ""}>
+                <span className={i === stage && pct < 100 ? "shimmer" : ""}>{s}</span><i />
+              </li>
+            ))}
+          </ol>
         </div>
 
-        {/* Description */}
-        <p className="hero-desk-desc" style={{ color: "rgba(255,255,255,0.75)", fontSize: 17, lineHeight: 1.85, maxWidth: 460, fontWeight: 400, animation: "slide-up 0.7s ease 0.6s both", opacity: 0 }}>
-          Plots · Flats · Floors · Construction across<br />Sector 4, 9, 42, 46 & Reliance MET City.<br />
-          <span style={{ color: colors.gold, fontWeight: 600 }}>Transparent builds. On-time delivery.</span>
-        </p>
-
-        {/* CTA buttons */}
-        <div className="hero-desk-cta" style={{ display: "flex", gap: 12, marginTop: 36, flexWrap: "wrap", animation: "slide-up 0.7s ease 0.75s both", opacity: 0 }}>
-          <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 26px", minHeight: 52, fontSize: 15 }}>
-            <Phone size={18} /> Call Now
-          </a>
-          <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 26px", minHeight: 52, fontSize: 15 }}>
-            <MessageCircle size={18} /> WhatsApp
-          </a>
-          <a href={`mailto:${EMAIL}`} className="btn-ghost" style={{ textDecoration: "none", padding: "0 22px", minHeight: 52, fontSize: 15 }}>
-            <MailIcon color="#fff" size={18} /> Email
-          </a>
-        </div>
-
-        {/* Stat cards row */}
-        <div className="hero-stat-row" style={{ display: "flex", gap: 12, marginTop: 44, animation: "slide-up 0.7s ease 0.9s both", opacity: 0 }}>
-          {heroStats.map((s, i) => (
-            <div key={i} className="hero-stat-card" style={{ animationDelay: `${0.9 + i * 0.08}s` }}>
-              <div className="hs-icon" style={{ fontSize: 22 }}>{s.icon}</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, color: colors.darkBlue, lineHeight: 1, marginTop: 6 }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: colors.muted, marginTop: 4, lineHeight: 1.4, fontWeight: 600, whiteSpace: "pre-line" }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── RIGHT PANEL — Image showcase ── */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", minWidth: 0 }}>
-        {/* Floating particles */}
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="particle" style={{
-            width: 4 + (i % 3) * 3, height: 4 + (i % 3) * 3,
-            background: i % 2 === 0 ? "rgba(201,168,76,0.6)" : "rgba(43,91,168,0.5)",
-            left: `${10 + i * 11}%`,
-            animationDuration: `${6 + i * 1.5}s`,
-            animationDelay: `${i * 0.8}s`,
-          }} />
-        ))}
-
-        {/* Main images */}
-        {(carousel || projectData.images).map((src, i) => (
-          <img key={i} src={src} alt="" loading={i === 0 ? "eager" : "lazy"}
-            style={{
-              position: "absolute", inset: 0, width: "100%", height: "100%",
-              objectFit: "cover", objectPosition: "center top",
-              opacity: i === current ? 1 : 0, transition: "opacity 1.4s ease",
-              filter: "brightness(0.3) contrast(1.1) saturate(0.7)",
-            }} />
-        ))}
-
-        {/* Overlays */}
-        <div style={{ position: "absolute", inset: 0, background: "rgba(12,15,26,0.5)", zIndex: 1 }} />
-        <div style={{ position: "absolute", inset: 0, zIndex: 2, background: "linear-gradient(to right, #0C0F1A 0%, rgba(12,15,26,0.15) 28%, transparent 55%)" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 200, zIndex: 2, background: "linear-gradient(to top, rgba(12,15,26,0.95), transparent)" }} />
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 120, zIndex: 2, background: "linear-gradient(to bottom, rgba(12,15,26,0.6), transparent)" }} />
-
-        {/* ── Glass card: Sector 42 progress ── */}
-        <div style={{ position: "absolute", top: 100, right: 20, zIndex: 5, maxWidth: 210, animation: "float2 5s ease-in-out infinite" }}>
-          <div className="glass-card-light" style={{ padding: "18px 20px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #2B5BA8, #1a3f7a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 12px rgba(43,91,168,0.4)" }}>
-                <TrendingUp size={16} color="#fff" />
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: colors.subtle, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Sector 42</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: colors.darkBlue, lineHeight: 1.2 }}>On Schedule ✓</div>
-              </div>
-            </div>
-            <div style={{ height: 6, background: "#f0f0f0", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
-              <div className="progress-bar-fill" style={{ width: "78%" }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: colors.subtle, fontWeight: 600 }}>78% Complete</span>
-              <span style={{ fontSize: 11, color: colors.darkBlue, fontWeight: 700 }}>June 2026</span>
-            </div>
+        {finePointer && (
+          <div className="drag-hint hand" style={{ opacity: entered && !started ? 1 : 0 }} aria-hidden="true">
+            drag to look around
+            <svg width="60" height="30" viewBox="0 0 60 30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6c14 18 34 20 50 10" /><path d="M46 10l8 6-9 4" /></svg>
           </div>
-        </div>
-
-        {/* ── Glass card: Star rating ── */}
-        <div style={{ position: "absolute", bottom: 120, right: 20, zIndex: 5, animation: "float 4.5s ease-in-out 0.8s infinite" }}>
-          <div className="glass-gold" style={{ padding: "14px 18px" }}>
-            <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
-              {[1,2,3,4,5].map(s => <Star key={s} size={14} color={colors.gold} fill={colors.gold} />)}
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>Trusted Builder</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)", marginTop: 2 }}>Premium Quality</div>
-          </div>
-        </div>
-
-        {/* ── Glass NEW badge ── */}
-        <div style={{ position: "absolute", top: 100, left: 24, zIndex: 5 }}>
-          <div className="glass-dark" style={{ padding: "9px 16px", display: "flex", alignItems: "center", gap: 8, animation: "pulse-green 2.5s infinite", border: "1px solid rgba(22,163,74,0.4)" }}>
-            <div style={{ position: "relative" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
-              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#4ade80", animation: "ping 1.5s ease-out infinite" }} />
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap" }}>New · Reliance MET City</span>
-          </div>
-        </div>
-
-        {/* ── Ghost watermark ── */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2rem, 4vw, 4.5rem)", fontWeight: 700, color: "rgba(255,255,255,0.05)", letterSpacing: 10, textTransform: "uppercase", textAlign: "center", userSelect: "none" }}>
-            ShineOne<br />Estate
-          </div>
-        </div>
-
-        {/* ── Thumbnail strip ── */}
-        <div style={{ position: "absolute", bottom: 24, left: 0, right: 0, zIndex: 5, display: "flex", gap: 8, justifyContent: "center", padding: "0 20px" }}>
-          {(carousel || []).slice(0, 6).map((src, i) => (
-            <button key={i} onClick={() => setCurrent(i)} aria-label={`Show photo ${i + 1}`}
-              style={{
-                padding: 0, background: "none",
-                width: 52, height: 38, borderRadius: 10, overflow: "hidden", cursor: "pointer", flexShrink: 0,
-                border: i === current ? `2px solid ${colors.gold}` : "2px solid rgba(255,255,255,0.15)",
-                transition: "all 0.3s cubic-bezier(.22,1,.36,1)",
-                transform: i === current ? "scale(1.12) translateY(-4px)" : "scale(1)",
-                boxShadow: i === current ? `0 8px 24px rgba(201,168,76,0.5)` : "none",
-              }}>
-              <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: i === current ? "none" : "brightness(0.5)" }} />
-            </button>
-          ))}
-        </div>
+        )}
+        <div className={`scroll-pill glass ${started || !entered ? "hide" : ""}`}><i />Scroll to build</div>
       </div>
     </section>
   );
 };
 
-/* ─────────────────────────── STATS ROW ─────────────────────────── */
-const StatsRow = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-  const c1 = useCountUp(3, 1200, visible);
-  const c2 = useCountUp(14400, 1500, visible);
-  const c3 = useCountUp(5, 1000, visible);
-  const c4 = useCountUp(78, 1800, visible);
-
+/* ─────────────────────────── 02 PROJECTS ─────────────────────────── */
+const OverviewChapter = ({ onSelectProject }) => {
+  const { ref, visible } = useReveal(0.12);
   const stats = [
-    { value: c1, suffix: "+", label: "Completed Projects", icon: <CheckCircle size={isMobile ? 20 : 24} color={colors.gold} /> },
-    { value: c2.toLocaleString("en-IN"), suffix: "", label: "Sq. Ft. Delivered", icon: <Home size={isMobile ? 20 : 24} color={colors.gold} /> },
-    { value: c3, suffix: "", label: "Active Sectors", icon: <MapPin size={isMobile ? 20 : 24} color={colors.gold} /> },
-    { value: c4, suffix: "%", label: "Sector 42 Progress", icon: <TrendingUp size={isMobile ? 20 : 24} color={colors.gold} /> },
+    { value: "3", suffix: "+", label: "Completed projects" },
+    { value: "14,400", suffix: "", label: "Sq. ft. delivered" },
+    { value: "5", suffix: "", label: "Active sectors" },
+    { value: "78", suffix: "%", label: "Sector 42 progress" },
   ];
-
   return (
-    <div ref={ref} style={{ background: `linear-gradient(135deg, ${colors.darkBlue} 0%, #1f4a8f 100%)`, padding: isMobile ? "20px 12px" : "36px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: isMobile ? 0 : 2 }}>
-        {stats.map((s, i) => {
-          const divider = isMobile ? { borderRight: i % 2 === 0 ? "1px solid rgba(255,255,255,0.12)" : "none", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.12)" : "none" }
-            : { borderRight: i < stats.length - 1 ? "1px solid rgba(255,255,255,0.12)" : "none" };
-          return (
-            <div key={i} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", padding: isMobile ? "18px 8px" : "26px 16px", ...divider }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: isMobile ? 8 : 12 }}>{s.icon}</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 32 : 42, fontWeight: 700, color: "#fff", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{s.value}{s.suffix}</div>
-              <div style={{ fontSize: isMobile ? 12 : 13, color: "rgba(255,255,255,0.78)", marginTop: 6, letterSpacing: 0.4, fontWeight: 500 }}>{s.label}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-/* ─────────────────────────── QUICK SNAPSHOT ─────────────────────────── */
-const QuickSnapshot = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-
-  const completed = projectData.projects.filter((p) => p.status.toLowerCase().includes("completed"));
-  const ongoing = projectData.projects.filter((p) => p.status.toLowerCase().includes("ongoing"));
-
-  return (
-    <section id="section-overview" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: colors.cream }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 40 : 64 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Projects Overview</div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
-            Built with<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>precision & pride</em>
-          </h2>
-          <p className="section-sub">
-            A snapshot of every development — from foundation to handover — across Gurugram's most sought-after sectors.
-          </p>
-        </div>
-
-        {/* Completed Projects */}
-        <div style={{ marginBottom: 48 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#16a34a" }} />
-            <span style={{ fontWeight: 600, fontSize: 15, color: "#16a34a", textTransform: "uppercase", letterSpacing: 1 }}>Completed & Delivered</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 16 }}>
-            {completed.map((p, i) => (
-              <div key={i} className={`card-hover shine-card reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${i * 0.1}s`, background: "#fff", borderRadius: 20, padding: isMobile ? "22px" : "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", position: "relative", overflow: "hidden" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(43,91,168,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Home size={20} color={colors.darkBlue} />
-                  </div>
-                  <span className="tag-pill" style={{ background: "#dcfce7", color: "#16a34a" }}>DELIVERED</span>
-                </div>
-                <h3 style={{ fontSize: 20, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.darkBlue, marginBottom: 6 }}>{p.name}</h3>
-                <p style={{ fontSize: 13, color: colors.subtle, fontWeight: 500 }}>{p.area}</p>
-                <div style={{ marginTop: 16, height: 4, background: "#f0f0f0", borderRadius: 2 }}>
-                  <div style={{ height: "100%", width: "100%", background: "#16a34a", borderRadius: 2 }} />
-                </div>
-                <p style={{ fontSize: 12, color: colors.subtle, marginTop: 8 }}>100% Complete</p>
+    <section id="ch-overview" ref={ref} className="chapter scene-chapter">
+      <div className="wrap">
+        <div className="half-left">
+          <ChapterHead n={2} label="Projects overview" visible={visible}
+            title={<><Rise>Built with</Rise><Rise d={0.12}><em>precision & pride</em></Rise></>}
+            lede="A snapshot of every development — from foundation to handover — across Gurugram's most sought-after sectors." />
+          <div className={`stats ${visible ? "in" : ""}`}>
+            {stats.map((s, i) => (
+              <div key={s.label} className="stat fade-up" style={{ "--d": `${0.1 * i}s` }}>
+                <div className="stat-num"><RollingNumber value={visible ? s.value : s.value.replace(/\d/g, "0")} /><small>{s.suffix}</small></div>
+                <div className="stat-label">{s.label}</div>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Ongoing Projects */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: colors.gold, animation: "pulse-ring 2s infinite" }} />
-            <span style={{ fontWeight: 600, fontSize: 15, color: "#b45309", textTransform: "uppercase", letterSpacing: 1 }}>Active Construction</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 16 }}>
-            {ongoing.map((p, i) => (
-              <div key={i} className={`card-hover reveal${visible ? " visible" : ""}`} style={{ transitionDelay: `${(i + 3) * 0.1}s`, background: "#fff", borderRadius: 20, padding: isMobile ? "22px" : "28px", border: "1px solid rgba(43,91,168,0.08)", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 20 }}>
-                  <div>
-                    <h3 style={{ fontSize: 22, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.darkBlue }}>{p.name}</h3>
-                    <p style={{ fontSize: 13, color: colors.subtle, marginTop: 4, fontWeight: 500 }}>{p.area}</p>
-                  </div>
-                  <span className="tag-pill" style={{ background: "#fef3c7", color: "#92400e" }}>
-                    {p.stage ? p.stage.toUpperCase() : "ONGOING"}
-                  </span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: colors.muted }}>Completion</span>
-                  <span style={{ fontSize: 20, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.darkBlue }}>{p.progress || 0}%</span>
-                </div>
-                <div style={{ height: 8, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}>
-                  <div className="progress-bar-fill" style={{ width: `${p.progress || 0}%` }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                  <span style={{ fontSize: 13, color: colors.subtle }}>ETA</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: colors.darkBlue }}>{p.eta || "TBD"}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-/* ─────────────────────────── PROGRESS TIMELINE ─────────────────────────── */
-const ProgressTimeline = () => {
-  const isMobile = useIsMobile();
-  const isTablet = useIsTablet();
-  const chipRow = useRef(null);
-  const { ref, visible } = useReveal();
-  const [selectedProject, setSelectedProject] = useState(projectData.projects[0].name);
-  const project = projectData.projects.find((p) => p.name === selectedProject) || projectData.projects[0];
-  const progress = project.progress !== undefined ? project.progress : project.status.toLowerCase().includes("completed") ? 100 : 78;
-
-  const stages = ["Foundation", "Structure", "Finishing", "Interior Works", "Final Inspection", "Handover"];
-  const stageStatuses = stages.map((s, idx) => {
-    if (project.status.toLowerCase().includes("completed")) return "completed";
-    if (project.status.toLowerCase().includes("ongoing")) {
-      if (project.stage) {
-        const ci = stages.findIndex((st) => st.toLowerCase() === String(project.stage).toLowerCase());
-        if (ci === -1) return "pending";
-        if (idx < ci) return "completed";
-        if (idx === ci) return "ongoing";
-        return "pending";
-      }
-      if (s === "Finishing") return "ongoing";
-      const fi = stages.indexOf("Finishing");
-      if (idx < fi) return "completed";
-      return "pending";
-    }
-    return "pending";
-  });
-
-  const selectProject = (name, el) => {
-    setSelectedProject(name);
-    vibrate();
-    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  };
-  const projectIdx = projectData.projects.findIndex((p) => p.name === selectedProject);
-  const swipe = useSwipe({
-    onLeft: () => { const n = projectData.projects[projectIdx + 1]; if (n) selectProject(n.name, chipRow.current?.children[projectIdx + 1]); },
-    onRight: () => { const n = projectData.projects[projectIdx - 1]; if (n) selectProject(n.name, chipRow.current?.children[projectIdx - 1]); },
-  });
-
-  const stageColors = { completed: { bg: "#dcfce7", border: "#16a34a", text: "#16a34a", label: "Completed" }, ongoing: { bg: "#fef3c7", border: colors.gold, text: "#92400e", label: "In Progress" }, pending: { bg: "#f9fafb", border: "#e5e7eb", text: "#6b7280", label: "Pending" } };
-
-  return (
-    <div id="section-progress" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#fff" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Construction Progress</div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
-            Track every<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>milestone</em>
-          </h2>
-        </div>
-
-        {/* Project selector */}
-        <div className={`h-scroll-fade reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", marginBottom: isMobile ? 24 : 40, marginLeft: isMobile ? -16 : 0, marginRight: isMobile ? -16 : 0 }}>
-          <div ref={chipRow} className="h-scroll" role="tablist" aria-label="Choose a project" style={{ gap: 10, padding: isMobile ? "4px 16px 8px" : "4px 0 8px" }}>
+          <div className={`panel register ${visible ? "in" : ""}`}>
             {projectData.projects.map((p, i) => {
-              const on = selectedProject === p.name;
+              const done = p.status.toLowerCase().includes("completed");
+              const pct = projectPercent(p);
               return (
-                <button key={i} role="tab" aria-selected={on} onClick={(e) => selectProject(p.name, e.currentTarget)} className="chip"
-                  style={{ background: on ? colors.darkBlue : "#fff", color: on ? "#fff" : colors.darkBlue,
-                    border: `2px solid ${on ? colors.darkBlue : "rgba(43,91,168,0.25)"}`, boxShadow: on ? "0 8px 20px rgba(43,91,168,0.3)" : "none" }}>
-                  {p.name}
-                  {p.status === "Ongoing" && <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: on ? colors.gold : "#f59e0b", marginLeft: 8, verticalAlign: "middle" }} />}
+                <button key={p.name} className="reg-row fade-up" style={{ "--d": `${0.3 + i * 0.07}s` }} onClick={() => onSelectProject(p.name)} aria-label={`${p.name}: ${done ? "delivered" : `${pct}% complete`}. Show progress`}>
+                  <span className="reg-idx">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="reg-name">{p.name}</span>
+                  <span className={`tag ${done ? "tag-done" : "tag-live"}`}>{done ? "Delivered" : p.stage || "Ongoing"}</span>
+                  <span className="reg-meta">
+                    <span>{p.area}</span>
+                    <span className="reg-bar"><i style={{ transform: `scaleX(${visible ? pct / 100 : 0})` }} /></span>
+                    <span>{done ? "100%" : `${pct}%`}{p.eta ? ` · ${p.eta}` : ""}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
-
-        {/* Progress display */}
-        <div {...swipe.handlers} className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s", background: colors.cream, borderRadius: 24, padding: isMobile ? "22px 20px" : "44px 48px", marginBottom: isMobile ? 20 : 32, border: "1px solid rgba(43,91,168,0.08)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 20 }}>
-            <div style={{ minWidth: 0 }}>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 24 : 30, fontWeight: 700, color: colors.darkBlue, lineHeight: 1.1 }}>{selectedProject}</h3>
-              <p style={{ fontSize: 13, color: colors.subtle, marginTop: 4 }}>{project.status} {project.eta ? `· ETA: ${project.eta}` : ""}</p>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 44 : 56, fontWeight: 700, color: colors.darkBlue, lineHeight: 1 }}>{progress}<span style={{ fontSize: 24 }}>%</span></div>
-              <div style={{ fontSize: 12, color: colors.subtle, marginTop: 4 }}>Overall Completion</div>
-            </div>
-          </div>
-          <div style={{ height: 12, background: "rgba(43,91,168,0.1)", borderRadius: 6, overflow: "hidden" }}>
-            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-
-        {/* Stages grid */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : isTablet ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: isMobile ? 10 : 12 }}>
-          {stages.map((stage, idx) => {
-            const s = stageStatuses[idx]; const c = stageColors[s];
-            return (
-              <div key={stage} className={`reveal${visible ? " visible" : ""}`}
-                style={{ transitionDelay: `${idx * 0.07}s`, background: c.bg, border: `1.5px solid ${c.border}`, borderRadius: 16, padding: isMobile ? "16px 10px" : "20px 14px", textAlign: "center", position: "relative", overflow: "visible" }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: c.border, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                  {s === "completed" ? <CheckCircle size={18} color="#fff" /> : s === "ongoing" ? <Clock size={18} color="#fff" /> : <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />}
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{stage}</div>
-                <div style={{ fontSize: 11, color: c.text, opacity: 0.8, marginTop: 4 }}>{c.label}</div>
-                {idx < stages.length - 1 && !isMobile && !isTablet && (
-                  <div style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", zIndex: 1 }}>
-                    <ArrowRight size={14} color={c.border} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-/* ─────────────────────────── STORIES VIEWER ─────────────────────────── */
-const StoriesViewer = () => {
+/* ─────────────────────────── 03 PROGRESS ─────────────────────────── */
+const ProgressChapter = ({ selected, onSelect, dragHandlers }) => {
+  const { ref, visible } = useReveal(0.12);
+  const chips = useRef(null);
+  const idx = Math.max(0, projectData.projects.findIndex((p) => p.name === selected));
+  const project = projectData.projects[idx];
+  const pct = projectPercent(project);
+  const stages = projectStages(project);
+  const pick = (i) => {
+    const p = projectData.projects[i]; if (!p) return;
+    onSelect(p.name); vibrate();
+    chips.current?.children[i]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  };
+  const swipe = useSwipe({ onLeft: () => pick(idx + 1), onRight: () => pick(idx - 1) });
+  const labels = { completed: "Completed", ongoing: "In progress", pending: "Pending" };
+
+  return (
+    <section id="ch-progress" ref={ref} className="chapter scene-chapter" {...dragHandlers}>
+      <div className="wrap">
+        <div className="half-right">
+          <ChapterHead n={3} label="Construction progress" visible={visible}
+            title={<><Rise>Track every</Rise><Rise d={0.12}><em>milestone</em></Rise></>}
+            lede="Pick a project — the site model shows where it stands today." />
+          <div className={`fade-up ${visible ? "in" : ""}`} style={{ "--d": ".2s" }}>
+            <div className="chips" ref={chips} role="tablist" aria-label="Projects">
+              {projectData.projects.map((p, i) => (
+                <button key={p.name} role="tab" aria-selected={i === idx} className={`chip glass ${i === idx ? "on" : ""}`} onClick={() => pick(i)}>
+                  {p.name}{p.status === "Ongoing" && <span className="wa-dot" style={{ background: "var(--gold)", boxShadow: "0 0 0 3px rgba(220,189,108,.2)", width: 6, height: 6 }} />}
+                </button>
+              ))}
+            </div>
+            <div className="panel prog-card" {...swipe}>
+              <div className="prog-top">
+                <div>
+                  <div className="serif" style={{ fontSize: "clamp(26px, 3vw, 34px)", lineHeight: 1.05 }}>{project.name}</div>
+                  <div className="mono" style={{ fontSize: 11, color: "var(--fg3)", marginTop: 10 }}>{project.status}{project.eta ? ` · ETA ${project.eta}` : ""} · {project.area}</div>
+                </div>
+                <div className="prog-pct"><RollingNumber value={String(pct)} stagger={0.04} /><small>%</small></div>
+              </div>
+              <div className="prog-bar"><i style={{ width: `${pct}%` }} /></div>
+              <ol className="stage-rows">
+                {STAGES.map((s, i) => (
+                  <li key={s} className={`stage-row ${stages[i]}`}>
+                    <span className="dot">{stages[i] === "completed" ? <Check size={14} /> : stages[i] === "ongoing" ? <Clock size={13} /> : <span style={{ fontSize: 10 }} className="mono">{i + 1}</span>}</span>
+                    <span><b>{s}</b><small>{labels[stages[i]]}</small></span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ─────────────────────────── 04 STORIES ─────────────────────────── */
+const StoriesChapter = ({ folderImages }) => {
   const isMobile = useIsMobile();
   const finePointer = useFinePointer();
-  const { ref, visible } = useReveal();
-  const folderImages = useBackendMedia();
-  const [openStory, setOpenStory] = useState({ open: false, folder: "", images: [], idx: 0 });
+  const { ref, visible } = useReveal(0.15);
+  const [story, setStory] = useState({ open: false, folder: "", images: [], idx: 0 });
   const [progress, setProgress] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [currentDuration, setCurrentDuration] = useState(4000);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [duration, setDuration] = useState(4000);
   const [dragY, setDragY] = useState(0);
-  const touchRef = useRef(null);
-  const animTimer = useRef(null);
-  const rafRef = useRef(null);
-  const elapsedRef = useRef(0);
-  useLockBodyScroll(openStory.open);
-
-  const DEFAULT_DURATION = 4000;
-
-  const open = (folder) => {
-    const imgs = folderImages[folder] || [];
-    if (!imgs.length) return;
-    elapsedRef.current = 0;
-    setOpenStory({ open: true, folder, images: imgs, idx: 0 });
-    setProgress(0); setIsPaused(false); setCurrentDuration(DEFAULT_DURATION); setDragY(0);
-  };
-  const close = () => { setOpenStory({ open: false, folder: "", images: [], idx: 0 }); setProgress(0); setIsPaused(false); setCurrentDuration(DEFAULT_DURATION); setDragY(0); };
-
-  const showIndex = (newIdx) => {
-    if (!openStory.open) return;
-    if (newIdx < 0) newIdx = 0;
-    if (newIdx >= openStory.images.length) return close();
-    setIsAnimating(true);
-    if (animTimer.current) clearTimeout(animTimer.current);
-    animTimer.current = setTimeout(() => { elapsedRef.current = 0; setOpenStory((s) => ({ ...s, idx: newIdx })); setProgress(0); setIsAnimating(false); }, 160);
-  };
-  const next = () => { if (!openStory.open) return; const ni = openStory.idx + 1; if (ni >= openStory.images.length) return close(); showIndex(ni); };
-  const prev = () => { if (!openStory.open) return; const pi = openStory.idx - 1; if (pi < 0) { elapsedRef.current = 0; setProgress(0); return; } showIndex(pi); };
-
-  // Progress timer — pausing keeps the elapsed time so "hold to pause" resumes where it left off
-  useEffect(() => {
-    if (!openStory.open || isPaused) return;
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    const start = Date.now() - elapsedRef.current;
-    const run = () => {
-      elapsedRef.current = Date.now() - start;
-      const p = Math.min(1, elapsedRef.current / currentDuration);
-      setProgress(p);
-      if (p >= 1) next(); else rafRef.current = requestAnimationFrame(run);
-    };
-    rafRef.current = requestAnimationFrame(run);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [openStory.open, openStory.idx, isPaused, currentDuration]);
-
-  useEffect(() => { return () => { if (animTimer.current) clearTimeout(animTimer.current); if (rafRef.current) cancelAnimationFrame(rafRef.current); }; }, []);
-
-  useEffect(() => {
-    if (!openStory.open) return;
-    const h = (e) => {
-      if (e.key === "Escape") close();
-      if (e.key === "ArrowRight" || e.key === "Enter") next();
-      if (e.key === "ArrowLeft") prev();
-      if (e.key === " ") { e.preventDefault(); setIsPaused((p) => !p); }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [openStory.open, openStory.idx]);
-
-  // Touch: tap left/right third = prev/next, horizontal swipe = prev/next, hold = pause, swipe down = close
-  const onTouchStart = (e) => {
-    const t = e.touches[0];
-    touchRef.current = { x: t.clientX, y: t.clientY, time: Date.now(), dy: 0 };
-    setIsPaused(true);
-  };
-  const onTouchMove = (e) => {
-    if (!touchRef.current) return;
-    const t = e.touches[0];
-    const dy = t.clientY - touchRef.current.y;
-    const dx = t.clientX - touchRef.current.x;
-    if (dy > 0 && Math.abs(dy) > Math.abs(dx)) { touchRef.current.dy = dy; setDragY(dy); }
-  };
-  const onTouchEnd = (e) => {
-    const st = touchRef.current; touchRef.current = null;
-    if (!st) return;
-    e.preventDefault(); // stop the synthetic click (otherwise a tap would advance twice)
-    const t = e.changedTouches[0];
-    const dx = t.clientX - st.x; const dy = t.clientY - st.y; const held = Date.now() - st.time;
-    setIsPaused(false);
-    if (dy > 110 && Math.abs(dy) > Math.abs(dx)) { close(); return; }
-    setDragY(0);
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { if (dx > 0) prev(); else next(); return; }
-    if (held < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-      if (t.clientX < window.innerWidth * 0.33) prev(); else next();
-    }
-  };
-
-  const storyFolders = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]
-    .map((d) => Object.keys(folderImages).find((k) => k.toLowerCase() === d)).filter(Boolean);
+  const touch = useRef(null);
+  const raf = useRef(0);
+  const elapsed = useRef(0);
+  useLockBodyScroll(story.open);
 
   const sectorSubtitles = {
     "sec 4": "Residential Project",
@@ -1312,141 +1143,147 @@ const StoriesViewer = () => {
     "reliance met city": "New Launch",
   };
 
-  const current = openStory.images[openStory.idx];
-  const currentIsVideo = /\.(mp4|webm|ogg|mov)$/i.test(String(current));
-  const ringSize = isMobile ? 82 : 108;
+  const folders = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]
+    .map((d) => Object.keys(folderImages).find((k) => k.toLowerCase() === d)).filter(Boolean);
 
+  const open = (folder) => {
+    const imgs = folderImages[folder] || []; if (!imgs.length) return;
+    elapsed.current = 0; setProgress(0); setPaused(false); setDuration(4000); setDragY(0);
+    setStory({ open: true, folder, images: imgs, idx: 0 });
+    audio.whoosh(0.6);
+  };
+  const close = () => { setStory({ open: false, folder: "", images: [], idx: 0 }); setDragY(0); setPaused(false); };
+  const show = (i) => {
+    if (i < 0) { elapsed.current = 0; setProgress(0); return; }
+    if (i >= story.images.length) { close(); return; }
+    elapsed.current = 0; setProgress(0); setDuration(4000);
+    setStory((s) => ({ ...s, idx: i }));
+  };
+  const next = () => show(story.idx + 1);
+  const prev = () => show(story.idx - 1);
+
+  useEffect(() => {
+    if (!story.open || paused) return;
+    const start = performance.now() - elapsed.current;
+    const run = (now) => {
+      elapsed.current = now - start;
+      const p = Math.min(1, elapsed.current / duration);
+      setProgress(p);
+      if (p >= 1) { show(story.idx + 1); return; }
+      raf.current = requestAnimationFrame(run);
+    };
+    raf.current = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(raf.current);
+  }, [story.open, story.idx, paused, duration]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!story.open) return;
+    const h = (e) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === " ") { e.preventDefault(); setPaused((p) => !p); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [story.open, story.idx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onTouchStart = (e) => { const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY, time: Date.now() }; setPaused(true); };
+  const onTouchMove = (e) => {
+    if (!touch.current) return;
+    const t = e.touches[0]; const dy = t.clientY - touch.current.y; const dx = t.clientX - touch.current.x;
+    if (dy > 0 && Math.abs(dy) > Math.abs(dx)) setDragY(dy);
+  };
+  const onTouchEnd = (e) => {
+    const st = touch.current; touch.current = null; if (!st) return;
+    e.preventDefault();
+    const t = e.changedTouches[0]; const dx = t.clientX - st.x; const dy = t.clientY - st.y; const held = Date.now() - st.time;
+    setPaused(false);
+    if (dy > 110 && Math.abs(dy) > Math.abs(dx)) { close(); return; }
+    setDragY(0);
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { if (dx > 0) prev(); else next(); return; }
+    if (held < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) { if (t.clientX < window.innerWidth * 0.33) prev(); else next(); }
+  };
+
+  const cur = story.images[story.idx];
   return (
-    <div id="section-stories" ref={ref} style={{ padding: isMobile ? "60px 0" : "clamp(72px, 8vw, 100px) 28px", background: `linear-gradient(160deg, ${colors.cream} 0%, #EDE8DF 100%)`, position: "relative", overflow: "hidden" }}>
-      {/* Decorative blobs */}
-      <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(43,91,168,0.05)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(201,168,76,0.07)", pointerEvents: "none" }} />
-      <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 28 : 56, padding: isMobile ? "0 16px" : 0 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Live Site Stories</div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
-            See the work<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>in progress</em>
-          </h2>
-          <p className="section-sub">
-            Real on-site updates from every sector — tap a circle to watch.
-          </p>
-        </div>
-
-        <div className="h-scroll" style={{ gap: isMobile ? 12 : 32, padding: isMobile ? "8px 20px 16px" : "8px 0 16px", scrollPaddingInline: isMobile ? 20 : 0 }}>
-          {storyFolders.map((folder, i) => {
-            const label = folderLabel(folder);
-            const isNew = folder.toLowerCase() === "reliance met city";
-            return (
-              <button key={folder} className={`lift press reveal${visible ? " visible" : ""}`} onClick={() => open(folder)} aria-label={`Watch ${label} stories`}
-                style={{ transitionDelay: `${i * 0.1}s`, textAlign: "center", cursor: "pointer", width: ringSize + 26, flexShrink: 0, background: "none", border: "none", padding: 0, scrollSnapAlign: "start" }}>
-                <div style={{ position: "relative", marginBottom: 10 }}>
-                  {isNew && (
-                    <div style={{ position: "absolute", top: -4, right: 0, background: "#16a34a", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 7px", borderRadius: 20, zIndex: 3, animation: "pulse-green 2s infinite", letterSpacing: 0.5 }}>NEW</div>
-                  )}
-                  <div className="story-ring" style={{ width: ringSize, height: ringSize, margin: "0 auto" }}>
-                    <div className="story-ring-inner">
-                      <img src={(folderImages[folder] || [])[0] || projectData.images[0]} loading="lazy" alt="" className="zoom-img"
-                        style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block" }} />
-                    </div>
-                  </div>
-                </div>
-                <div style={{ fontSize: isMobile ? 12.5 : 13, fontWeight: 700, color: colors.black, lineHeight: 1.25 }}>{label}</div>
-                <div style={{ fontSize: 10.5, color: colors.darkBlue, marginTop: 2, fontWeight: 600 }}>{sectorSubtitles[folder.toLowerCase()] || ""}</div>
-                <div style={{ fontSize: 10.5, color: colors.subtle, marginTop: 1 }}>{(folderImages[folder] || []).length} updates</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* FULLSCREEN STORY VIEWER */}
-        {openStory.open && (
-          <div role="dialog" aria-modal="true" aria-label={`${folderLabel(openStory.folder)} stories`}
-            onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-            onMouseDown={() => finePointer && setIsPaused(true)} onMouseUp={() => finePointer && setIsPaused(false)}
-            style={{ position: "fixed", inset: 0, background: `rgba(0,0,0,${1 - Math.min(dragY / 400, 0.6)})`, zIndex: 2000, display: "flex", justifyContent: "center", alignItems: "center", animation: "fade-in 0.2s ease", touchAction: "none", userSelect: "none", WebkitUserSelect: "none" }}>
-            <div style={{ position: "absolute", inset: 0, transform: `translateY(${dragY}px) scale(${1 - Math.min(dragY / 2000, 0.1)})`, transition: dragY ? "none" : "transform 0.25s ease", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {/* Progress bars */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "calc(10px + env(safe-area-inset-top)) 12px 0", display: "flex", gap: 4, zIndex: 5, maxWidth: 640, margin: "0 auto" }}>
-                {openStory.images.map((_, i) => (
-                  <div key={i} style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.3)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ height: "100%", background: "#fff", width: i < openStory.idx ? "100%" : i === openStory.idx ? `${progress * 100}%` : "0%" }} />
-                  </div>
-                ))}
+    <section id="ch-stories" ref={ref} className="chapter">
+      <div className="wrap">
+        <ChapterHead n={4} label="Live site stories" center visible={visible}
+          title={<><Rise>See the work</Rise><Rise d={0.12}><em>in progress</em></Rise></>}
+          lede="Real on-site updates from every sector — tap a circle to watch." />
+      </div>
+      <div className={`story-row ${visible ? "in" : ""}`}>
+        {folders.map((f, i) => {
+          const key = f.toLowerCase();
+          return (
+            <button key={f} className="story fade-up" style={{ "--d": `${0.1 * i}s` }} onClick={() => open(f)} aria-label={`Watch ${folderLabel(f)} stories`}>
+              <div className="story-ring">
+                {key === "reliance met city" && <span className="tag tag-live story-new" style={{ background: "#0b0d12" }}>New</span>}
+                <div><img src={(folderImages[f] || [])[0] || projectData.images[0]} alt="" loading="lazy" /></div>
               </div>
+              <div className="story-name">{folderLabel(f)}</div>
+              <div className="story-sub">{sectorSubtitles[key] || ""}</div>
+              <div className="story-sub" style={{ marginTop: 3, color: "var(--fg2)" }}>{(folderImages[f] || []).length} updates</div>
+            </button>
+          );
+        })}
+      </div>
 
-              {/* Header */}
-              <div style={{ position: "absolute", top: "calc(24px + env(safe-area-inset-top))", left: 0, right: 0, maxWidth: 640, margin: "0 auto", padding: "0 12px", display: "flex", alignItems: "center", gap: 12, zIndex: 6 }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(255,255,255,0.85)", flexShrink: 0 }}>
-                  <img src={openStory.images[0]} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: "#fff" }}>{folderLabel(openStory.folder)}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>{openStory.idx + 1} / {openStory.images.length}{isPaused && !dragY ? " · Paused" : ""}</div>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); close(); }} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); close(); }} aria-label="Close stories" className="icon-btn">
-                  <X size={20} color="#fff" />
-                </button>
+      {story.open && (
+        <div className="viewer" role="dialog" aria-modal="true" aria-label={`${folderLabel(story.folder)} stories`}
+          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+          onMouseDown={() => finePointer && setPaused(true)} onMouseUp={() => finePointer && setPaused(false)}
+          style={{ background: `rgba(0,0,0,${1 - Math.min(dragY / 400, 0.6)})` }}>
+          <div style={{ position: "absolute", inset: 0, transform: `translateY(${dragY}px) scale(${1 - Math.min(dragY / 2000, 0.1)})`, transition: dragY ? "none" : "transform .25s ease" }}>
+            <div className="viewer-bars">
+              {story.images.map((_, i) => <div key={i}><i style={{ width: i < story.idx ? "100%" : i === story.idx ? `${progress * 100}%` : "0%" }} /></div>)}
+            </div>
+            <div className="viewer-head">
+              <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(255,255,255,.85)", flexShrink: 0 }}>
+                <img src={story.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
-
-              {/* Media */}
-              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "calc(76px + env(safe-area-inset-top)) 0 calc(44px + env(safe-area-inset-bottom))" }}>
-                <div style={{ opacity: isAnimating ? 0 : 1, transition: "opacity 160ms ease", maxWidth: isMobile ? "100%" : 600, width: "100%", height: "100%", borderRadius: isMobile ? 0 : 14, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {currentIsVideo ? (
-                    <video key={current} src={current} style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
-                      playsInline autoPlay preload="metadata" muted
-                      onLoadedMetadata={(e) => { const d = e.target.duration; elapsedRef.current = 0; setCurrentDuration(d > 0 && isFinite(d) ? d * 1000 : DEFAULT_DURATION); setProgress(0); }}
-                      onEnded={next} />
-                  ) : (
-                    <img key={current} src={current} alt={`${folderLabel(openStory.folder)} update ${openStory.idx + 1}`} draggable={false}
-                      style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }} />
-                  )}
-                </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="serif" style={{ fontSize: 18 }}>{folderLabel(story.folder)}</div>
+                <div className="mono" style={{ fontSize: 10.5, color: "rgba(255,255,255,.7)", marginTop: 2 }}>{story.idx + 1} / {story.images.length}{paused && !dragY ? " · Paused" : ""}</div>
               </div>
-
-              {/* Desktop prev/next arrows & click zones */}
-              {!isMobile && (
-                <>
-                  <div style={{ position: "absolute", left: 0, top: 90, bottom: 40, width: "35%", cursor: "pointer", zIndex: 4 }} onClick={prev} />
-                  <div style={{ position: "absolute", right: 0, top: 90, bottom: 40, width: "35%", cursor: "pointer", zIndex: 4 }} onClick={next} />
-                  <button onClick={prev} aria-label="Previous" className="icon-btn" style={{ position: "absolute", left: "max(16px, calc(50% - 360px))", top: "50%", transform: "translateY(-50%)", zIndex: 5, width: 48, height: 48, opacity: openStory.idx === 0 ? 0.35 : 1 }}>
-                    <ChevronLeft size={22} color="#fff" />
-                  </button>
-                  <button onClick={next} aria-label="Next" className="icon-btn" style={{ position: "absolute", right: "max(16px, calc(50% - 360px))", top: "50%", transform: "translateY(-50%)", zIndex: 5, width: 48, height: 48 }}>
-                    <ChevronRight size={22} color="#fff" />
-                  </button>
-                </>
-              )}
-
-              {/* Gesture hint */}
-              <div style={{ position: "absolute", bottom: "calc(14px + env(safe-area-inset-bottom))", left: 0, right: 0, textAlign: "center", color: "rgba(255,255,255,0.6)", fontSize: 11.5, letterSpacing: 0.3, zIndex: 5, pointerEvents: "none" }}>
-                {isMobile ? "Tap to skip · Hold to pause · Swipe down to close" : "← → to navigate · Space to pause · Esc to close"}
+              <button className="hud-icon glass" aria-label="Close stories" onClick={close} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); close(); }}><X size={18} /></button>
+            </div>
+            <div style={{ position: "absolute", inset: 0, padding: "calc(74px + env(safe-area-inset-top)) 0 calc(44px + env(safe-area-inset-bottom))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: "100%", maxWidth: isMobile ? "100%" : 620, height: "100%", borderRadius: isMobile ? 0 : 18, overflow: "hidden" }}>
+                {isVideo(cur) ? (
+                  <video key={cur} src={cur} playsInline autoPlay muted preload="metadata" style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    onLoadedMetadata={(e) => { const d = e.target.duration; elapsed.current = 0; setDuration(d > 0 && isFinite(d) ? d * 1000 : 4000); }} onEnded={next} />
+                ) : (
+                  <img key={cur} src={cur} alt={`${folderLabel(story.folder)} — update ${story.idx + 1}`} draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", animation: "fadeIn .3s ease" }} />
+                )}
               </div>
             </div>
+            {!isMobile && (
+              <>
+                <div style={{ position: "absolute", left: 0, top: 90, bottom: 40, width: "35%", cursor: "w-resize" }} onClick={prev} />
+                <div style={{ position: "absolute", right: 0, top: 90, bottom: 40, width: "35%", cursor: "e-resize" }} onClick={next} />
+                <button className="hud-icon glass lb-nav" style={{ left: "max(16px, calc(50% - 380px))" }} onClick={prev} aria-label="Previous"><ChevronLeft size={20} /></button>
+                <button className="hud-icon glass lb-nav" style={{ right: "max(16px, calc(50% - 380px))" }} onClick={next} aria-label="Next"><ChevronRight size={20} /></button>
+              </>
+            )}
+            <div className="viewer-hint">{isMobile ? "Tap to skip · Hold to pause · Swipe down to close" : "← → navigate · Space pause · Esc close"}</div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </section>
   );
 };
 
-/* ─────────────────────────── IMAGE GALLERY ─────────────────────────── */
-const ImageGallery = () => {
+/* ─────────────────────────── 05 GALLERY ─────────────────────────── */
+const GalleryChapter = ({ folderImages }) => {
   const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-  const folderImages = useBackendMedia();
-  const keys = Object.keys(folderImages);
-  const isVideo = (src) => /\.(mp4|webm|ogg)$/i.test(String(src));
-
-  const [lightbox, setLightbox] = useState({ open: false, src: "", folder: "", index: 0, items: [] });
-  const thumbsRef = useRef(null);
-  useLockBodyScroll(lightbox.open);
-
-  const completedFolders = ["sec 4", "sec 9", "sec 46"];
-  const ongoingFolders = ["sec 42", "reliance met city"];
-  const normalize = (s) => String(s || "").toLowerCase().trim();
-  const resolveFolder = (name) => keys.find((k) => normalize(k) === normalize(name));
-  const completedResolved = completedFolders.map(resolveFolder).filter(Boolean);
-  const ongoingResolved = ongoingFolders.map(resolveFolder).filter(Boolean);
+  const { ref, visible } = useReveal(0.12);
+  const strip = useDragScroll();
+  const thumbs = useRef(null);
+  const [scrollP, setScrollP] = useState(0);
+  const [lb, setLb] = useState({ open: false, folder: "", items: [], index: 0 });
+  useLockBodyScroll(lb.open);
 
   const projectDesc = {
     "sec 4": "Delivered residential project with premium quality finishing and handed over to all owners.",
@@ -1455,7 +1292,6 @@ const ImageGallery = () => {
     "sec 42": "Active development site — structural and finishing work ongoing at pace.",
     "reliance met city": "Newly launched project in a rapidly growing urban infrastructure zone.",
   };
-
   const projectSubtitle = {
     "sec 4": "Completed Residential Floors",
     "sec 9": "Delivered Housing Project",
@@ -1464,148 +1300,143 @@ const ImageGallery = () => {
     "reliance met city": "New Development · Just Launched",
   };
 
-  const openImg = (folder, src, idx, items) => setLightbox({ open: true, src, folder, index: idx, items });
-  const close = () => setLightbox({ open: false, src: "", folder: "", index: 0, items: [] });
-  const goNext = () => { const n = (lightbox.index + 1) % lightbox.items.length; setLightbox((s) => ({ ...s, index: n, src: s.items[n] })); };
-  const goPrev = () => { const p = (lightbox.index - 1 + lightbox.items.length) % lightbox.items.length; setLightbox((s) => ({ ...s, index: p, src: s.items[p] })); };
-  const goTo = (i) => setLightbox((s) => ({ ...s, index: i, src: s.items[i] }));
-  const lbSwipe = useSwipe({ onLeft: () => { goNext(); vibrate(); }, onRight: () => { goPrev(); vibrate(); }, onDown: close });
+  const keys = Object.keys(folderImages);
+  const resolve = (name) => keys.find((k) => k.toLowerCase().trim() === name);
+  const cards = [
+    ...["sec 4", "sec 9", "sec 46"].map((f) => ({ f: resolve(f), done: true })),
+    ...["sec 42", "reliance met city"].map((f) => ({ f: resolve(f), done: false })),
+  ].filter((c) => c.f && (folderImages[c.f] || []).some((s) => !isVideo(s)));
+
+  const openLb = (f) => { const items = (folderImages[f] || []).filter((s) => !isVideo(s)); setLb({ open: true, folder: f, items, index: 0 }); audio.whoosh(0.5); };
+  const closeLb = () => setLb((s) => ({ ...s, open: false }));
+  const go = (d) => setLb((s) => ({ ...s, index: (s.index + d + s.items.length) % s.items.length }));
+  const swipe = useSwipe({ onLeft: () => go(1), onRight: () => go(-1), onDown: closeLb });
 
   useEffect(() => {
-    if (!lightbox.open) return;
-    thumbsRef.current?.children[lightbox.index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }, [lightbox.open, lightbox.index]);
-
-  useEffect(() => {
-    if (!lightbox.open) return;
-    const h = (e) => { if (e.key === "Escape") close(); if (e.key === "ArrowRight") goNext(); if (e.key === "ArrowLeft") goPrev(); };
+    if (!lb.open) return;
+    thumbs.current?.children[lb.index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    const h = (e) => { if (e.key === "Escape") closeLb(); if (e.key === "ArrowRight") go(1); if (e.key === "ArrowLeft") go(-1); };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [lightbox.open, lightbox.index]);
+  }, [lb.open, lb.index]);
 
-  const GalleryFolder = ({ folder, isNew = false, delay = 0 }) => {
-    const items = (folderImages[folder] || []).filter((src) => !isVideo(src));
-    if (!items.length) return null;
-    const key = normalize(folder);
-    return (
-      <div role="button" tabIndex={0} aria-label={`Open ${folderLabel(folder)} gallery, ${items.length} photos`}
-        className={`card-hover shine-card neon-hover reveal${visible ? " visible" : ""}`}
-        style={{ transitionDelay: `${delay}s`, background: "#fff", borderRadius: 20, overflow: "hidden", cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.06)", border: "1px solid rgba(43,91,168,0.08)" }}
-        onClick={() => openImg(folder, items[0], 0, items)}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImg(folder, items[0], 0, items); } }}>
-        <div style={{ position: "relative", overflow: "hidden", aspectRatio: "4/3" }}>
-          {isNew && (
-            <div style={{ position: "absolute", top: 12, right: 12, background: "#16a34a", color: "#fff", fontSize: 10, fontWeight: 800, padding: "4px 10px", borderRadius: 20, zIndex: 3, animation: "pulse-green 2s infinite", letterSpacing: 0.5 }}>NEW LAUNCH</div>
-          )}
-          <img src={items[0]} alt={folderLabel(folder)} loading="lazy" className="zoom-img"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          <div style={{ position: "absolute", top: 12, left: 12, zIndex: 2, background: "rgba(12,15,26,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
-            📷 {items.length}
-          </div>
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)" }} />
-          <div style={{ position: "absolute", bottom: 14, left: 16, right: 16 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>{folderLabel(folder)}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 3, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{projectSubtitle[key] || ""}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.66)", marginTop: 2 }}>{items.length} photos</div>
-          </div>
-        </div>
-        <div style={{ padding: "16px 18px" }}>
-          <p style={{ fontSize: 13, color: colors.muted, lineHeight: 1.6 }}>{projectDesc[key] || "Construction project."}</p>
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 6, color: colors.darkBlue, fontSize: 13, fontWeight: 600 }}>
-            View Gallery <ArrowRight size={14} />
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const onScroll = (e) => { const el = e.currentTarget; const max = el.scrollWidth - el.clientWidth; setScrollP(max > 0 ? el.scrollLeft / max : 0); };
+  const nudge = (d) => { const el = strip.current; if (!el) return; el.scrollBy({ left: d * el.clientWidth * 0.7, behavior: "smooth" }); };
 
   return (
-    <div id="section-gallery" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#fff" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Photo Gallery</div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>Every project,<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>documented</em></h2>
-        </div>
-
-        <div style={{ marginBottom: 48 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#16a34a" }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", letterSpacing: 2, textTransform: "uppercase" }}>Completed & Delivered</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(260px, 1fr))", gap: isMobile ? 16 : 20 }}>
-            {completedResolved.map((f, i) => <GalleryFolder key={f} folder={f} delay={i * 0.1} />)}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: colors.gold, animation: "pulse-ring 2s infinite" }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#92400e", letterSpacing: 2, textTransform: "uppercase" }}>Active Construction</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: isMobile ? 16 : 20 }}>
-            {ongoingResolved.map((f, i) => <GalleryFolder key={f} folder={f} isNew={f.toLowerCase() === "reliance met city"} delay={(i + 3) * 0.1} />)}
-          </div>
-        </div>
+    <section id="ch-gallery" ref={ref} className="chapter">
+      <div className="wrap">
+        <ChapterHead n={5} label="Photo gallery" visible={visible}
+          title={<><Rise>Every project,</Rise><Rise d={0.12}><em>documented</em></Rise></>}
+          lede={isMobile ? "Swipe through each site — tap to open its photos." : "Drag or scroll through each site — click to open its photos."} />
+      </div>
+      <div className={`strip ${visible ? "in" : ""}`} ref={strip} onScroll={onScroll}>
+        {cards.map(({ f, done }, i) => {
+          const items = (folderImages[f] || []).filter((s) => !isVideo(s));
+          const key = f.toLowerCase();
+          return (
+            <button key={f} className="gcard fade-up" style={{ "--d": `${0.08 * i}s` }} onClick={() => openLb(f)} aria-label={`Open ${folderLabel(f)} gallery, ${items.length} photos`}>
+              <img src={items[0]} alt="" loading="lazy" draggable={false} />
+              <div className="gcard-top">
+                <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.85)" }}>{String(i + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")}</span>
+                <span className={`tag ${done ? "tag-done" : "tag-live"}`} style={{ background: "rgba(0,0,0,.45)" }}>{done ? "Completed" : key === "reliance met city" ? "New launch" : "Ongoing"}</span>
+              </div>
+              <div className="gcard-body">
+                <div className="mono" style={{ fontSize: 10.5, color: "rgba(255,255,255,.7)", marginBottom: 10 }}>{projectSubtitle[key] || ""}</div>
+                <h3>{folderLabel(f)}</h3>
+                <p>{projectDesc[key] || ""}</p>
+                <span className="gcard-open">{items.length} photos <ArrowUpRight size={14} /></span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="wrap strip-ctrl">
+        <div className="strip-track" aria-hidden="true"><i style={{ transform: `scaleX(${0.15 + scrollP * 0.85})` }} /></div>
+        <button className="icon-circle glass" onClick={() => nudge(-1)} aria-label="Scroll gallery left"><ChevronLeft size={18} /></button>
+        <button className="icon-circle glass" onClick={() => nudge(1)} aria-label="Scroll gallery right"><ChevronRight size={18} /></button>
       </div>
 
-      {/* Lightbox */}
-      {lightbox.open && (
-        <div role="dialog" aria-modal="true" aria-label={`${folderLabel(lightbox.folder)} photos`} onClick={close} {...lbSwipe.handlers}
-          style={{ position: "fixed", inset: 0, background: "rgba(5,7,14,0.96)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", flexDirection: "column", zIndex: 2000, animation: "fade-in 0.2s ease",
-            padding: "env(safe-area-inset-top) 0 env(safe-area-inset-bottom)" }}>
-          {/* Top bar */}
-          <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: isMobile ? "12px 14px" : "18px 24px", color: "#fff" }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 20 : 24, fontWeight: 700, lineHeight: 1.1 }}>{folderLabel(lightbox.folder)}</div>
-              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Photo {lightbox.index + 1} of {lightbox.items.length}</div>
+      {lb.open && (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label={`${folderLabel(lb.folder)} photos`} {...swipe} onClick={closeLb}>
+          <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px var(--gutter)" }}>
+            <div>
+              <div className="serif" style={{ fontSize: "clamp(22px, 3vw, 30px)", lineHeight: 1 }}>{folderLabel(lb.folder)}</div>
+              <div className="mono" style={{ fontSize: 11, color: "var(--fg3)", marginTop: 6 }}>{String(lb.index + 1).padStart(2, "0")} / {String(lb.items.length).padStart(2, "0")}</div>
             </div>
-            <button onClick={close} aria-label="Close gallery" className="icon-btn"><X size={20} color="#fff" /></button>
+            <button className="hud-icon glass" onClick={closeLb} aria-label="Close gallery"><X size={18} /></button>
           </div>
-
-          {/* Image stage */}
-          <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "0 8px" : "0 84px" }}>
-            <img key={lightbox.src} src={lightbox.src} alt={`${folderLabel(lightbox.folder)} — ${lightbox.index + 1} of ${lightbox.items.length}`} onClick={(e) => e.stopPropagation()} draggable={false}
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: isMobile ? 10 : 14, display: "block", animation: "fade-in 0.25s ease", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
-            {lightbox.items.length > 1 && (
+          <div className="lb-stage">
+            <img key={lb.index} src={lb.items[lb.index]} alt={`${folderLabel(lb.folder)} — ${lb.index + 1} of ${lb.items.length}`} draggable={false} onClick={(e) => e.stopPropagation()} />
+            {lb.items.length > 1 && (
               <>
-                <button onClick={(e) => { e.stopPropagation(); goPrev(); }} aria-label="Previous photo" className="icon-btn"
-                  style={{ position: "absolute", left: isMobile ? 12 : 20, top: "50%", transform: "translateY(-50%)", width: isMobile ? 40 : 52, height: isMobile ? 40 : 52, background: isMobile ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.12)" }}>
-                  <ChevronLeft size={isMobile ? 20 : 24} color="#fff" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); goNext(); }} aria-label="Next photo" className="icon-btn"
-                  style={{ position: "absolute", right: isMobile ? 12 : 20, top: "50%", transform: "translateY(-50%)", width: isMobile ? 40 : 52, height: isMobile ? 40 : 52, background: isMobile ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.12)" }}>
-                  <ChevronRight size={isMobile ? 20 : 24} color="#fff" />
-                </button>
+                <button className="hud-icon glass lb-nav" style={{ left: "clamp(10px, 2vw, 28px)" }} onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous photo"><ChevronLeft size={20} /></button>
+                <button className="hud-icon glass lb-nav" style={{ right: "clamp(10px, 2vw, 28px)" }} onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next photo"><ChevronRight size={20} /></button>
               </>
             )}
           </div>
-
-          {/* Thumbnails */}
-          <div onClick={(e) => e.stopPropagation()} style={{ padding: isMobile ? "12px 0 8px" : "16px 0 12px" }}>
-            <div ref={thumbsRef} className="h-scroll" style={{ gap: 8, padding: "4px 14px" }}>
-              {lightbox.items.map((src, i) => (
-                <button key={i} onClick={() => goTo(i)} aria-label={`Photo ${i + 1}`}
-                  style={{ flexShrink: 0, width: isMobile ? 56 : 72, height: isMobile ? 42 : 52, padding: 0, borderRadius: 8, overflow: "hidden", cursor: "pointer",
-                    border: i === lightbox.index ? `2px solid ${colors.gold}` : "2px solid transparent", opacity: i === lightbox.index ? 1 : 0.55, transition: "all 0.2s ease", background: "#111" }}>
-                  <img src={src} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                </button>
+          <div onClick={(e) => e.stopPropagation()}>
+            <div className="thumbs" ref={thumbs}>
+              {lb.items.map((src, i) => (
+                <button key={i} className={i === lb.index ? "on" : ""} onClick={() => setLb((s) => ({ ...s, index: i }))} aria-label={`Photo ${i + 1}`}><img src={src} alt="" loading="lazy" /></button>
               ))}
             </div>
-            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.55)", fontSize: 11.5, marginTop: 8 }}>
-              {isMobile ? "Swipe to browse · Swipe down to close" : "Use ← → keys · Esc to close"}
-            </div>
+            <div className="viewer-hint" style={{ position: "static", padding: "8px 0 12px" }}>{isMobile ? "Swipe to browse · Swipe down to close" : "← → browse · Esc close"}</div>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
-/* ─────────────────────────── GURUGRAM LOCATIONS SECTION ─────────────────────────── */
-const GurugramLocations = () => {
+/* ─────────────────────────── 06 BEFORE / AFTER ─────────────────────────── */
+const TransformChapter = () => {
   const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-  const [activeZone, setActiveZone] = useState(0);
+  const { ref, visible } = useReveal(0.15);
+  const [x, setX] = useState(50);
+  const [drag, setDrag] = useState(false);
+  const box = useRef(null);
+
+  let beforeImg, afterImg;
+  try { beforeImg = require("./data/beforeafter/before.jpeg"); } catch (e) {}
+  try { afterImg = require("./data/beforeafter/After.jpeg"); } catch (e) {}
+
+  // Fallback to stock images
+  if (!beforeImg) beforeImg = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900";
+  if (!afterImg) afterImg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900";
+
+  const update = (clientX) => { const r = box.current?.getBoundingClientRect(); if (!r) return; setX(Math.max(4, Math.min(96, ((clientX - r.left) / r.width) * 100))); };
+  return (
+    <section id="ch-transform" ref={ref} className="chapter">
+      <div className="wrap">
+        <ChapterHead n={6} label="Before & after" center visible={visible}
+          title={<><Rise>The transformation</Rise><Rise d={0.12}><em>speaks for itself</em></Rise></>}
+          lede={isMobile ? "Slide across the photo to compare." : "Drag across the photo — or use the ← → keys — to compare."} />
+        <div className={`fade-up ${visible ? "in" : ""}`} style={{ "--d": ".2s" }}>
+          <div ref={box} className="ba" role="slider" tabIndex={0} aria-label="Before and after comparison" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(x)}
+            onPointerDown={(e) => { setDrag(true); update(e.clientX); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {} }}
+            onPointerMove={(e) => drag && update(e.clientX)} onPointerUp={() => setDrag(false)} onPointerCancel={() => setDrag(false)}
+            onKeyDown={(e) => { if (e.key === "ArrowLeft") { e.preventDefault(); setX((v) => Math.max(4, v - 5)); } if (e.key === "ArrowRight") { e.preventDefault(); setX((v) => Math.min(96, v + 5)); } }}>
+            <img src={afterImg} alt="After" draggable={false} loading="lazy" />
+            <img src={beforeImg} alt="Before" draggable={false} loading="lazy" style={{ clipPath: `inset(0 ${100 - x}% 0 0)` }} />
+            <span className="ba-label glass" style={{ left: 18 }}>Before</span>
+            <span className="ba-label glass" style={{ right: 18 }}>After</span>
+            <span className="ba-line" style={{ left: `${x}%` }} />
+            <span className="ba-handle glass" style={{ left: `${x}%`, transition: drag ? "none" : "left .3s var(--ease)" }}>
+              <span style={{ display: "flex" }}><ChevronLeft size={16} /><ChevronRight size={16} /></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ─────────────────────────── 07 GURUGRAM ─────────────────────────── */
+const LocationsChapter = () => {
+  const { ref, visible } = useReveal(0.12);
+  const [active, setActive] = useState(0);
+  const chipRow = useRef(null);
 
   const zones = [
     {
@@ -1680,15 +1511,6 @@ const GurugramLocations = () => {
     },
   ];
 
-  const az = zones[activeZone];
-  const zoneRow = useRef(null);
-  const pickZone = (i) => {
-    const n = Math.max(0, Math.min(zones.length - 1, i));
-    setActiveZone(n);
-    zoneRow.current?.children[n]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  };
-  const zoneSwipe = useSwipe({ onLeft: () => { pickZone(activeZone + 1); vibrate(); }, onRight: () => { pickZone(activeZone - 1); vibrate(); } });
-
   const coverageList = [
     "Sector 4", "Sector 9", "Sector 42", "Sector 46",
     "DLF Phase 1–5", "Golf Course Road", "Golf Course Extension Road",
@@ -1696,137 +1518,66 @@ const GurugramLocations = () => {
     "MG Road", "Sector 43", "Sector 56", "Sector 57", "Manesar",
   ];
 
+  const pick = (i) => {
+    const n = Math.max(0, Math.min(zones.length - 1, i));
+    setActive(n);
+    chipRow.current?.children[n]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  };
+  const swipe = useSwipe({ onLeft: () => { pick(active + 1); vibrate(); }, onRight: () => { pick(active - 1); vibrate(); } });
+  const z = zones[active];
+
   return (
-    <div ref={ref} style={{ background: "#fff" }}>
-      {/* ── MAIN ZONES SECTION ── */}
-      <div style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+    <section id="ch-locations" ref={ref} className="chapter">
+      <div className="wrap">
+        <ChapterHead n={7} label="Our service area" visible={visible}
+          title={<><Rise>Our projects across</Rise><Rise d={0.12}><em>Gurugram</em></Rise></>}
+          lede="From established residential sectors to emerging investment zones — serving clients across all major micro-markets in Gurugram." />
 
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
-            <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Our Service Area</div>
-            <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
-              Our Projects Across<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>Gurugram</em>
-            </h2>
-            <p className="section-sub">
-              From established residential sectors to emerging investment zones — serving clients across all major micro-markets in Gurugram.
-            </p>
+        <div className={`zones fade-up ${visible ? "in" : ""}`} style={{ "--d": ".2s" }}>
+          <div className="zone-list" role="tablist" aria-label="Zones">
+            {zones.map((zz, i) => (
+              <button key={zz.name} role="tab" aria-selected={i === active} className={`zone-btn ${i === active ? "on" : ""}`} onClick={() => pick(i)}>
+                <span className="mono">{String(i + 1).padStart(2, "0")}</span>
+                <b>{zz.name}</b>
+                <span className="zdot" style={{ background: zz.color }} />
+              </button>
+            ))}
           </div>
 
-          {/* Zone tab selector — swipeable on touch */}
-          <div className={`h-scroll-fade reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.1s", marginBottom: isMobile ? 20 : 40, marginLeft: isMobile ? -16 : 0, marginRight: isMobile ? -16 : 0 }}>
-            <div ref={zoneRow} className={isMobile ? "h-scroll" : undefined} role="tablist" aria-label="Gurugram zones" style={{ display: "flex", gap: 8, padding: isMobile ? "6px 16px 10px" : "6px 0 10px", flexWrap: isMobile ? "nowrap" : "wrap", justifyContent: isMobile ? "flex-start" : "center" }}>
-              {zones.map((z, i) => {
-                const on = i === activeZone;
-                return (
-                  <button key={i} role="tab" aria-selected={on} onClick={() => pickZone(i)} className="chip"
-                    style={{ fontSize: isMobile ? 13 : 13.5, padding: isMobile ? "9px 14px" : "10px 18px",
-                      background: on ? z.color : "#fff", color: on ? "#fff" : colors.muted,
-                      border: `2px solid ${on ? z.color : "rgba(0,0,0,0.09)"}`,
-                      boxShadow: on ? `0 8px 24px ${z.color}40` : "0 1px 3px rgba(0,0,0,0.04)" }}>
-                    <span style={{ marginRight: 6 }}>{z.icon}</span>{z.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Active zone card */}
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s" }} {...zoneSwipe.handlers}>
-            <div key={activeZone} style={{
-              animation: "fade-in 0.35s ease",
-              background: `linear-gradient(135deg, ${az.color}08 0%, ${az.color}04 100%)`,
-              border: `1.5px solid ${az.color}25`,
-              borderRadius: 28, overflow: "hidden",
-              boxShadow: `0 20px 60px ${az.color}12`,
-            }}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 0 }}>
-                {/* Left info */}
-                <div style={{ padding: isMobile ? "26px 20px" : "clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px)", borderRight: isMobile ? "none" : `1px solid ${az.color}20` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-                    <div style={{ width: 56, height: 56, borderRadius: 16, background: az.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
-                      {az.icon}
-                    </div>
-                    <div>
-                      <div style={{ display: "inline-block", background: az.tagColor + "18", color: az.tagColor, fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", padding: "3px 10px", borderRadius: 20, marginBottom: 4 }}>{az.tag}</div>
-                      <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: colors.black, lineHeight: 1.15 }}>{az.name}</h3>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: isMobile ? 14.5 : 15, color: colors.muted, lineHeight: 1.8, marginBottom: isMobile ? 22 : 32 }}>{az.description}</p>
-
-                  {/* Highlights */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-                    {az.highlights.map((h, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", borderRadius: 12, padding: "10px 14px", border: `1px solid ${az.color}18`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: az.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: colors.black }}>{h}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Right sectors */}
-                <div style={{ padding: isMobile ? "0 20px 26px" : "clamp(32px, 4vw, 52px) clamp(28px, 4vw, 48px)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: colors.subtle, marginBottom: 20 }}>Areas Covered</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {az.sectors.map((s, i) => (
-                      <div key={i} style={{
-                        padding: "8px 16px", borderRadius: 50,
-                        background: i === 0 ? az.color : `${az.color}12`,
-                        color: i === 0 ? "#fff" : az.color,
-                        fontSize: 13, fontWeight: 700,
-                        border: `1.5px solid ${i === 0 ? az.color : az.color + "30"}`,
-                        transition: "all 0.2s ease",
-                      }}>
-                        {s}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Zone note */}
-                  <div style={{ marginTop: 32, padding: "20px", background: "#fff", borderRadius: 16, border: `1px solid ${az.color}20` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <MapPin size={16} color={az.color} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: colors.black }}>Serving clients across this zone</span>
-                    </div>
-                    <p style={{ fontSize: 13, color: colors.subtle, lineHeight: 1.6 }}>
-                      We work with buyers and investors across all major residential and investment zones in Gurugram. Get in touch to discuss your requirements.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {isMobile && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, fontSize: 12, color: colors.subtle }}>
-              {zones.map((_, i) => <span key={i} style={{ width: i === activeZone ? 16 : 6, height: 6, borderRadius: 3, background: i === activeZone ? az.color : "rgba(0,0,0,0.15)", transition: "all 0.3s ease" }} />)}
-            </div>
-          )}
-
-          {/* Coverage pill cloud */}
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.3s", marginTop: isMobile ? 40 : 56, textAlign: "center" }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase", color: colors.subtle, marginBottom: 20 }}>Key Areas We Work In</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-              {coverageList.map((a, i) => (
-                <div key={i} className="pill-hover" style={{ padding: "7px 14px", borderRadius: 50, background: colors.cream, border: "1px solid rgba(43,91,168,0.15)", fontSize: isMobile ? 12.5 : 13, fontWeight: 600, color: colors.darkBlue, transition: "all 0.2s" }}>
-                  {a}
-                </div>
+          <div>
+            <div className="chips zone-chips" ref={chipRow} role="tablist" aria-label="Zones" style={{ marginBottom: 12 }}>
+              {zones.map((zz, i) => (
+                <button key={zz.name} role="tab" aria-selected={i === active} className={`chip glass ${i === active ? "on" : ""}`} onClick={() => pick(i)}>{zz.name}</button>
               ))}
             </div>
-            <p style={{ fontSize: 13, color: colors.subtle, marginTop: 20, fontStyle: "italic" }}>
-              Serving clients across major residential and investment zones in Gurugram
-            </p>
+            <div key={active} className="panel zone-card" {...swipe}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span className="tag" style={{ background: `${z.color}2e`, color: "#fff" }}><span className="wa-dot" style={{ background: z.color, boxShadow: "none" }} />{z.tag}</span>
+                <span className="mono" style={{ fontSize: 11, color: "var(--fg3)" }}>Zone {String(active + 1).padStart(2, "0")} / {String(zones.length).padStart(2, "0")}</span>
+              </div>
+              <h3 className="serif" style={{ fontWeight: 400, fontSize: "clamp(28px, 3.4vw, 42px)", lineHeight: 1.05, margin: "18px 0 14px" }}>{z.name}</h3>
+              <p className="lede" style={{ maxWidth: 640 }}>{z.description}</p>
+              <div className="hl-grid">
+                {z.highlights.map((hh) => <div key={hh} className="hl"><i style={{ background: z.color }} />{hh}</div>)}
+              </div>
+              <div className="mono" style={{ fontSize: 11, color: "var(--fg3)", marginTop: 28 }}>Areas covered</div>
+              <div className="sector-pills">{z.sectors.map((s) => <span key={s}>{s}</span>)}</div>
+            </div>
           </div>
         </div>
+
+        <div className={`fade-up ${visible ? "in" : ""}`} style={{ "--d": ".35s", marginTop: "clamp(48px, 8vh, 80px)", textAlign: "center" }}>
+          <div className="mono" style={{ fontSize: 11, color: "var(--fg3)" }}>Key areas we work in</div>
+          <div className="cloud">{coverageList.map((a) => <span key={a}>{a}</span>)}</div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-/* ─────────────────────────── WHY GURUGRAM SECTION ─────────────────────────── */
-const WhyGurugram = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
+/* ─────────────────────────── 08 WHY ─────────────────────────── */
+const WhyChapter = () => {
+  const { ref, visible } = useReveal(0.12);
 
   const reasons = [
     { icon: "🚇", title: "Delhi Connectivity", desc: "Direct metro lines, NH-48, and Dwarka Expressway offer seamless access to Delhi — a key driver of demand and resale value.", stat: "30 min", statLabel: "to Delhi by metro" },
@@ -1838,684 +1589,42 @@ const WhyGurugram = () => {
   ];
 
   return (
-    <div ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#0C0F1A" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 40 : 64 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16, color: "rgba(201,168,76,0.85)" }}>
-            <span style={{ background: colors.gold }} /> Why Invest Here
-          </div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)", color: "#fff" }}>
-            Why <em style={{ color: colors.gold, fontStyle: "italic" }}>Gurugram</em>
-          </h2>
-          <p style={{ maxWidth: 520, margin: "20px auto 0", color: "rgba(255,255,255,0.66)", fontSize: 16, lineHeight: 1.85 }}>
-            India's Millennium City — a convergence of world-class infrastructure, corporate investment, and real estate opportunity.
-          </p>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(280px, 1fr))", gap: isMobile ? 12 : 20 }}>
+    <section id="ch-why" ref={ref} className="chapter">
+      <div className="wrap">
+        <ChapterHead n={8} label="Why invest here" visible={visible}
+          title={<><Rise>Why</Rise><Rise d={0.12}><em>Gurugram</em></Rise></>}
+          lede="India's Millennium City — a convergence of world-class infrastructure, corporate investment, and real estate opportunity." />
+        <div className={`why-grid ${visible ? "in" : ""}`}>
           {reasons.map((r, i) => (
-            <div key={i} className={`tilt-card reveal${visible ? " visible" : ""}`}
-              style={{
-                transitionDelay: `${i * 0.08}s`,
-                background: "rgba(255,255,255,0.04)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 20, padding: isMobile ? "22px" : "28px",
-                cursor: "default",
-              }}>
-              <div style={{ fontSize: 32, marginBottom: 16 }}>{r.icon}</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.gold, lineHeight: 1 }}>{r.stat}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.statLabel}</div>
+            <article key={r.title} className="why fade-up" style={{ "--d": `${0.07 * i}s` }}>
+              <div>
+                <div className="why-stat">{r.stat}</div>
+                <div className="mono" style={{ fontSize: 10.5, color: "var(--fg3)", marginTop: 10 }}>{r.statLabel}</div>
               </div>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 10 }}>{r.title}</h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>{r.desc}</p>
-            </div>
+              <h3>{r.title}</h3>
+              <p>{r.desc}</p>
+            </article>
           ))}
         </div>
-
-        {/* Bottom CTA strip */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.5s", marginTop: isMobile ? 36 : 56, textAlign: "center", padding: isMobile ? "28px 18px" : "36px 28px", background: "rgba(201,168,76,0.08)", borderRadius: 20, border: "1px solid rgba(201,168,76,0.2)" }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
-            Ready to invest in Gurugram?
-          </div>
-          <p style={{ color: "rgba(255,255,255,0.66)", fontSize: 14, marginBottom: 24 }}>
-            Speak to our team about ongoing projects, site visits, and investment options.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "auto auto", gap: 10, justifyContent: "center" }}>
-            <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 24px", fontSize: 15, justifyContent: "center" }}>
-              <Phone size={17} /> Call Now
-            </a>
-            <a href={`${WA_URL}?text=Hi%2C%20I%27m%20interested%20in%20investing%20in%20Gurugram.`} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 24px", fontSize: 15, justifyContent: "center" }}>
-              <MessageCircle size={17} /> WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ─────────────────────────── CONTACT SECTION ─────────────────────────── */
-const ContactSection = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-
-  let profileImg = null;
-  try { profileImg = require("./data/Profile/my_img.jpeg"); } catch (e) {}
-
-  return (
-    <div id="section-contact" ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#fff" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>Get in Touch</div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5.2vw, 3.5rem)" }}>
-            Let's build your<br /><em style={{ fontStyle: "italic", color: colors.darkBlue }}>dream together</em>
-          </h2>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.15s", background: "linear-gradient(145deg, rgba(245,240,232,0.95), rgba(235,228,215,0.9))", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.8)", borderRadius: 28, padding: isMobile ? "32px 20px" : "56px 64px", maxWidth: 520, width: "100%", textAlign: "center", position: "relative", overflow: "hidden", boxShadow: "0 20px 60px rgba(43,91,168,0.12)" }}>
-            <div style={{ position: "absolute", top: -30, left: -30, width: 160, height: 160, borderRadius: "50%", background: "rgba(43,91,168,0.06)" }} />
-            <div style={{ position: "absolute", bottom: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(201,168,76,0.1)" }} />
-
-            {profileImg ? (
-              <div style={{ width: isMobile ? 100 : 120, height: isMobile ? 100 : 120, borderRadius: "50%", margin: "0 auto 24px", position: "relative" }}>
-                <div style={{ position: "absolute", inset: -4, borderRadius: "50%", background: `linear-gradient(135deg, ${colors.darkBlue}, ${colors.gold})`, zIndex: 0 }} />
-                <img src={profileImg} alt="Parveen Chawla" loading="lazy"
-                  style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "4px solid #fff", position: "relative", zIndex: 1 }} />
-              </div>
-            ) : (
-              <div style={{ width: 100, height: 100, borderRadius: "50%", background: `linear-gradient(135deg, ${colors.darkBlue}, ${colors.gold})`, margin: "0 auto 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 700, color: "#fff" }}>PC</span>
-              </div>
-            )}
-
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: colors.black, marginBottom: 4, position: "relative" }}>Parveen Chawla</h3>
-            <p style={{ fontSize: 14, color: colors.subtle, marginBottom: isMobile ? 24 : 32, fontWeight: 500, position: "relative" }}>Founder · ShineOne Estate</p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
-              <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", width: "100%", padding: "0 20px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
-                <Phone size={18} /> +91 93109 94032
-              </a>
-              <a href={WA_URL} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", width: "100%", padding: "0 20px", minHeight: 52, fontSize: 15, justifyContent: "center" }}>
-                <MessageCircle size={18} /> WhatsApp Chat
-              </a>
-              <a href={`mailto:${EMAIL}`} className="btn-outline" style={{ textDecoration: "none", width: "100%", padding: "0 16px", minHeight: 52, fontSize: isMobile ? 14 : 15, overflowWrap: "anywhere" }}>
-                <MailIcon color="currentColor" size={18} /> {EMAIL}
-              </a>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 18, fontSize: 12.5, color: colors.subtle, position: "relative" }}>
-              <Clock size={14} /> Usually replies within minutes · Site visits on working days
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ─────────────────────────── FOOTER ─────────────────────────── */
-const Footer = () => {
-  const isMobile = useIsMobile();
-  const isCompact = useIsCompact();
-  return (
-    <footer style={{ background: "#0D0D0D", color: colors.cream, padding: isCompact ? "56px 20px calc(100px + env(safe-area-inset-bottom))" : "80px 28px 40px" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr 1fr", gap: isMobile ? 36 : 40, marginBottom: isMobile ? 36 : 48 }}>
+        <div className={`panel fade-up ${visible ? "in" : ""}`} style={{ "--d": ".4s", marginTop: 20, padding: "clamp(24px, 3vw, 36px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, fontWeight: 700, color: colors.gold, marginBottom: 8 }}>ShineOne Estate</div>
-            <div style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>We Build Your Vision</div>
-            <p style={{ fontSize: 14, lineHeight: 1.9, color: "rgba(255,255,255,0.72)", maxWidth: 360 }}>
-              Premium residential development focused on transparent construction, quality materials and timely delivery across Gurugram's key sectors.
-            </p>
-            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-              <a href={`tel:${PHONE}`} className="press" style={{ textDecoration: "none", background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: "0 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 8, color: "#fff", fontSize: 13.5, fontWeight: 600, transition: "transform 0.15s" }}>
-                <Phone size={15} /> Call
-              </a>
-              <a href={WA_URL} target="_blank" rel="noreferrer" className="press" style={{ textDecoration: "none", background: "rgba(37,211,102,0.15)", borderRadius: 10, padding: "0 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 8, color: "#4ade80", fontSize: 13.5, fontWeight: 600, transition: "transform 0.15s" }}>
-                <MessageCircle size={15} /> WhatsApp
-              </a>
-            </div>
+            <div className="serif" style={{ fontSize: "clamp(24px, 2.6vw, 32px)" }}>Ready to invest in Gurugram?</div>
+            <p style={{ color: "var(--fg2)", marginTop: 6, fontSize: 15 }}>Speak to our team about ongoing projects, site visits, and investment options.</p>
           </div>
-
-          <div>
-            <h4 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>Projects</h4>
-            {[["Sector 4", "Completed"], ["Sector 9", "Completed"], ["Sector 46", "Completed"], ["Sector 42", "Ongoing"], ["Reliance MET City", "NEW"]].map(([name, status]) => (
-              <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.75)" }}>{name}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: status === "Completed" ? "#4ade80" : status === "NEW" ? colors.gold : "#fbbf24", letterSpacing: 0.5 }}>{status}</span>
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>Contact</h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {[
-                { icon: <Phone size={15} />, text: "+91 93109 94032", href: "tel:+919310994032" },
-                { icon: <MailIcon color="currentColor" size={15} />, text: "parveen@shineoneestate.co.in", href: "mailto:parveen@shineoneestate.co.in" },
-                { icon: <MapPin size={15} />, text: "Gurugram, Haryana", href: null },
-              ].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <div style={{ color: colors.gold, marginTop: 1, flexShrink: 0 }}>{item.icon}</div>
-                  {item.href ? (
-                    <a href={item.href} style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textDecoration: "none", lineHeight: 1.6 }}>{item.text}</a>
-                  ) : (
-                    <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>{item.text}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>© 2026 ShineOne Estate · Built with transparency and trust.</span>
-         
-        </div>
-      </div>
-    </footer>
-  );
-};
-
-/* ─────────────────────────── STICKY CTA (phones & tablets) ─────────────────────────── */
-const StickyCTA = () => {
-  const isCompact = useIsCompact();
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    // Appears once the hero (which has its own buttons) is scrolled past
-    const fn = () => setVisible(window.scrollY > window.innerHeight * 0.6);
-    fn(); window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-  if (!isCompact) return null;
-  return (
-    <div role="region" aria-label="Quick contact" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 500, background: "rgba(13,13,13,0.94)", backdropFilter: "blur(20px) saturate(160%)", WebkitBackdropFilter: "blur(20px) saturate(160%)",
-      borderTop: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)",
-      padding: "10px 12px calc(10px + env(safe-area-inset-bottom))",
-      transform: visible ? "translateY(0)" : "translateY(110%)", transition: "transform 0.45s cubic-bezier(.22,1,.36,1)" }}>
-      <div style={{ maxWidth: 640, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr 52px", gap: 8 }}>
-        <a href={`tel:${PHONE}`} className="btn-primary" style={{ textDecoration: "none", padding: "0 12px", fontSize: 15, justifyContent: "center", boxShadow: "none" }}>
-          <Phone size={17} /> Call
-        </a>
-        <a href={`${WA_URL}?text=${encodeURIComponent("Hi, I'm interested in a ShineOne Estate project.")}`} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 12px", fontSize: 15, justifyContent: "center", boxShadow: "none" }}>
-          <MessageCircle size={17} /> WhatsApp
-        </a>
-        <a href={`mailto:${EMAIL}`} aria-label="Email us" className="btn-ghost" style={{ textDecoration: "none", justifyContent: "center", padding: 0, background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.2)" }}>
-          <MailIcon color="#fff" size={19} />
-        </a>
-      </div>
-    </div>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════════════════
-   NEW FEATURES
-═══════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────── PAGE LOADER ─────────────────────────── */
-const PageLoader = ({ onDone }) => {
-  const [phase, setPhase] = useState(0); // 0=counting, 1=reveal, 2=done
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    // Count 0→100 over ~0.9s
-    const start = Date.now();
-    const dur = 900;
-    const tick = () => {
-      const p = Math.min((Date.now() - start) / dur, 1);
-      const ease = 1 - Math.pow(1 - p, 3);
-      setCount(Math.round(ease * 100));
-      if (p < 1) requestAnimationFrame(tick);
-      else {
-        setPhase(1);
-        setTimeout(() => { setPhase(2); onDone(); }, 450);
-      }
-    };
-    requestAnimationFrame(tick);
-  }, []);
-
-  if (phase === 2) return null;
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
-      background: "#0C0F1A",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      opacity: phase === 1 ? 0 : 1,
-      transform: phase === 1 ? "scale(1.04)" : "scale(1)",
-      transition: "opacity 0.45s ease, transform 0.45s ease",
-      pointerEvents: phase === 1 ? "none" : "all",
-    }}>
-      {/* Spinning ring */}
-      <div style={{ position: "relative", width: 110, height: 110, marginBottom: 32 }}>
-        <svg width="110" height="110" style={{ position: "absolute", inset: 0, animation: "border-spin 2.5s linear infinite" }}>
-          <circle cx="55" cy="55" r="50" fill="none" stroke="rgba(201,168,76,0.15)" strokeWidth="2" />
-          <circle cx="55" cy="55" r="50" fill="none" stroke="url(#loaderGrad)" strokeWidth="2.5"
-            strokeDasharray="314" strokeDashoffset={314 - (314 * count / 100)}
-            strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.05s linear" }} />
-          <defs>
-            <linearGradient id="loaderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#2B5BA8" />
-              <stop offset="100%" stopColor="#C9A84C" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: "#fff" }}>{count}</span>
-        </div>
-      </div>
-
-      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, fontWeight: 700, color: "#fff", letterSpacing: 1, marginBottom: 8 }}>
-        ShineOne <span style={{ color: colors.gold, fontStyle: "italic" }}>Estate</span>
-      </div>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
-        We Build Your Vision
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ width: 200, height: 2, background: "rgba(255,255,255,0.1)", borderRadius: 1, marginTop: 32, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${count}%`, background: "linear-gradient(90deg, #2B5BA8, #C9A84C)", transition: "width 0.05s linear", borderRadius: 1 }} />
-      </div>
-    </div>
-  );
-};
-
-/* ─────────────────────────── CUSTOM CURSOR ─────────────────────────── */
-const CustomCursor = () => {
-  const isMobile = !useFinePointer();
-  const dot = useRef(null);
-  const ring = useRef(null);
-  const pos = useRef({ x: 0, y: 0 });
-  const ringPos = useRef({ x: 0, y: 0 });
-  const [hovered, setHovered] = useState(false);
-  const [clicked, setClicked] = useState(false);
-
-  useEffect(() => {
-    if (isMobile) return;
-    const onMove = (e) => {
-      pos.current = { x: e.clientX, y: e.clientY };
-      if (dot.current) {
-        dot.current.style.left = e.clientX + "px";
-        dot.current.style.top = e.clientY + "px";
-      }
-    };
-    const onDown = () => setClicked(true);
-    const onUp = () => setClicked(false);
-
-    // Detect hover on interactive elements
-    const onEnter = (e) => {
-      if (e.target.closest("a,button,[data-cursor-hover]")) setHovered(true);
-    };
-    const onLeave = (e) => {
-      if (e.target.closest("a,button,[data-cursor-hover]")) setHovered(false);
-    };
-
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("mouseup", onUp);
-    document.addEventListener("mouseover", onEnter);
-    document.addEventListener("mouseout", onLeave);
-
-    // Smooth ring follow
-    let raf;
-    const lerp = (a, b, t) => a + (b - a) * t;
-    const follow = () => {
-      ringPos.current.x = lerp(ringPos.current.x, pos.current.x, 0.1);
-      ringPos.current.y = lerp(ringPos.current.y, pos.current.y, 0.1);
-      if (ring.current) {
-        ring.current.style.left = ringPos.current.x + "px";
-        ring.current.style.top = ringPos.current.y + "px";
-      }
-      raf = requestAnimationFrame(follow);
-    };
-    raf = requestAnimationFrame(follow);
-
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("mouseup", onUp);
-      document.removeEventListener("mouseover", onEnter);
-      document.removeEventListener("mouseout", onLeave);
-      cancelAnimationFrame(raf);
-    };
-  }, [isMobile]);
-
-  if (isMobile) return null;
-
-  return (
-    <>
-      <style>{`* { cursor: none !important; }`}</style>
-      {/* Dot — snaps instantly */}
-      <div ref={dot} style={{
-        position: "fixed", pointerEvents: "none", zIndex: 99999,
-        width: clicked ? 6 : 8, height: clicked ? 6 : 8,
-        borderRadius: "50%", background: colors.gold,
-        transform: "translate(-50%, -50%)",
-        transition: "width 0.15s, height 0.15s",
-        mixBlendMode: "normal",
-      }} />
-      {/* Ring — lags behind */}
-      <div ref={ring} style={{
-        position: "fixed", pointerEvents: "none", zIndex: 99998,
-        width: hovered ? 48 : clicked ? 20 : 32,
-        height: hovered ? 48 : clicked ? 20 : 32,
-        borderRadius: "50%",
-        border: `1.5px solid ${hovered ? colors.gold : "rgba(43,91,168,0.7)"}`,
-        transform: "translate(-50%, -50%)",
-        transition: "width 0.3s cubic-bezier(.22,1,.36,1), height 0.3s cubic-bezier(.22,1,.36,1), border-color 0.3s",
-        background: hovered ? "rgba(201,168,76,0.08)" : "transparent",
-      }} />
-    </>
-  );
-};
-
-/* ─────────────────────────── WAVE DIVIDER ─────────────────────────── */
-const WaveDivider = ({ topColor = "#fff", bottomColor = "#F5F0E8", flip = false }) => (
-  <div aria-hidden="true" style={{ position: "relative", overflow: "hidden", height: "clamp(32px, 5vw, 72px)", background: bottomColor, marginTop: -1 }}>
-    <svg viewBox="0 0 1440 72" preserveAspectRatio="none"
-      style={{ position: "absolute", bottom: flip ? "auto" : 0, top: flip ? 0 : "auto", width: "100%", height: "100%", transform: flip ? "scaleY(-1)" : "none" }}>
-      <path d="M0,36 C240,72 480,0 720,36 C960,72 1200,0 1440,36 L1440,72 L0,72 Z" fill={topColor} />
-    </svg>
-  </div>
-);
-
-const DiagonalDivider = ({ color = "#fff" }) => (
-  <div style={{ height: 60, background: "transparent", position: "relative", overflow: "hidden" }}>
-    <div style={{ position: "absolute", inset: 0, background: color, clipPath: "polygon(0 0, 100% 40%, 100% 100%, 0 100%)" }} />
-  </div>
-);
-
-/* ─────────────────────────── SCROLL TO TOP ─────────────────────────── */
-const ScrollToTop = () => {
-  const isCompact = useIsCompact();
-  const [visible, setVisible] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const scrolled = window.scrollY;
-      const total = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(total > 0 ? scrolled / total : 0);
-      setVisible(scrolled > window.innerHeight * 1.2);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const scrollUp = () => { vibrate(); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const size = isCompact ? 46 : 52;
-  const r = size / 2 - 5;
-  const circumference = 2 * Math.PI * r;
-
-  return (
-    <button onClick={scrollUp} data-cursor-hover aria-label="Back to top"
-      style={{
-        position: "fixed", zIndex: 450, width: size, height: size,
-        bottom: isCompact ? "calc(84px + env(safe-area-inset-bottom))" : 100, right: isCompact ? 14 : 26,
-        borderRadius: "50%", border: "none", cursor: "pointer",
-        background: colors.darkBlue, boxShadow: "0 8px 24px rgba(43,91,168,0.4)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        opacity: visible ? 1 : 0, transform: visible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.8)",
-        transition: "opacity 0.4s cubic-bezier(.22,1,.36,1), transform 0.4s cubic-bezier(.22,1,.36,1)",
-        pointerEvents: visible ? "auto" : "none",
-      }}>
-      <svg width={size} height={size} style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={colors.gold} strokeWidth="2.5"
-          strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)}
-          strokeLinecap="round" />
-      </svg>
-      <ChevronLeft size={18} color="#fff" style={{ transform: "rotate(90deg)" }} />
-    </button>
-  );
-};
-
-/* ─────────────────────────── WHATSAPP WIDGET ─────────────────────────── */
-const WhatsAppWidget = () => {
-  const [open, setOpen] = useState(false);
-  const [entered, setEntered] = useState(false);
-  const isCompact = useIsCompact();
-  const boxRef = useRef(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setEntered(true), 2500);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
-    const onDown = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
-    window.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onDown);
-    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onDown); };
-  }, [open]);
-
-  if (isCompact) return null;
-
-  const messages = [
-    { text: "👋 Hi! Interested in a project?", from: "them", delay: 0 },
-    { text: "We have ongoing projects in Sector 42 & Reliance MET City.", from: "them", delay: 400 },
-  ];
-
-  const quickReplies = [
-    { label: "Sector 42 details", msg: "Hi, I'd like to know more about Sector 42 project." },
-    { label: "Reliance MET City", msg: "Hi, I'm interested in the Reliance MET City project." },
-    { label: "Book a site visit", msg: "Hi, I'd like to book a site visit." },
-    { label: "Pricing & plans", msg: "Hi, can you share pricing details?" },
-  ];
-
-  return (
-    <div ref={boxRef} style={{ position: "fixed", bottom: 26, right: 24, zIndex: 460 }}>
-      {/* Chat panel */}
-      {open && (
-        <div style={{
-          position: "absolute", bottom: 68, right: 0,
-          width: 330,
-          maxHeight: 440,
-          background: "#fff", borderRadius: 20,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-          overflow: "hidden",
-          animation: "slide-up 0.3s cubic-bezier(.22,1,.36,1) both",
-          border: "1px solid rgba(0,0,0,0.06)",
-        }}>
-          {/* Header */}
-          <div style={{ background: "#25D366", padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontSize: 22 }}>🏠</span>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, color: "#fff", fontSize: 15 }}>ShineOne Estate</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", display: "inline-block" }} />
-                Online · Typically replies in minutes
-              </div>
-            </div>
-            <button onClick={() => setOpen(false)} aria-label="Close chat" style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
-              <X size={18} color="rgba(255,255,255,0.8)" />
-            </button>
-          </div>
-
-          {/* Chat bubbles */}
-          <div style={{ padding: "16px 14px 8px", background: "#ECE5DD", minHeight: 120 }}>
-            {messages.map((m, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "flex-start", marginBottom: 8, animation: `slide-up 0.4s ease ${m.delay}ms both` }}>
-                <div style={{ background: "#fff", borderRadius: "0 12px 12px 12px", padding: "10px 14px", maxWidth: "85%", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", fontSize: 14, lineHeight: 1.5, color: "#0D0D0D" }}>
-                  {m.text}
-                </div>
-              </div>
-            ))}
-            <div style={{ fontSize: 11, color: "rgba(0,0,0,0.4)", textAlign: "center", marginTop: 8, fontStyle: "italic" }}>
-              Choose a message to send
-            </div>
-          </div>
-
-          {/* Quick replies */}
-          <div style={{ padding: "10px 12px 14px", background: "#fff", display: "flex", flexDirection: "column", gap: 7 }}>
-            {quickReplies.map((r, i) => (
-              <a key={i} href={`https://wa.me/919310994032?text=${encodeURIComponent(r.msg)}`}
-                target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-                <button style={{
-                  width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 10,
-                  border: "1.5px solid #25D366", background: "transparent",
-                  color: "#128C7E", fontWeight: 600, fontSize: 13,
-                  fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
-                  transition: "all 0.2s ease", display: "flex", alignItems: "center", justifyContent: "space-between",
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#f0fdf4"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-                  {r.label} <ArrowRight size={14} />
-                </button>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* FAB button */}
-      <button onClick={() => setOpen(!open)} data-cursor-hover aria-label={open ? "Close WhatsApp chat" : "Open WhatsApp chat"} aria-expanded={open}
-        style={{
-          width: 58, height: 58, borderRadius: "50%", border: "none", cursor: "pointer",
-          background: "linear-gradient(135deg, #25D366, #128C7E)",
-          boxShadow: open ? "0 8px 24px rgba(37,211,102,0.5)" : "0 8px 32px rgba(37,211,102,0.55)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          opacity: entered ? 1 : 0,
-          transform: entered ? "scale(1)" : "scale(0.5)",
-          transition: "all 0.4s cubic-bezier(.22,1,.36,1)",
-          animation: entered && !open ? "pulse-green 2.5s infinite" : "none",
-        }}>
-        {open
-          ? <X size={24} color="#fff" />
-          : <MessageCircle size={26} color="#fff" />
-        }
-      </button>
-
-      {/* Notification dot */}
-      {!open && entered && (
-        <div style={{ position: "absolute", top: 2, right: 2, width: 14, height: 14, borderRadius: "50%", background: "#ef4444", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 8, fontWeight: 800, color: "#fff" }}>1</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* ─────────────────────────── BEFORE / AFTER SLIDER ─────────────────────────── */
-const BeforeAfterSlider = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-  const [sliderX, setSliderX] = useState(50); // percentage
-  const [dragging, setDragging] = useState(false);
-  const containerRef = useRef(null);
-
-  let beforeImg, afterImg;
-  try { beforeImg = require("./data/beforeafter/before.jpeg"); } catch (e) {}
-  try { afterImg = require("./data/beforeafter/After.jpeg"); } catch (e) {}
-
-  // Fallback to stock images
-  if (!beforeImg) beforeImg = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900";
-  if (!afterImg) afterImg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900";
-
-  const updateSlider = (clientX) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const pct = Math.max(5, Math.min(95, ((clientX - rect.left) / rect.width) * 100));
-    setSliderX(pct);
-  };
-
-  // Pointer events cover mouse, touch and pen. touch-action: pan-y keeps vertical page scrolling
-  // working while a horizontal drag moves the slider.
-  const onPointerDown = (e) => {
-    setDragging(true);
-    updateSlider(e.clientX);
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
-  };
-  const onPointerMove = (e) => { if (dragging) updateSlider(e.clientX); };
-  const stop = () => setDragging(false);
-  const onKeyDown = (e) => {
-    if (e.key === "ArrowLeft") { e.preventDefault(); setSliderX((x) => Math.max(5, x - 5)); }
-    if (e.key === "ArrowRight") { e.preventDefault(); setSliderX((x) => Math.min(95, x + 5)); }
-  };
-
-  return (
-    <div ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: "#0C0F1A" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 52 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16, color: "rgba(201,168,76,0.9)" }}>
-            <span style={{ background: colors.gold }} /> Before & After
-          </div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5vw, 3.2rem)", color: "#fff" }}>
-            The transformation<br /><em style={{ color: colors.gold, fontStyle: "italic" }}>speaks for itself</em>
-          </h2>
-          <p style={{ color: "rgba(255,255,255,0.66)", fontSize: 15, marginTop: 16, lineHeight: 1.8 }}>
-            See how our sites go from bare ground to finished homes
-          </p>
-        </div>
-
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.2s" }}>
-          <div ref={containerRef}
-            onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={stop} onPointerCancel={stop}
-            role="slider" tabIndex={0} aria-label="Before and after comparison" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sliderX)} onKeyDown={onKeyDown}
-            style={{ position: "relative", borderRadius: isMobile ? 18 : 24, overflow: "hidden", userSelect: "none", WebkitUserSelect: "none", touchAction: "pan-y", aspectRatio: isMobile ? "4/3" : "16/7", maxHeight: "72vh", width: "100%", cursor: dragging ? "grabbing" : "ew-resize", boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
-
-            {/* AFTER (full background) */}
-            <img src={afterImg} alt="After" loading="lazy" draggable={false}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
-
-            {/* BEFORE (clipped left side) */}
-            <div style={{ position: "absolute", inset: 0, overflow: "hidden", width: `${sliderX}%` }}>
-              <img src={beforeImg} alt="Before" loading="lazy" draggable={false}
-                style={{ width: `${10000 / sliderX}%`, maxWidth: "none", height: "100%", objectFit: "cover", objectPosition: "center" }} />
-            </div>
-
-            {/* Labels */}
-            <div style={{ position: "absolute", top: 18, left: 18, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", color: "#fff", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", border: "1px solid rgba(255,255,255,0.2)" }}>
-              Before
-            </div>
-            <div style={{ position: "absolute", top: 18, right: 18, background: "rgba(43,91,168,0.85)", backdropFilter: "blur(8px)", color: "#fff", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", border: "1px solid rgba(255,255,255,0.2)" }}>
-              After
-            </div>
-
-            {/* Divider line */}
-            <div style={{ position: "absolute", top: 0, bottom: 0, left: `${sliderX}%`, width: 2, background: "#fff", transform: "translateX(-50%)", boxShadow: "0 0 12px rgba(255,255,255,0.6)" }} />
-
-            {/* Drag handle */}
-            <div aria-hidden="true"
-              style={{
-                position: "absolute", top: "50%", left: `${sliderX}%`,
-                transform: "translate(-50%, -50%)",
-                width: 48, height: 48, borderRadius: "50%",
-                background: "#fff", boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "grab", zIndex: 3, transition: dragging ? "none" : "left 0.25s cubic-bezier(.22,1,.36,1)",
-                pointerEvents: "none",
-                border: `3px solid ${colors.gold}`,
-              }}>
-              <div style={{ display: "flex", gap: 3 }}>
-                <ChevronLeft size={14} color={colors.darkBlue} />
-                <ChevronRight size={14} color={colors.darkBlue} />
-              </div>
-            </div>
-          </div>
-
-          {/* Hint text */}
-          <div style={{ textAlign: "center", marginTop: 16, color: "rgba(255,255,255,0.55)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <span style={{ fontSize: 16, display: "inline-block", animation: "nudge-x 1.6s ease-in-out infinite" }}>👆</span> {isMobile ? "Slide or tap anywhere on the photo" : "Drag, click, or use ← → keys to compare"}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <a className="pill pill-solid" href={`tel:${PHONE}`}><Phone size={17} /> Call now</a>
+            <a className="pill glass" href={`${WA_URL}?text=Hi%2C%20I%27m%20interested%20in%20investing%20in%20Gurugram.`} target="_blank" rel="noreferrer"><span className="wa-dot" /> WhatsApp</a>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-/* ─────────────────────────── FAQ SECTION ─────────────────────────── */
-const FAQSection = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal();
-  const [openIdx, setOpenIdx] = useState(null);
+/* ─────────────────────────── 09 FAQ ─────────────────────────── */
+const FAQChapter = () => {
+  const { ref, visible } = useReveal(0.1);
+  const [openIdx, setOpenIdx] = useState(0);
 
   const faqs = [
     // { q: "What is the RERA registration number?", a: "ShineOne Estate is RERA registered with number P51900052847. All our projects comply fully with RERA regulations, ensuring complete transparency in construction timelines, costs, and delivery." },
@@ -2529,122 +1638,230 @@ const FAQSection = () => {
   ];
 
   return (
-    <div ref={ref} style={{ padding: isMobile ? "60px 16px" : "clamp(72px, 8vw, 100px) 28px", background: colors.cream }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ textAlign: "center", marginBottom: isMobile ? 36 : 56 }}>
-          <div className="section-label" style={{ justifyContent: "center", marginBottom: 16 }}>FAQ</div>
-          <h2 className="display-heading" style={{ fontSize: "clamp(2.1rem, 5vw, 3.2rem)" }}>
-            Common questions<br /><em style={{ color: colors.darkBlue, fontStyle: "italic" }}>answered</em>
-          </h2>
-          <p className="section-sub">
-            Everything you need to know before making your decision.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {faqs.map((faq, i) => {
-            const isOpen = openIdx === i;
+    <section id="ch-faq" ref={ref} className="chapter">
+      <div className="wrap" style={{ maxWidth: 980 }}>
+        <ChapterHead n={9} label="FAQ" visible={visible}
+          title={<><Rise>Common questions</Rise><Rise d={0.12}><em>answered</em></Rise></>}
+          lede="Everything you need to know before making your decision." />
+        <div className={`faq ${visible ? "in" : ""}`}>
+          {faqs.map((f, i) => {
+            const open = openIdx === i;
             return (
-              <div key={i} className={`reveal${visible ? " visible" : ""}`}
-                style={{ transitionDelay: `${i * 0.05}s`, background: "#fff", borderRadius: 16, overflow: "hidden",
-                  border: `1.5px solid ${isOpen ? colors.darkBlue : "rgba(43,91,168,0.1)"}`,
-                  boxShadow: isOpen ? "0 8px 32px rgba(43,91,168,0.12)" : "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "all 0.3s ease" }}>
-                <button onClick={() => setOpenIdx(isOpen ? null : i)} aria-expanded={isOpen}
-                  style={{ minHeight: 60, width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer",
-                    padding: isMobile ? "18px 18px" : "22px 28px",
-                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: isMobile ? 14 : 16, fontWeight: 700, color: isOpen ? colors.darkBlue : colors.black, lineHeight: 1.4 }}>
-                    {faq.q}
-                  </span>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: isOpen ? colors.darkBlue : "rgba(43,91,168,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.3s ease" }}>
-                    <div style={{ width: 10, height: 10, position: "relative" }}>
-                      <div style={{ position: "absolute", width: 10, height: 2, background: isOpen ? "#fff" : colors.darkBlue, borderRadius: 1, top: "50%", left: 0, transform: "translateY(-50%)" }} />
-                      <div style={{ position: "absolute", width: 2, height: 10, background: isOpen ? "#fff" : colors.darkBlue, borderRadius: 1, top: 0, left: "50%", transform: `translateX(-50%) scaleY(${isOpen ? 0 : 1})`, transition: "transform 0.3s ease" }} />
-                    </div>
-                  </div>
+              <div key={f.q} className={`faq-item fade-up ${open ? "open" : ""}`} style={{ "--d": `${0.05 * i}s` }}>
+                <button className="faq-q" onClick={() => setOpenIdx(open ? -1 : i)} aria-expanded={open}>
+                  <span className="mono">{String(i + 1).padStart(2, "0")}</span>
+                  <b>{f.q}</b>
+                  <span className="faq-plus glass"><Plus size={18} /></span>
                 </button>
-                <div style={{ maxHeight: isOpen ? 600 : 0, overflow: "hidden", transition: "max-height 0.45s cubic-bezier(.22,1,.36,1)" }}>
-                  <div style={{ padding: isMobile ? "0 18px 20px" : "0 28px 24px", fontSize: 14, color: colors.muted, lineHeight: 1.85, borderTop: "1px solid rgba(43,91,168,0.08)" }}>
-                    <div style={{ paddingTop: 16 }}>{faq.a}</div>
-                  </div>
-                </div>
+                <div className="faq-a"><div><p>{f.a}</p></div></div>
               </div>
             );
           })}
         </div>
-
-        {/* CTA below FAQ */}
-        <div className={`reveal${visible ? " visible" : ""}`} style={{ transitionDelay: "0.4s", textAlign: "center", marginTop: isMobile ? 32 : 48, padding: isMobile ? "28px 20px" : "36px 28px", background: `linear-gradient(135deg, ${colors.darkBlue}, #1f4a8f)`, borderRadius: 20, boxShadow: "0 16px 48px rgba(43,91,168,0.25)" }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Still have questions?</div>
-          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, marginBottom: 20 }}>Our team responds within minutes on WhatsApp</p>
-          <a href={`${WA_URL}?text=Hi%2C%20I%20have%20a%20question%20about%20ShineOne%20Estate.`} target="_blank" rel="noreferrer" className="btn-wa" style={{ textDecoration: "none", padding: "0 28px", fontSize: 15, justifyContent: "center", width: isMobile ? "100%" : "auto" }}>
-            <MessageCircle size={18} /> Ask on WhatsApp
-          </a>
+        <div className={`fade-up ${visible ? "in" : ""}`} style={{ "--d": ".35s", marginTop: 36, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <div className="serif" style={{ fontSize: 24 }}>Still have questions?</div>
+            <div style={{ color: "var(--fg2)", marginTop: 4, fontSize: 15 }}>Our team responds within minutes on WhatsApp</div>
+          </div>
+          <a className="pill pill-solid" href={`${WA_URL}?text=Hi%2C%20I%20have%20a%20question%20about%20ShineOne%20Estate.`} target="_blank" rel="noreferrer"><WhatsAppIcon size={17} /> Ask on WhatsApp</a>
         </div>
       </div>
-    </div>
+    </section>
+  );
+};
+
+/* ─────────────────────────── 10 CONTACT ─────────────────────────── */
+const ContactChapter = () => {
+  const { ref, visible } = useReveal(0.12);
+  let profileImg = null;
+  try { profileImg = require("./data/Profile/my_img.jpeg"); } catch (e) {}
+  const footProjects = [["Sector 4", "Completed"], ["Sector 9", "Completed"], ["Sector 46", "Completed"], ["Sector 42", "Ongoing"], ["Reliance MET City", "NEW"]];
+
+  return (
+    <section id="ch-contact" ref={ref} className="chapter" style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom))" }}>
+      <div className="wrap">
+        <ChapterHead n={10} label="Get in touch" visible={visible}
+          title={<><Rise>Let's build your</Rise><Rise d={0.12}><em>dream together</em></Rise></>} />
+        <div className={`panel contact-card fade-up ${visible ? "in" : ""}`} style={{ "--d": ".2s" }}>
+          <div className="avatar">{profileImg ? <img src={profileImg} alt="Parveen Chawla" loading="lazy" /> : <div style={{ display: "grid", placeItems: "center", background: "#1a1d26" }} className="serif">PC</div>}</div>
+          <div>
+            <div className="serif" style={{ fontSize: "clamp(30px, 3.4vw, 44px)", lineHeight: 1 }}>Parveen Chawla</div>
+            <div className="mono" style={{ fontSize: 11, color: "var(--fg3)", marginTop: 10 }}>Founder · ShineOne Estate</div>
+            <div className="contact-actions">
+              <a className="pill pill-solid" href={`tel:${PHONE}`}><Phone size={17} /> +91 93109 94032</a>
+              <a className="pill glass" href={WA_URL} target="_blank" rel="noreferrer"><span className="wa-dot" /> WhatsApp chat</a>
+              <a className="pill glass" href={`mailto:${EMAIL}`} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{EMAIL}</a>
+            </div>
+          </div>
+        </div>
+
+        <footer className="foot">
+          <div>
+            <div className="serif" style={{ fontSize: 32 }}>ShineOne Estate</div>
+            <div className="mono" style={{ fontSize: 11, color: "var(--fg3)", marginTop: 8 }}>We build your vision</div>
+            <p style={{ color: "var(--fg2)", fontSize: 14.5, lineHeight: 1.8, marginTop: 16, maxWidth: 380 }}>Premium residential development focused on transparent construction, quality materials and timely delivery across Gurugram's key sectors.</p>
+          </div>
+          <div>
+            <h4>Projects</h4>
+            {footProjects.map(([n, s]) => (
+              <div key={n} className="foot-row"><span>{n}</span><span className="mono" style={{ fontSize: 10.5, color: s === "Completed" ? "#86efac" : "var(--sand)" }}>{s}</span></div>
+            ))}
+          </div>
+          <div>
+            <h4>Contact</h4>
+            <div className="foot-row"><a href={`tel:${PHONE}`}>+91 93109 94032</a><ArrowUpRight size={14} /></div>
+            <div className="foot-row"><a href={`mailto:${EMAIL}`} style={{ overflowWrap: "anywhere" }}>{EMAIL}</a><ArrowUpRight size={14} /></div>
+            <div className="foot-row"><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><MapPin size={14} /> Gurugram, Haryana</span></div>
+          </div>
+        </footer>
+        <div className="foot-base"><span>© 2026 ShineOne Estate</span><span>Built with transparency and trust</span></div>
+      </div>
+    </section>
   );
 };
 
 /* ─────────────────────────── APP ─────────────────────────── */
 export default function App() {
-  // Intro loader plays once per browser session (and never for reduced-motion users)
-  const [loading, setLoading] = useState(() => {
-    try {
-      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
-      return !sessionStorage.getItem("s1-intro-seen");
-    } catch (e) { return true; }
-  });
-  const finishLoading = () => {
-    try { sessionStorage.setItem("s1-intro-seen", "1"); } catch (e) {}
-    setLoading(false);
+  const folderImages = useBackendMedia();
+  const reduced = useReducedMotion();
+  const finePointer = useFinePointer();
+  const [entered, setEntered] = useState(() => { try { return sessionStorage.getItem("s1-entered") === "1"; } catch (e) { return false; } });
+  const [selected, setSelected] = useState(projectData.projects.find((p) => p.status === "Ongoing")?.name || projectData.projects[0].name);
+  const active = useStore((s) => s.active);
+  const host = useRef(null);
+  const scene = useRef(null);
+  const [sceneFailed, setSceneFailed] = useState(false);
+  useLockBodyScroll(!entered);
+
+  // Start at the top when arriving (the gate expects the plot to be empty)
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+    if (!entered) window.scrollTo(0, 0);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 3D site
+  useEffect(() => {
+    try { scene.current = new SiteScene(host.current, { reduced }); }
+    catch (e) { setSceneFailed(true); return undefined; }
+    const s = scene.current;
+    const onResize = () => s.resize();
+    window.addEventListener("resize", onResize);
+    return () => { window.removeEventListener("resize", onResize); s.dispose(); scene.current = null; };
+  }, [reduced]);
+
+  // Scroll → chapter position, ground build progress
+  useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const vh = window.innerHeight; const mid = vh * 0.5;
+      let idx = 0, frac = 0;
+      CHAPTERS.forEach((c, i) => {
+        const el = document.getElementById(`ch-${c.id}`); if (!el) return;
+        const r = el.getBoundingClientRect();
+        if (r.top <= mid) { idx = i; frac = Math.min(1, Math.max(0, (mid - r.top) / r.height)); }
+      });
+      const g = document.getElementById("ch-ground");
+      let ground = store.ground;
+      if (g) { const r = g.getBoundingClientRect(); ground = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - vh * 1.15))); }
+      store.set({ pos: idx + frac, active: idx, ground });
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(measure); };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); cancelAnimationFrame(raf); };
+  }, []);
+
+  // Drive the 3D site from chapter + selections
+  useEffect(() => {
+    const apply = (st) => {
+      const s = scene.current; if (!s) return;
+      const ch = CHAPTERS[st.active];
+      const proj = projectData.projects.find((p) => p.name === selected) || projectData.projects[0];
+      const p = st.active === 0 ? (entered ? st.ground : 0) : st.active === 1 ? 1 : st.active === 2 ? projectSceneP(proj) : 1;
+      s.setProgress(p);
+      if (ch.scene) s.setFraming(ch.scene);
+      s.setNight(ch.night ?? 0.6);
+      s.setActive(st.active < SCENE_CHAPTERS + 1 && !document.hidden);
+    };
+    apply(store);
+    store.subs.add(apply);
+    const onVis = () => apply(store);
+    document.addEventListener("visibilitychange", onVis);
+    return () => { store.subs.delete(apply); document.removeEventListener("visibilitychange", onVis); };
+  }, [selected, entered, sceneFailed]);
+
+  // Chapter changes → sound mood + whoosh
+  const lastActive = useRef(active);
+  useEffect(() => {
+    if (lastActive.current !== active) { audio.whoosh(0.55); lastActive.current = active; }
+    audio.setMood(CHAPTERS[active].mood);
+  }, [active]);
+
+  // UI click sound
+  useEffect(() => {
+    const onClick = (e) => { if (e.target.closest?.("button, a")) audio.click(); };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+
+  // Pointer parallax (mouse only)
+  useEffect(() => {
+    if (!finePointer) return undefined;
+    const onMove = (e) => scene.current?.setPointer(e.clientX / window.innerWidth * 2 - 1, e.clientY / window.innerHeight * 2 - 1);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [finePointer]);
+
+  // Drag (mouse or horizontal finger) to turn the site model
+  const drag = useRef(null);
+  const dragHandlers = {
+    onPointerDown: (e) => { if (e.target.closest("a, button, input, .panel, .chips")) return; drag.current = { x: e.clientX, id: e.pointerId }; },
+    onPointerMove: (e) => { if (!drag.current || drag.current.id !== e.pointerId) return; const dx = e.clientX - drag.current.x; drag.current.x = e.clientX; scene.current?.dragBy(dx); },
+    onPointerUp: () => { drag.current = null; },
+    onPointerCancel: () => { drag.current = null; },
+    style: { touchAction: "pan-y" },
   };
 
+  const enter = () => {
+    try { sessionStorage.setItem("s1-entered", "1"); } catch (e) {}
+    setEntered(true);
+  };
+  const selectProject = (name) => { setSelected(name); goToChapter(2); };
+
+  const bgKey = CHAPTERS[active].bg;
+  const fallbackImg = (folderImages?.["Caraousel"] || folderImages?.["caraousel"] || projectData.images)[0];
+
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: colors.cream, minHeight: "100vh", overflowX: "clip" }}>
-      <GlobalStyles />
-      <CustomCursor />
-      {loading && <PageLoader onDone={finishLoading} />}
-
-      <div style={{ opacity: loading ? 0 : 1, transition: "opacity 0.5s ease 0.1s" }}>
-        <StickyHeader />
-        <Hero />
-        <Ticker />
-        <StatsRow />
-
-        <WaveDivider topColor={colors.cream} bottomColor="#fff" />
-        <QuickSnapshot />
-        <WaveDivider topColor="#fff" bottomColor="#fff" />
-
-        <ProgressTimeline />
-
-        <WaveDivider topColor="#fff" bottomColor={colors.cream} />
-        <StoriesViewer />
-        <WaveDivider topColor={colors.cream} bottomColor="#fff" />
-
-        <ImageGallery />
-
-        <BeforeAfterSlider />
-
-        <WaveDivider topColor="#0C0F1A" bottomColor={colors.cream} />
-        <FAQSection />
-        <WaveDivider topColor={colors.cream} bottomColor="#fff" />
-
-        <div id="section-locations">
-          <GurugramLocations />
-        </div>
-
-        <WhyGurugram />
-
-        <WaveDivider topColor="#0C0F1A" bottomColor="#fff" />
-
-        <ContactSection />
-        <Footer />
-        <StickyCTA />
-        <WhatsAppWidget />
-        <ScrollToTop />
+    <div className="xp">
+      <Styles />
+      <div className="bg" aria-hidden="true">
+        {["dawn", "dusk", "blueprint", "night", "ember", "close"].map((k) => <div key={k} className={`bg-${k} ${bgKey === k ? "on" : ""}`} />)}
       </div>
+      <div className={`scene-host ${active >= SCENE_CHAPTERS ? "off" : ""}`} ref={host} aria-hidden="true">
+        {sceneFailed && <div className="scene-fallback" style={{ backgroundImage: `url("${fallbackImg}")` }} />}
+      </div>
+      <div className="grain" aria-hidden="true" />
+
+      {!entered && <EntryGate onEnter={enter} />}
+      <Hud hidden={!entered} />
+
+      <main>
+        <GroundChapter entered={entered} dragHandlers={dragHandlers} />
+        <OverviewChapter onSelectProject={selectProject} />
+        <ProgressChapter selected={selected} onSelect={setSelected} dragHandlers={dragHandlers} />
+        <StoriesChapter folderImages={folderImages} />
+        <GalleryChapter folderImages={folderImages} />
+        <TransformChapter />
+        <LocationsChapter />
+        <WhyChapter />
+        <FAQChapter />
+        <ContactChapter />
+      </main>
+      {entered && <ActionBarGate />}
     </div>
   );
 }
+
+const ActionBarGate = () => (useIsCompact() ? <ActionBar /> : null);
