@@ -147,17 +147,10 @@ const CLOUDINARY_FOLDER_IMAGES = {
   ],
 };
 
-// Maps each sector's folder name to the Cloudinary tag applied to its images.
-// Tag a new image with this tag when uploading to Cloudinary and it will show
-// up on the site automatically — no code change needed.
-const CLOUDINARY_CLOUD_NAME = "dz4k2icvs";
-const CLOUDINARY_FOLDER_TAGS = {
-  "sec 4": "sec4",
-  "sec 9": "sec9",
-  "sec 42": "sec42",
-  "sec 46": "sec46",
-  "reliance met city": "reliancemetcity",
-};
+// Photos and videos come from the We Three server, which lists the ShineOne/<folder> folders in
+// Cloudinary. Upload or delete them from the mobile app's Media tab and they show here within a
+// minute or two. If the server can't be reached the last-known list above is shown instead.
+const MEDIA_API_URL = "https://we-three-api.onrender.com/api/public/shine/media";
 
 const useBackendMedia = () => {
   const [folderImages, setFolderImages] = useState(CLOUDINARY_FOLDER_IMAGES);
@@ -166,26 +159,20 @@ const useBackendMedia = () => {
     let cancelled = false;
 
     const fetchAll = async () => {
-      const entries = await Promise.all(
-        Object.entries(CLOUDINARY_FOLDER_TAGS).map(async ([folder, tag]) => {
-          try {
-            const res = await fetch(
-              `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/list/${tag}.json`
-            );
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
-            const urls = (json.resources || []).map(
-              (r) => `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/v${r.version}/${r.public_id}.${r.format}`
-            );
-            return [folder, urls.length ? urls : CLOUDINARY_FOLDER_IMAGES[folder] || []];
-          } catch (err) {
-            // Falls back to the last-known hardcoded list for this folder.
-            return [folder, CLOUDINARY_FOLDER_IMAGES[folder] || []];
-          }
-        })
-      );
-
-      if (!cancelled) setFolderImages(Object.fromEntries(entries));
+      try {
+        const res = await fetch(MEDIA_API_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { folders } = await res.json();
+        const names = Object.keys(folders || {});
+        // Every folder empty means the server isn't reading the right account: keep the fallback
+        // rather than blanking the site. Otherwise the server's list is the truth for each folder.
+        if (!names.some((f) => folders[f].length > 0)) throw new Error("empty");
+        const merged = { ...CLOUDINARY_FOLDER_IMAGES };
+        names.forEach((folder) => { merged[folder] = folders[folder]; });
+        if (!cancelled) setFolderImages(merged);
+      } catch (err) {
+        // Keeps the last-known hardcoded list.
+      }
     };
 
     fetchAll();
