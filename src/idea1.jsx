@@ -79,34 +79,29 @@ const useReveal = (threshold = 0.15) => {
   return { ref, visible };
 };
 
-// Mouse drag-to-scroll for horizontal strips (touch already scrolls natively)
-const useDragScroll = () => {
-  const ref = useRef(null);
-  const moved = useRef(false);
+const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// Progress (0 → 1) through a tall section whose content is pinned with position: sticky.
+// Calls back on every animation frame while scrolling — callers write styles directly so
+// scroll-driven animation never re-renders React.
+const usePinProgress = (ref, onProgress) => {
+  const cb = useRef(onProgress);
+  cb.current = onProgress;
   useEffect(() => {
-    const el = ref.current; if (!el) return;
-    let down = false, sx = 0, sl = 0;
-    const onDown = (e) => { if (e.pointerType !== "mouse" || e.button !== 0) return; down = true; moved.current = false; sx = e.clientX; sl = el.scrollLeft; };
-    const onMove = (e) => {
-      if (!down) return;
-      const dx = e.clientX - sx;
-      if (Math.abs(dx) > 5 && !moved.current) { moved.current = true; el.classList.add("is-dragging"); }
-      if (moved.current) el.scrollLeft = sl - dx;
+    let raf = 0;
+    const run = () => {
+      raf = 0;
+      const el = ref.current; if (!el) return;
+      const r = el.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      cb.current(Math.min(1, Math.max(0, -r.top / Math.max(1, total))));
     };
-    const onUp = () => { if (!down) return; down = false; el.classList.remove("is-dragging"); };
-    const onClick = (e) => { if (moved.current) { e.preventDefault(); e.stopPropagation(); moved.current = false; } };
-    el.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    el.addEventListener("click", onClick, true);
-    return () => {
-      el.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      el.removeEventListener("click", onClick, true);
-    };
-  }, []);
-  return ref;
+    const on = () => { if (!raf) raf = requestAnimationFrame(run); };
+    run();
+    window.addEventListener("scroll", on, { passive: true });
+    window.addEventListener("resize", on);
+    return () => { window.removeEventListener("scroll", on); window.removeEventListener("resize", on); cancelAnimationFrame(raf); };
+  }, [ref]);
 };
 
 /* ─────────────────────────── DATA ─────────────────────────── */
@@ -552,12 +547,12 @@ const Styles = () => (
   .viewer-head { position: absolute; top: calc(22px + env(safe-area-inset-top)); left: 12px; right: 12px; max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; z-index: 6; }
   .viewer-hint { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); pointer-events: none; }
 
-  /* Gallery strip */
-  .strip { display: flex; gap: clamp(12px, 2vw, 22px); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; padding: 4px var(--gutter) 8px; scroll-padding-inline: var(--gutter); cursor: grab; overscroll-behavior-x: contain; }
-  .strip::-webkit-scrollbar { display: none; }
-  .strip.is-dragging { cursor: grabbing; scroll-snap-type: none; }
-  .strip.is-dragging * { pointer-events: none; }
-  .gcard { position: relative; flex-shrink: 0; width: clamp(270px, 38vw, 560px); aspect-ratio: 4 / 5; border-radius: 24px; overflow: hidden; scroll-snap-align: start; text-align: left; background: #111; }
+  /* Gallery — pinned horizontal stage */
+  .gal-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; display: flex; flex-direction: column; padding-top: calc(clamp(92px, 12vh, 124px) + env(safe-area-inset-top)); }
+  .gal-pin .ch-head { margin-bottom: clamp(16px, 3vh, 30px); gap: 14px; }
+  .gal-pin .h2 { font-size: clamp(2.2rem, min(5vw, 7.4vh), 4.2rem); }
+  .gal-track { display: flex; gap: clamp(12px, 2vw, 24px); padding: 0 var(--gutter); width: max-content; will-change: transform; }
+  .gcard { position: relative; flex-shrink: 0; height: min(50svh, 580px); aspect-ratio: 4 / 5; border-radius: 24px; overflow: hidden; text-align: left; background: #111; }
   .gcard img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--ease); }
   .gcard:hover img { transform: scale(1.05); }
   .gcard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.05) 55%, rgba(0,0,0,.45)); }
@@ -566,9 +561,11 @@ const Styles = () => (
   .gcard-body h3 { font-family: var(--serif); font-weight: 400; font-size: clamp(1.8rem, 3vw, 2.6rem); line-height: 1; }
   .gcard-body p { margin-top: 10px; color: var(--fg2); font-size: 14px; line-height: 1.6; max-width: 400px; }
   .gcard-open { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-  .strip-ctrl { display: flex; align-items: center; gap: 16px; margin-top: 22px; }
+  .gal-foot { margin-top: auto; display: flex; align-items: center; gap: 16px; padding: 18px var(--gutter) calc(clamp(22px, 4vh, 40px) + env(safe-area-inset-bottom)); }
+  @media (max-height: 920px) { .gal-pin .lede { display: none; } }
+  .gal-count { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--fg2); min-width: 7ch; }
   .strip-track { flex: 1; height: 2px; background: rgba(255,255,255,.14); border-radius: 2px; overflow: hidden; }
-  .strip-track i { display: block; height: 100%; background: #fff; transform-origin: left; }
+  .strip-track i { display: block; height: 100%; background: #fff; transform-origin: left; transform: scaleX(0); }
 
   .lightbox { position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; background: rgba(5,7,12,.96); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); animation: fadeIn .25s ease; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
   .lb-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; padding: 0 clamp(8px, 7vw, 96px); }
@@ -580,12 +577,26 @@ const Styles = () => (
   .thumbs button.on { opacity: 1; border-color: #fff; }
   .thumbs img { width: 100%; height: 100%; object-fit: cover; }
 
-  /* Before / after */
-  .ba { position: relative; width: 100%; aspect-ratio: 16 / 8; max-height: 74vh; border-radius: 28px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: ew-resize; box-shadow: 0 40px 100px rgba(0,0,0,.5); }
-  .ba img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-  .ba-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #fff; box-shadow: 0 0 18px rgba(255,255,255,.8); transform: translateX(-50%); pointer-events: none; }
-  .ba-handle { position: absolute; top: 50%; width: 64px; height: 64px; transform: translate(-50%,-50%); border-radius: 50%; display: grid; place-items: center; pointer-events: none; }
-  .ba-label { position: absolute; top: 18px; padding: 8px 14px; border-radius: 999px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+  /* Before / after — pinned scroll stage: frame grows to full screen, then a light sweep reveals "after" */
+  .ba-stage { position: relative; height: 330svh; }
+  .ba-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; --grow: 0; --wipe: 0; --it: 36svh; --is: 12vw; --ib: 7svh; }
+  .ba-head { position: absolute; z-index: 3; left: var(--gutter); right: var(--gutter); top: calc(clamp(92px, 12vh, 124px) + env(safe-area-inset-top)); display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center;
+    opacity: calc(1 - var(--grow) * 1.7); transform: translateY(calc(var(--grow) * -50px)); pointer-events: none; }
+  .ba-head .h2 { font-size: clamp(2.2rem, min(5vw, 7.4vh), 4.2rem); }
+  .ba-frame { position: absolute; inset: 0; overflow: hidden; background: #111;
+    clip-path: inset(calc(var(--it) * (1 - var(--grow))) calc(var(--is) * (1 - var(--grow))) calc(var(--ib) * (1 - var(--grow))) round calc(28px * (1 - var(--grow)))); }
+  .ba-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(calc(1.14 - var(--grow) * .1 - var(--wipe) * .04)); }
+  .ba-after { clip-path: inset(0 calc((1 - var(--wipe)) * 100%) 0 0); }
+  .ba-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0) 38%), linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,0) 26%); opacity: var(--grow); }
+  .ba-sweep { position: absolute; top: 0; bottom: 0; left: calc(var(--wipe) * 100%); width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 28px 6px rgba(255,236,200,.55); opacity: calc(var(--grow) * min(1, (1 - var(--wipe)) * 12)); }
+  .ba-tag { position: absolute; top: calc(84px + env(safe-area-inset-top)); padding: 8px 14px; border-radius: 999px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+  .ba-tag.after { left: var(--gutter); opacity: min(1, calc(var(--wipe) * 5)); }
+  .ba-tag.before { right: var(--gutter); opacity: calc(var(--grow) * (1 - var(--wipe))); }
+  .ba-caption { position: absolute; left: var(--gutter); bottom: calc(clamp(28px, 5vh, 48px) + env(safe-area-inset-bottom)); opacity: var(--grow); }
+  .ba-num { font-family: var(--mono); font-weight: 700; font-size: clamp(3.4rem, 10vh, 6.4rem); line-height: 1; display: flex; align-items: flex-start; }
+  .ba-num small { font-size: .32em; margin-top: .3em; margin-left: 4px; color: var(--fg2); }
+  .ba-hint { position: absolute; left: 50%; bottom: calc(clamp(28px, 5vh, 48px) + env(safe-area-inset-bottom)); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 999px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; transition: opacity .5s; }
+  .ba-hint i { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: bob 2s ease-in-out infinite; }
 
   /* Locations */
   .zones { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: clamp(16px, 3vw, 40px); align-items: start; }
@@ -664,6 +675,10 @@ const Styles = () => (
     .scene-chapter { padding-top: 58svh; }
   }
   @media (min-width: 1024px) { .zone-chips, .mtl-wrap { display: none !important; } }
+  @media (max-width: 1023px) {
+    .ba-caption { bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .gal-foot { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  }
   @media (max-width: 767px) {
     .ground-copy { left: var(--gutter); right: var(--gutter); width: auto; bottom: calc(26px + env(safe-area-inset-bottom)); }
     .ground-copy .display { font-size: clamp(3rem, 15vw, 4.4rem); margin: 14px 0 14px; }
@@ -685,7 +700,10 @@ const Styles = () => (
     .faq-q { grid-template-columns: 30px 1fr 40px; padding: 20px 0; }
     .faq-a p { padding: 0 8px 22px 42px; font-size: 15px; }
     .foot { grid-template-columns: 1fr; }
-    .ba { aspect-ratio: 4 / 4.4; border-radius: 22px; }
+    .ba-pin { --it: 30svh; --is: 4vw; --ib: 18svh; }
+    .ba-hint { display: none; }
+    .gal-pin .lede { display: none; }
+    .gcard { height: min(50svh, 470px); }
     .hud-cta { display: none !important; }
     .hud .hud-brand > span:last-child { display: none; }
     .hud .hud-brand { padding: 0 5px; }
@@ -1278,10 +1296,12 @@ const StoriesChapter = ({ folderImages }) => {
 /* ─────────────────────────── 05 GALLERY ─────────────────────────── */
 const GalleryChapter = ({ folderImages }) => {
   const isMobile = useIsMobile();
-  const { ref, visible } = useReveal(0.12);
-  const strip = useDragScroll();
+  const { ref, visible } = useReveal(0.05);
+  const track = useRef(null);
+  const bar = useRef(null);
+  const countRef = useRef(null);
   const thumbs = useRef(null);
-  const [scrollP, setScrollP] = useState(0);
+  const [height, setHeight] = useState(null);
   const [lb, setLb] = useState({ open: false, folder: "", items: [], index: 0 });
   useLockBodyScroll(lb.open);
 
@@ -1320,41 +1340,73 @@ const GalleryChapter = ({ folderImages }) => {
     return () => window.removeEventListener("keydown", h);
   }, [lb.open, lb.index]);
 
-  const onScroll = (e) => { const el = e.currentTarget; const max = el.scrollWidth - el.clientWidth; setScrollP(max > 0 ? el.scrollLeft / max : 0); };
-  const nudge = (d) => { const el = strip.current; if (!el) return; el.scrollBy({ left: d * el.clientWidth * 0.7, behavior: "smooth" }); };
+  // Section height = one screen + the horizontal distance the cards travel (+ a little dwell at both ends)
+  useEffect(() => {
+    const el = track.current; if (!el) return undefined;
+    const measure = () => {
+      const dist = Math.max(0, el.scrollWidth - window.innerWidth);
+      setHeight(window.innerHeight + dist * 1.15 + window.innerHeight * 0.35);
+    };
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    window.addEventListener("resize", measure);
+    return () => { ro?.disconnect(); window.removeEventListener("resize", measure); };
+  }, [cards.length]);
+
+  usePinProgress(ref, (p) => {
+    const el = track.current; if (!el) return;
+    const dist = Math.max(0, el.scrollWidth - window.innerWidth);
+    const q = Math.min(1, Math.max(0, (p - 0.12) / 0.8));
+    el.style.transform = `translate3d(${(-q * dist).toFixed(1)}px, 0, 0)`;
+    if (bar.current) bar.current.style.transform = `scaleX(${q})`;
+    if (countRef.current) countRef.current.textContent = `${String(Math.min(cards.length, Math.floor(q * (cards.length - 1) + 1.5))).padStart(2, "0")} / ${String(cards.length).padStart(2, "0")}`;
+  });
+
+  // Arrow buttons move one card by scrolling the page the matching amount
+  const nudge = (d) => {
+    const el = track.current; const sec = ref.current; if (!el || !sec) return;
+    const dist = Math.max(1, el.scrollWidth - window.innerWidth);
+    const card = el.firstElementChild ? el.firstElementChild.getBoundingClientRect().width + 20 : 400;
+    const perPx = ((sec.offsetHeight - window.innerHeight) * 0.8) / dist;
+    window.scrollBy({ top: d * card * perPx, behavior: "smooth" });
+  };
 
   return (
-    <section id="ch-gallery" ref={ref} className="chapter">
-      <div className="wrap">
-        <ChapterHead n={5} label="Photo gallery" visible={visible}
-          title={<><Rise>Every project,</Rise><Rise d={0.12}><em>documented</em></Rise></>}
-          lede={isMobile ? "Swipe through each site — tap to open its photos." : "Drag or scroll through each site — click to open its photos."} />
-      </div>
-      <div className={`strip ${visible ? "in" : ""}`} ref={strip} onScroll={onScroll}>
-        {cards.map(({ f, done }, i) => {
-          const items = (folderImages[f] || []).filter((s) => !isVideo(s));
-          const key = f.toLowerCase();
-          return (
-            <button key={f} className="gcard fade-up" style={{ "--d": `${0.08 * i}s` }} onClick={() => openLb(f)} aria-label={`Open ${folderLabel(f)} gallery, ${items.length} photos`}>
-              <img src={items[0]} alt="" loading="lazy" draggable={false} />
-              <div className="gcard-top">
-                <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.85)" }}>{String(i + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")}</span>
-                <span className={`tag ${done ? "tag-done" : "tag-live"}`} style={{ background: "rgba(0,0,0,.45)" }}>{done ? "Completed" : key === "reliance met city" ? "New launch" : "Ongoing"}</span>
-              </div>
-              <div className="gcard-body">
-                <div className="mono" style={{ fontSize: 10.5, color: "rgba(255,255,255,.7)", marginBottom: 10 }}>{projectSubtitle[key] || ""}</div>
-                <h3>{folderLabel(f)}</h3>
-                <p>{projectDesc[key] || ""}</p>
-                <span className="gcard-open">{items.length} photos <ArrowUpRight size={14} /></span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <div className="wrap strip-ctrl">
-        <div className="strip-track" aria-hidden="true"><i style={{ transform: `scaleX(${0.15 + scrollP * 0.85})` }} /></div>
-        <button className="icon-circle glass" onClick={() => nudge(-1)} aria-label="Scroll gallery left"><ChevronLeft size={18} /></button>
-        <button className="icon-circle glass" onClick={() => nudge(1)} aria-label="Scroll gallery right"><ChevronRight size={18} /></button>
+    <section id="ch-gallery" ref={ref} className="gal-stage" style={{ height: height ? `${height}px` : undefined }}>
+      <div className={`gal-pin ${visible ? "in" : ""}`}>
+        <div className="wrap">
+          <ChapterHead n={5} label="Photo gallery" visible={visible}
+            title={<><Rise>Every project,</Rise><Rise d={0.12}><em>documented</em></Rise></>}
+            lede={isMobile ? "Keep scrolling to move through each site — tap one to open its photos." : "Keep scrolling to move through each site — click one to open its photos."} />
+        </div>
+        <div className="gal-track" ref={track}>
+          {cards.map(({ f, done }, i) => {
+            const items = (folderImages[f] || []).filter((s) => !isVideo(s));
+            const key = f.toLowerCase();
+            return (
+              <button key={f} className="gcard fade-up" style={{ "--d": `${0.08 * i}s` }} onClick={() => openLb(f)} aria-label={`Open ${folderLabel(f)} gallery, ${items.length} photos`}>
+                <img src={items[0]} alt="" loading="lazy" draggable={false} />
+                <div className="gcard-top">
+                  <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.85)" }}>{String(i + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")}</span>
+                  <span className={`tag ${done ? "tag-done" : "tag-live"}`} style={{ background: "rgba(0,0,0,.45)" }}>{done ? "Completed" : key === "reliance met city" ? "New launch" : "Ongoing"}</span>
+                </div>
+                <div className="gcard-body">
+                  <div className="mono" style={{ fontSize: 10.5, color: "rgba(255,255,255,.7)", marginBottom: 10 }}>{projectSubtitle[key] || ""}</div>
+                  <h3>{folderLabel(f)}</h3>
+                  <p>{projectDesc[key] || ""}</p>
+                  <span className="gcard-open">{items.length} photos <ArrowUpRight size={14} /></span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="gal-foot">
+          <span className="gal-count" ref={countRef}>01 / {String(cards.length).padStart(2, "0")}</span>
+          <div className="strip-track" aria-hidden="true"><i ref={bar} /></div>
+          <button className="icon-circle glass" onClick={() => nudge(-1)} aria-label="Previous project"><ChevronLeft size={18} /></button>
+          <button className="icon-circle glass" onClick={() => nudge(1)} aria-label="Next project"><ChevronRight size={18} /></button>
+        </div>
       </div>
 
       {lb.open && (
@@ -1391,11 +1443,10 @@ const GalleryChapter = ({ folderImages }) => {
 
 /* ─────────────────────────── 06 BEFORE / AFTER ─────────────────────────── */
 const TransformChapter = () => {
-  const isMobile = useIsMobile();
-  const { ref, visible } = useReveal(0.15);
-  const [x, setX] = useState(50);
-  const [drag, setDrag] = useState(false);
-  const box = useRef(null);
+  const sec = useRef(null);
+  const pin = useRef(null);
+  const pctRef = useRef(null);
+  const [done, setDone] = useState(false);
 
   let beforeImg, afterImg;
   try { beforeImg = require("./data/beforeafter/before.jpeg"); } catch (e) {}
@@ -1405,27 +1456,35 @@ const TransformChapter = () => {
   if (!beforeImg) beforeImg = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900";
   if (!afterImg) afterImg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900";
 
-  const update = (clientX) => { const r = box.current?.getBoundingClientRect(); if (!r) return; setX(Math.max(4, Math.min(96, ((clientX - r.left) / r.width) * 100))); };
+  usePinProgress(sec, (p) => {
+    const el = pin.current; if (!el) return;
+    const grow = ss(0.02, 0.26, p);
+    const wipe = ss(0.32, 0.88, p);
+    el.style.setProperty("--grow", grow.toFixed(4));
+    el.style.setProperty("--wipe", wipe.toFixed(4));
+    if (pctRef.current) pctRef.current.textContent = String(Math.round(wipe * 100)).padStart(2, "0");
+    setDone(wipe > 0.98);
+  });
+
   return (
-    <section id="ch-transform" ref={ref} className="chapter">
-      <div className="wrap">
-        <ChapterHead n={6} label="Before & after" center visible={visible}
-          title={<><Rise>The transformation</Rise><Rise d={0.12}><em>speaks for itself</em></Rise></>}
-          lede={isMobile ? "Slide across the photo to compare." : "Drag across the photo — or use the ← → keys — to compare."} />
-        <div className={`fade-up ${visible ? "in" : ""}`} style={{ "--d": ".2s" }}>
-          <div ref={box} className="ba" role="slider" tabIndex={0} aria-label="Before and after comparison" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(x)}
-            onPointerDown={(e) => { setDrag(true); update(e.clientX); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {} }}
-            onPointerMove={(e) => drag && update(e.clientX)} onPointerUp={() => setDrag(false)} onPointerCancel={() => setDrag(false)}
-            onKeyDown={(e) => { if (e.key === "ArrowLeft") { e.preventDefault(); setX((v) => Math.max(4, v - 5)); } if (e.key === "ArrowRight") { e.preventDefault(); setX((v) => Math.min(96, v + 5)); } }}>
-            <img src={afterImg} alt="After" draggable={false} loading="lazy" />
-            <img src={beforeImg} alt="Before" draggable={false} loading="lazy" style={{ clipPath: `inset(0 ${100 - x}% 0 0)` }} />
-            <span className="ba-label glass" style={{ left: 18 }}>Before</span>
-            <span className="ba-label glass" style={{ right: 18 }}>After</span>
-            <span className="ba-line" style={{ left: `${x}%` }} />
-            <span className="ba-handle glass" style={{ left: `${x}%`, transition: drag ? "none" : "left .3s var(--ease)" }}>
-              <span style={{ display: "flex" }}><ChevronLeft size={16} /><ChevronRight size={16} /></span>
-            </span>
+    <section id="ch-transform" ref={sec} className="ba-stage" aria-label="Before and after">
+      <div className="ba-pin" ref={pin}>
+        <div className="ba-frame">
+          <img src={beforeImg} alt="Before — the site at the start of work" draggable={false} loading="lazy" />
+          <img className="ba-after" src={afterImg} alt="After — the finished building" draggable={false} loading="lazy" />
+          <div className="ba-shade" />
+          <span className="ba-sweep" aria-hidden="true" />
+          <span className="ba-tag glass after">After</span>
+          <span className="ba-tag glass before">Before</span>
+          <div className="ba-caption" aria-hidden="true">
+            <div className="mono" style={{ fontSize: 11, color: "var(--fg2)", marginBottom: 6 }}>Transformation</div>
+            <div className="ba-num"><span ref={pctRef}>00</span><small>%</small></div>
           </div>
+        </div>
+        <div className="ba-hint glass" style={{ opacity: done ? 0 : 1, zIndex: 4 }} aria-hidden="true"><i />Keep scrolling</div>
+        <div className="ba-head in">
+          <span className="eyebrow"><b>06</b><i />Before & after</span>
+          <h2 className="h2">The transformation<br /><em>speaks for itself</em></h2>
         </div>
       </div>
     </section>
