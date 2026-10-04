@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Phone, MessageCircle, MapPin, X, ChevronLeft, ChevronRight, ArrowUpRight, Plus, Check, Clock } from "lucide-react";
+import Lenis from "lenis";
 import audio from "./experience/audioEngine";
 import SiteScene from "./experience/SiteScene";
 
@@ -40,12 +41,26 @@ const useReducedMotion = () => {
   return r;
 };
 
+// Smooth (eased, inertial) scrolling — created once in App, shared here so overlays can pause it.
+const smooth = { lenis: null };
+const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const scrollToY = (y, duration = 1.6) => {
+  if (smooth.lenis) smooth.lenis.scrollTo(y, { duration, easing: easeInOutCubic });
+  else window.scrollTo({ top: y, behavior: "smooth" });
+};
+// Centre a chip/card inside its own horizontal row without moving the page vertically
+const centerInRow = (el) => {
+  const row = el?.parentElement; if (!row) return;
+  row.scrollTo({ left: el.offsetLeft - (row.clientWidth - el.clientWidth) / 2, behavior: "smooth" });
+};
+
 const useLockBodyScroll = (locked) => {
   useEffect(() => {
     if (!locked) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    smooth.lenis?.stop();
+    return () => { document.body.style.overflow = prev; smooth.lenis?.start(); };
   }, [locked]);
 };
 
@@ -214,6 +229,30 @@ const useBackendMedia = () => {
   return folderImages;
 };
 
+// Project status (progress %, stage, ETA) comes from the same server; edit it in the app's Media tab.
+const SITE_API_URL = "https://we-three-api.onrender.com/api/public/shine/site";
+let siteRequest = null;
+const loadSite = () => {
+  if (!siteRequest) {
+    siteRequest = fetch(SITE_API_URL)
+      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .then(({ projects }) => (Array.isArray(projects) && projects.length
+        ? projects.map((p) => ({ name: p.name, status: p.status, area: p.area, progress: p.progress, stage: p.stage || undefined, eta: p.eta || undefined }))
+        : null))
+      .catch(() => null);
+  }
+  return siteRequest;
+};
+const useSiteProjects = () => {
+  const [projects, setProjects] = useState(projectData.projects);
+  useEffect(() => {
+    let cancelled = false;
+    loadSite().then((p) => { if (p && !cancelled) setProjects(p); });
+    return () => { cancelled = true; };
+  }, []);
+  return projects;
+};
+
 /* ─────────────────────────── CHAPTERS & SCROLL STORE ─────────────────────────── */
 const CHAPTERS = [
   { id: "ground", label: "Ground", mood: 0, bg: "dawn", scene: "intro", night: 0.1 },
@@ -278,7 +317,10 @@ const useStore = (selector) => {
   }, []);
   return v;
 };
-const goToChapter = (i) => document.getElementById(`ch-${CHAPTERS[i].id}`)?.scrollIntoView({ behavior: "smooth" });
+const goToChapter = (i) => {
+  const el = document.getElementById(`ch-${CHAPTERS[i].id}`);
+  if (el) scrollToY(el.getBoundingClientRect().top + window.scrollY, 1.8);
+};
 
 /* ─────────────────────────── STYLES ─────────────────────────── */
 const Styles = () => (
@@ -303,6 +345,24 @@ const Styles = () => (
   ::selection { background: rgba(220,189,108,.4); }
 
   .xp { position: relative; min-height: 100vh; overflow-x: clip; }
+
+  /* Smooth scrolling (Lenis) */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-stopped { overflow: hidden; }
+  .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+
+  /* Custom cursor */
+  html.has-cursor, html.has-cursor * { cursor: none !important; }
+  .cursor-dot, .cursor-ring { position: fixed; top: 0; left: 0; z-index: 400; pointer-events: none; will-change: transform; }
+  .cursor-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; mix-blend-mode: difference; }
+  .cursor-ring { width: 0; height: 0; }
+  .cursor-ring::before { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; border-radius: 50%; transform: translate(-50%, -50%);
+    border: 1px solid rgba(255,255,255,.55); transition: width .35s var(--ease), height .35s var(--ease), background .35s, border-color .35s; }
+  .cursor-ring.m-hover::before { width: 58px; height: 58px; background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.85); }
+  .cursor-ring.m-drag::before, .cursor-ring.m-draw::before { width: 74px; height: 74px; background: rgba(0,0,0,.28); border-color: rgba(255,255,255,.25); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .cursor-ring.m-down::before { width: 24px; height: 24px; background: rgba(255,255,255,.2); }
+  .cursor-ring span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #fff; white-space: nowrap; }
   .wrap { width: min(1240px, 100% - var(--gutter) * 2); margin-inline: auto; }
 
   /* ── Backdrops (cross-faded per chapter) ── */
@@ -419,35 +479,41 @@ const Styles = () => (
   .mtl-bar i { display: block; height: 100%; background: #fff; transform-origin: left; }
   .mtl-count { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: rgba(255,255,255,.88); font-variant-numeric: tabular-nums; }
 
-  /* ── Entry gate ── */
-  .gate { position: fixed; inset: 0; z-index: 100; color: #fff; transition: opacity .9s ease, transform 1.2s var(--ease), filter .9s ease; }
-  .gate::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 130vw 120vh at 50% 128%, rgba(244,227,195,.9) 8%, rgba(185,135,99,.8) 26%, rgba(58,60,88,.88) 54%, rgba(11,15,24,.96) 82%); }
-  .gate.leaving { opacity: 0; transform: scale(1.08); filter: blur(10px); pointer-events: none; }
-  .gate > * { position: absolute; }
+  /* ── Entry gate: frosted glass you break by drawing a circle ── */
+  .gate { position: fixed; inset: 0; z-index: 100; color: #fff; touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+  .gate > *:not(.frost) { position: absolute; }
+  .frost { position: absolute; inset: 0; -webkit-backdrop-filter: blur(18px) saturate(115%); backdrop-filter: blur(18px) saturate(115%);
+    background: radial-gradient(ellipse 130vw 120vh at 50% 128%, rgba(244,227,195,.5) 8%, rgba(185,135,99,.42) 26%, rgba(58,60,88,.62) 54%, rgba(11,15,24,.82) 82%); overflow: hidden; }
+  .frost::before { content: ""; position: absolute; inset: -8%; opacity: .26; animation: drift 38s ease-in-out infinite alternate; will-change: transform;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' preserveAspectRatio='none'><filter id='v' x='0' y='0' width='100%' height='100%'><feTurbulence type='turbulence' baseFrequency='.006' numOctaves='3' seed='11'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -5 0 0 0 1.15'/></filter><rect width='1000' height='1000' filter='url(%23v)'/></svg>") center / cover no-repeat; }
+  .frost::after { content: ""; position: absolute; inset: 0; opacity: .07;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+  @keyframes drift { from { transform: translate3d(-3%, -2%, 0) scale(1.02); } to { transform: translate3d(3%, 2%, 0) scale(1.05); } }
+  .shard { animation: shard 1.25s cubic-bezier(.2,.65,.25,1) forwards; will-change: transform, opacity; }
+  @keyframes shard { 0% { transform: none; opacity: 1; } 18% { opacity: 1; } 100% { transform: translate3d(var(--tx), var(--ty), 0) rotate(var(--rot)) scale(.92); opacity: 0; } }
+  .gate.phase-shattering { pointer-events: none; }
+  .gate:not(.phase-idle) .gate-top, .gate:not(.phase-idle) .gate-counter, .gate:not(.phase-idle) .gate-note, .gate:not(.phase-idle) .gate-actions { opacity: 0; transition: opacity .35s; }
+  .gate-draw { inset: 0; pointer-events: none; overflow: visible; }
+  .gate-draw .guide { opacity: 0; transition: opacity 1s .2s; }
+  .gate.ready .gate-draw .guide { opacity: 1; }
+  .gate-draw .demo { animation: demo 2.6s cubic-bezier(.65,0,.35,1) infinite; }
+  @keyframes demo { 0% { transform: rotate(0deg); opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { transform: rotate(360deg); opacity: 0; } }
+  .gate-draw .stroke { transition: opacity .5s; }
+  .gate-draw .crack { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: crack .35s ease-out forwards; }
+  @keyframes crack { to { stroke-dashoffset: 0; } }
+  .gate.phase-shattering .gate-draw { opacity: 0; transition: opacity .5s .1s; }
+  .gate-label { transform: translate(-50%, -50%); font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.92); pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity .8s .3s; text-shadow: 0 0 18px rgba(0,0,0,.25); }
+  .gate.ready .gate-label { opacity: 1; }
   .gate-top { top: calc(18px + env(safe-area-inset-top)); left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .gate-counter { left: var(--gutter); bottom: calc(clamp(24px, 4vh, 40px) + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: 12px; }
+  .gate-counter { left: var(--gutter); bottom: calc(clamp(24px, 4vh, 40px) + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: 12px; pointer-events: none; }
   .gate-count { font-family: var(--mono); font-weight: 700; font-size: clamp(5.5rem, 16.7vh, 11rem); line-height: 1;
     -webkit-mask-image: linear-gradient(transparent 0%, #000 22% 78%, transparent 100%); mask-image: linear-gradient(transparent 0%, #000 22% 78%, transparent 100%); }
-  .gate-unit { font-size: 12px; color: rgba(255,255,255,.7); padding-bottom: 1.2rem; line-height: 1.6; }
-  .gate-center { inset: 0; display: grid; place-items: center; pointer-events: none; }
-  .gate-center > div { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 34px; opacity: 0; transform: translateY(14px); transition: opacity .8s ease, transform .8s var(--ease); }
-  .gate.ready .gate-center > div { opacity: 1; transform: none; }
-  .gate-note { right: var(--gutter); bottom: calc(clamp(28px, 5vh, 48px) + env(safe-area-inset-bottom)); font-size: 11px; color: rgba(255,255,255,.72); text-align: right; line-height: 1.7; }
-  .hold { position: relative; width: 92px; height: 92px; }
-  .hold-btn { position: absolute; inset: 0; border-radius: 50%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-    background: radial-gradient(circle, rgba(255,255,255,0) 0 24%, #fff 48%, rgba(255,255,255,.92) 62%, rgba(255,255,255,.32) 82%, rgba(255,255,255,0) 100%);
-    box-shadow: 0 0 34px 4px rgba(255,255,255,.28); transition: transform .2s var(--ease); }
-  .hold-btn:hover { transform: scale(1.06); }
-  .hold-btn.pressing { transform: scale(.94); }
-  .hold-btn::before, .hold-btn::after { content: ""; position: absolute; top: 50%; left: 50%; width: 130%; height: 130%; border-radius: 50%; pointer-events: none;
-    background: radial-gradient(circle, rgba(255,255,255,0) 40%, rgba(255,255,255,.15) 64%, rgba(255,255,255,.85) 86%, #fff 94%, rgba(255,255,255,0) 96%);
-    animation: ripple 2.8s var(--ease) infinite; opacity: 0; }
-  .hold-btn::after { animation-delay: 1.4s; }
-  @keyframes ripple { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.7); } 15% { opacity: .75; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.65); } }
-  .hold-ring { position: absolute; top: 50%; left: 50%; width: 128%; height: 128%; transform: translate(-50%,-50%) rotate(-90deg); overflow: visible; pointer-events: none; }
-  .hold-ring circle { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(255,255,255,.6)); }
-  .hold-label { position: absolute; top: 50%; left: calc(100% + 26px); transform: translateY(-50%); font-family: var(--mono); font-weight: 700; font-size: clamp(1rem, 2.2vw, 1.35rem); line-height: 1.08; text-transform: uppercase; white-space: pre; }
-  .gate-skip { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.75); padding: 12px 16px; border-radius: 999px; transition: background .25s, color .25s; }
+  .gate-unit { font-size: 12px; color: rgba(255,255,255,.75); padding-bottom: 1.2rem; line-height: 1.6; }
+  .gate-actions { left: 50%; bottom: calc(clamp(28px, 6vh, 56px) + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0; transition: opacity .8s .6s; }
+  .gate.ready .gate-actions { opacity: 1; }
+  .gate-tap { animation: fadeIn .6s ease; min-height: 44px; font-size: 14px; }
+  .gate-note { right: var(--gutter); bottom: calc(clamp(28px, 5vh, 48px) + env(safe-area-inset-bottom)); font-size: 11px; color: rgba(255,255,255,.78); text-align: right; line-height: 1.7; pointer-events: none; }
+  .gate-skip { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.8); padding: 12px 16px; border-radius: 999px; transition: background .25s, color .25s; }
   .gate-skip:hover { background: rgba(255,255,255,.1); color: #fff; }
 
   /* ── Chapter: Ground (hero, scroll-scrubbed build) ── */
@@ -708,9 +774,9 @@ const Styles = () => (
     .hud .hud-brand > span:last-child { display: none; }
     .hud .hud-brand { padding: 0 5px; }
     .gcard { width: 82vw; }
-    .hold-label { top: calc(100% + 30px); left: 50%; transform: translateX(-50%); text-align: center; font-size: 1.05rem; }
-    .gate-center > div { gap: 96px; }
-    .gate-note { left: var(--gutter); right: auto; text-align: left; bottom: auto; top: calc(70px + env(safe-area-inset-top)); }
+    .gate-actions { bottom: calc(176px + env(safe-area-inset-bottom)); }
+    .gate-count { font-size: 6.4rem; }
+    .gate-note { left: var(--gutter); right: auto; text-align: left; bottom: auto; top: calc(74px + env(safe-area-inset-top)); }
     .chapter { padding-bottom: 110px; }
   }
   @media (min-width: 1024px) and (max-height: 760px) {
@@ -777,14 +843,51 @@ const SoundButton = () => {
 };
 
 /* ─────────────────────────── ENTRY GATE ─────────────────────────── */
-const HOLD_MS = 1150;
+const TAU = Math.PI * 2;
+const useViewport = () => {
+  const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+  useEffect(() => {
+    const on = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return vp;
+};
+
+// Glass shards: wedges from (roughly) the centre out past the screen edge
+const makeShards = (w, h, n = 13) => {
+  const cx = w / 2, cy = h / 2, far = Math.hypot(w, h);
+  const cuts = Array.from({ length: n }, (_, i) => (i / n) * TAU + (Math.random() - 0.5) * (TAU / n) * 0.7).sort((x, y) => x - y);
+  return cuts.map((a0, i) => {
+    const a1 = i === n - 1 ? cuts[0] + TAU : cuts[i + 1];
+    const mid = (a0 + a1) / 2;
+    const jr = Math.min(w, h) * (0.12 + Math.random() * 0.18);
+    const c = [cx + (Math.random() - 0.5) * 18, cy + (Math.random() - 0.5) * 18];
+    const pts = [c, [cx + Math.cos(a0) * far, cy + Math.sin(a0) * far], [cx + Math.cos(mid) * far * 1.1, cy + Math.sin(mid) * far * 1.1], [cx + Math.cos(a1) * far, cy + Math.sin(a1) * far], [cx + Math.cos(mid + 0.08) * jr, cy + Math.sin(mid + 0.08) * jr]];
+    const push = Math.min(w, h) * (0.35 + Math.random() * 0.35);
+    return {
+      clip: `polygon(${pts.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(", ")})`,
+      tx: Math.cos(mid) * push, ty: Math.sin(mid) * push + Math.min(w, h) * 0.12,
+      rot: (Math.random() - 0.5) * 30, delay: Math.random() * 0.12,
+      ox: cx + Math.cos(mid) * jr * 2, oy: cy + Math.sin(mid) * jr * 2,
+    };
+  });
+};
+
 const EntryGate = ({ onEnter }) => {
+  const { w, h } = useViewport();
+  const mobile = w < 768;
+  const R = Math.min(w, h) * (mobile ? 0.3 : 0.2);
+  const cx = w / 2, cy = h / 2;
   const [count, setCount] = useState(0);
   const [ready, setReady] = useState(false);
-  const [hold, setHold] = useState(0);
-  const [pressing, setPressing] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  const h = useRef({ raf: 0, value: 0, active: false, last: 0, done: false });
+  const [prog, setProg] = useState(0);
+  const [drawing, setDrawing] = useState(false);
+  const [stroke, setStroke] = useState("");
+  const [phase, setPhase] = useState("idle"); // idle → cracked → shattering
+  const [shards, setShards] = useState([]);
+  const [fallback, setFallback] = useState(false);
+  const st = useRef({ active: false, last: 0, sum: 0, pts: [], done: false, raf: 0, auto: false });
 
   // Loader: counts up while fonts and the 3D site get ready
   useEffect(() => {
@@ -792,7 +895,7 @@ const EntryGate = ({ onEnter }) => {
     const t0 = performance.now();
     (document.fonts?.ready || Promise.resolve()).then(() => { fontsReady = true; });
     const tick = (now) => {
-      const linear = Math.min(1, (now - t0) / 1700);
+      const linear = Math.min(1, (now - t0) / 1800);
       const eased = 1 - Math.pow(1 - linear, 2.2);
       const cap = fontsReady || now - t0 > 4000 ? 100 : 92;
       const v = Math.min(cap, Math.round(eased * 100));
@@ -804,79 +907,201 @@ const EntryGate = ({ onEnter }) => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Offer a tap fallback if nobody has tried drawing after a while
+  useEffect(() => {
+    if (!ready) return undefined;
+    const t = setTimeout(() => setFallback(true), 6500);
+    return () => clearTimeout(t);
+  }, [ready]);
+
   const finish = (withSound) => {
-    if (h.current.done) return;
-    h.current.done = true;
-    cancelAnimationFrame(h.current.raf);
-    if (withSound) { audio.enable(); audio.holdEnd(); audio.breakGround(); vibrate([12, 40, 24]); }
-    else audio.holdEnd();
-    setLeaving(true);
-    setTimeout(onEnter, 950);
+    const s = st.current;
+    if (s.done) return;
+    s.done = true; s.active = false;
+    cancelAnimationFrame(s.raf);
+    if (withSound) { audio.enable(); audio.drawEnd(); audio.shatter(); vibrate([10, 30, 30]); }
+    else audio.drawEnd();
+    setProg(1); setDrawing(false);
+    setShards(makeShards(window.innerWidth, window.innerHeight));
+    setPhase("cracked");
+    setTimeout(() => setPhase("shattering"), 220);
+    setTimeout(onEnter, 1500);
   };
 
-  const step = (now) => {
-    const s = h.current;
-    const dt = now - (s.last || now); s.last = now;
-    s.value = s.active ? Math.min(1, s.value + dt / HOLD_MS) : Math.max(0, s.value - dt / (HOLD_MS * 0.45));
-    setHold(s.value);
-    audio.holdUpdate(s.value);
-    if (s.value >= 1) { finish(true); return; }
-    if (s.active || s.value > 0) s.raf = requestAnimationFrame(step);
-  };
+  const pathFrom = (pts) => pts.length < 2 ? "" : `M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L")}`;
+
   const begin = (e) => {
-    if (!ready || h.current.done) return;
-    if (e?.pointerType) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {} }
-    const s = h.current;
-    if (s.active) return;
-    s.active = true; s.last = 0;
-    setPressing(true);
-    audio.holdStart();
-    vibrate(10);
+    if (!ready || st.current.done || st.current.auto) return;
+    if (e.target.closest("button, a")) return;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+    const s = st.current;
     cancelAnimationFrame(s.raf);
-    s.raf = requestAnimationFrame(step);
+    s.active = true; s.sum = 0; s.pts = [[e.clientX, e.clientY]];
+    s.last = Math.atan2(e.clientY - cy, e.clientX - cx);
+    setDrawing(true); setProg(0); setStroke("");
+    audio.drawStart();
   };
-  const release = () => {
-    const s = h.current;
+  const move = (e) => {
+    const s = st.current;
     if (!s.active || s.done) return;
-    s.active = false; s.last = 0;
-    setPressing(false);
-    audio.holdEnd();
-    cancelAnimationFrame(s.raf);
-    s.raf = requestAnimationFrame(step);
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const a = Math.atan2(dy, dx);
+    let d = a - s.last;
+    if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+    s.last = a;
+    if (Math.hypot(dx, dy) > R * 0.22) s.sum += d; // ignore wobbles right at the centre
+    s.pts.push([e.clientX, e.clientY]);
+    if (s.pts.length > 420) s.pts.shift();
+    const p = Math.min(1, Math.abs(s.sum) / (TAU * 0.9));
+    setProg(p); setStroke(pathFrom(s.pts));
+    audio.drawUpdate(p);
+    if (p >= 1) finish(true);
+  };
+  const end = () => {
+    const s = st.current;
+    if (!s.active || s.done) return;
+    s.active = false;
+    setDrawing(false);
+    audio.drawEnd();
+    // rewind softly
+    const start = performance.now(); let from = 0;
+    setProg((p) => { from = p; return p; });
+    const back = (now) => {
+      const k = Math.min(1, (now - start) / 600);
+      setProg(from * (1 - k * k));
+      if (k < 1 && !s.active) s.raf = requestAnimationFrame(back); else if (k >= 1) setStroke("");
+    };
+    s.raf = requestAnimationFrame(back);
   };
 
-  const C = 2 * Math.PI * 48;
+  // Keyboard / tap fallback: the circle draws itself
+  const autoDraw = (withSound = true) => {
+    const s = st.current;
+    if (!ready || s.done || s.auto) return;
+    s.auto = true;
+    if (withSound) audio.drawStart();
+    const t0 = performance.now(), dur = 1300, a0 = -Math.PI / 2;
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      const e = easeInOutCubic(k);
+      const a = a0 + e * TAU;
+      s.pts.push([cx + Math.cos(a) * R, cy + Math.sin(a) * R]);
+      setStroke(pathFrom(s.pts)); setProg(e); setDrawing(true);
+      if (withSound) audio.drawUpdate(e);
+      if (k < 1) s.raf = requestAnimationFrame(step); else finish(withSound);
+    };
+    s.pts = []; s.raf = requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    const onKey = (e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); autoDraw(true); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const C = TAU * R;
+  const cracks = phase !== "idle" ? Array.from({ length: 9 }, (_, i) => {
+    const a = (i / 9) * TAU + Math.sin(i * 7.3) * 0.3; const len = Math.hypot(w, h) * 0.6;
+    const mx = cx + Math.cos(a + 0.12) * len * 0.35, my = cy + Math.sin(a + 0.12) * len * 0.35;
+    return `M${cx},${cy} L${mx},${my} L${cx + Math.cos(a) * len},${cy + Math.sin(a) * len}`;
+  }) : [];
+
   return (
-    <div className={`gate ${ready ? "ready" : ""} ${leaving ? "leaving" : ""}`} role="dialog" aria-modal="true" aria-label="Enter ShineOne Estate">
+    <div className={`gate ${ready ? "ready" : ""} phase-${phase}`} role="dialog" aria-modal="true" aria-label="Enter ShineOne Estate"
+      onPointerDown={begin} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end} data-cursor="draw">
+      {phase !== "shattering" && <div className="frost" />}
+      {phase === "shattering" && shards.map((sh, i) => (
+        <div key={i} className="frost shard" style={{ clipPath: sh.clip, WebkitClipPath: sh.clip, transformOrigin: `${sh.ox}px ${sh.oy}px`, "--tx": `${sh.tx}px`, "--ty": `${sh.ty}px`, "--rot": `${sh.rot}deg`, animationDelay: `${sh.delay}s` }} />
+      ))}
+
+      <svg className="gate-draw" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+        <defs>
+          <linearGradient id="trail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#fff" stopOpacity=".9" /></linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+        </defs>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="1" strokeDasharray="2 7" className="guide" />
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" filter="url(#glow)"
+          strokeDasharray={C} strokeDashoffset={C * (1 - prog)} transform={`rotate(-90 ${cx} ${cy})`} style={{ opacity: prog > 0 ? 0.55 : 0 }} />
+        {!drawing && prog === 0 && ready && phase === "idle" && (
+          <g className="demo" style={{ transformOrigin: `${cx}px ${cy}px` }}>
+            <path d={`M${cx + Math.cos(-Math.PI / 2 - 1.1) * R},${cy + Math.sin(-Math.PI / 2 - 1.1) * R} A${R},${R} 0 0 1 ${cx},${cy - R}`} fill="none" stroke="url(#trail)" strokeWidth="3" strokeLinecap="round" filter="url(#glow)" />
+            <circle cx={cx} cy={cy - R} r="6" fill="#fff" filter="url(#glow)" />
+          </g>
+        )}
+        {stroke && <path d={stroke} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)" style={{ opacity: phase === "idle" ? 0.95 : 0 }} className="stroke" />}
+        {cracks.map((d, i) => <path key={i} d={d} fill="none" stroke="rgba(255,255,255,.85)" strokeWidth="1.2" className="crack" />)}
+      </svg>
+
       <div className="gate-top">
         <span className="hud-brand glass" style={{ pointerEvents: "none" }}><span className="hud-mark">S1</span><span>ShineOne Estate</span></span>
-        <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.75)" }}>Gurugram</span>
+        <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.8)" }}>Gurugram</span>
       </div>
 
-      <div className="gate-center">
-        <div>
-          <div className="hold">
-            <button className={`hold-btn ${pressing ? "pressing" : ""}`} aria-label="Press and hold to enter with sound"
-              onPointerDown={begin} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}
-              onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); begin(); } }}
-              onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") release(); }}
-              onContextMenu={(e) => e.preventDefault()} />
-            <svg className="hold-ring" viewBox="0 0 100 100" aria-hidden="true">
-              <circle cx="50" cy="50" r="48" strokeDasharray={C} strokeDashoffset={C * (1 - hold)} style={{ opacity: hold > 0 ? 1 : 0 }} />
-            </svg>
-            <div className="hold-label" aria-hidden="true">{"Hold to\nbreak ground"}</div>
-          </div>
-          <button className="gate-skip" onClick={() => finish(false)}>Enter without sound</button>
-        </div>
+      <div className="gate-label mono" style={{ left: cx, top: cy }} aria-live="polite">
+        {drawing && phase === "idle" ? `${Math.round(prog * 100)}%` : phase === "idle" ? "Draw a circle" : ""}
       </div>
 
-      <div className="gate-note mono">Sound on<br />for the full site experience</div>
+      <div className="gate-actions">
+        {fallback && phase === "idle" && <button className="pill glass gate-tap" onClick={() => autoDraw(true)}>Tap here instead</button>}
+        <button className="gate-skip" onClick={() => finish(false)}>Enter without sound</button>
+      </div>
+
+      <div className="gate-note mono">Sound on<br />for the full experience</div>
 
       <div className="gate-counter" aria-live="polite">
         <span className="gate-count"><RollingNumber value={String(count).padStart(2, "0")} stagger={0} /></span>
-        <span className="gate-unit mono">Loading<br />the site</span>
+        <span className="gate-unit mono">Breaking<br />ground</span>
       </div>
     </div>
+  );
+};
+
+/* ─────────────────────────── CURSOR (mouse / trackpad only) ─────────────────────────── */
+const Cursor = () => {
+  const fine = useFinePointer();
+  const dot = useRef(null);
+  const ring = useRef(null);
+  const [mode, setMode] = useState(""); // "" | hover | drag | draw | down
+  useEffect(() => {
+    if (!fine) return undefined;
+    document.documentElement.classList.add("has-cursor");
+    const pos = { x: -100, y: -100 }, lag = { x: -100, y: -100 };
+    let raf, down = false, current = "";
+    const set = (m) => { if (m !== current) { current = m; setMode(m); } };
+    const onMove = (e) => {
+      pos.x = e.clientX; pos.y = e.clientY;
+      if (dot.current) dot.current.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
+      const t = e.target;
+      const zone = t.closest?.("[data-cursor]")?.getAttribute("data-cursor");
+      const interactive = t.closest?.("a, button, [role='slider'], [role='tab'], .gcard");
+      set(down ? "down" : interactive ? "hover" : zone || "");
+    };
+    const onDown = () => { down = true; set("down"); };
+    const onUp = () => { down = false; set(""); };
+    const loop = () => {
+      lag.x += (pos.x - lag.x) * 0.18; lag.y += (pos.y - lag.y) * 0.18;
+      if (ring.current) ring.current.style.transform = `translate3d(${lag.x}px, ${lag.y}px, 0)`;
+      raf = requestAnimationFrame(loop);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointerup", onUp);
+    raf = requestAnimationFrame(loop);
+    return () => {
+      document.documentElement.classList.remove("has-cursor");
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+      cancelAnimationFrame(raf);
+    };
+  }, [fine]);
+  if (!fine) return null;
+  const label = mode === "drag" ? "Drag" : mode === "draw" ? "Draw" : "";
+  return (
+    <>
+      <div ref={ring} className={`cursor-ring m-${mode || "none"}`} aria-hidden="true"><span>{label}</span></div>
+      <div ref={dot} className="cursor-dot" aria-hidden="true" />
+    </>
   );
 };
 
@@ -935,7 +1160,7 @@ const Hud = ({ hidden }) => {
 
   return (
     <header className={`hud ${hidden ? "hidden" : ""}`}>
-      <Brand onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
+      <Brand onClick={() => scrollToY(0, 2)} />
       <Ruler />
       <div className="hud-right" ref={boxRef} style={{ position: "relative" }}>
         <MobileTimeline onOpen={() => setOpen((o) => !o)} />
@@ -948,7 +1173,7 @@ const Hud = ({ hidden }) => {
             <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><rect y="0" width="18" height="1.6" rx=".8" fill="#fff" /><rect y="5.2" width="12" height="1.6" rx=".8" fill="#fff" /><rect y="10.4" width="18" height="1.6" rx=".8" fill="#fff" /></svg>
           )}
         </button>
-        <div className={`menu-drop glass ${open ? "open" : ""}`} role="menu">
+        <div className={`menu-drop glass ${open ? "open" : ""}`} role="menu" data-lenis-prevent>
           {CHAPTERS.map((c, i) => (
             <button key={c.id} role="menuitem" className={`menu-item ${i === active ? "on" : ""}`} onClick={() => go(i)}>
               <span className="mono">{String(i + 1).padStart(2, "0")}</span>{c.label}
@@ -1035,13 +1260,17 @@ const GroundChapter = ({ entered, dragHandlers }) => {
 };
 
 /* ─────────────────────────── 02 PROJECTS ─────────────────────────── */
-const OverviewChapter = ({ onSelectProject }) => {
+const OverviewChapter = ({ projects, onSelectProject }) => {
   const { ref, visible } = useReveal(0.12);
+  const isDone = (p) => p.status.toLowerCase().includes("completed");
+  const done = projects.filter(isDone);
+  const sqft = done.reduce((sum, p) => sum + (parseInt(String(p.area).replace(/[^0-9]/g, ""), 10) || 0), 0);
+  const focus = projects.find((p) => p.name === "Sector 42") || projects.find((p) => !isDone(p));
   const stats = [
-    { value: "3", suffix: "+", label: "Completed projects" },
-    { value: "14,400", suffix: "", label: "Sq. ft. delivered" },
-    { value: "5", suffix: "", label: "Active sectors" },
-    { value: "78", suffix: "%", label: "Sector 42 progress" },
+    { value: String(done.length), suffix: "+", label: "Completed projects" },
+    { value: sqft.toLocaleString("en-IN"), suffix: "", label: "Sq. ft. delivered" },
+    { value: String(projects.length), suffix: "", label: "Active sectors" },
+    ...(focus ? [{ value: String(projectPercent(focus)), suffix: "%", label: `${focus.name} progress` }] : []),
   ];
   return (
     <section id="ch-overview" ref={ref} className="chapter scene-chapter">
@@ -1059,7 +1288,7 @@ const OverviewChapter = ({ onSelectProject }) => {
             ))}
           </div>
           <div className={`panel register ${visible ? "in" : ""}`}>
-            {projectData.projects.map((p, i) => {
+            {projects.map((p, i) => {
               const done = p.status.toLowerCase().includes("completed");
               const pct = projectPercent(p);
               return (
@@ -1083,17 +1312,17 @@ const OverviewChapter = ({ onSelectProject }) => {
 };
 
 /* ─────────────────────────── 03 PROGRESS ─────────────────────────── */
-const ProgressChapter = ({ selected, onSelect, dragHandlers }) => {
+const ProgressChapter = ({ projects, selected, onSelect, dragHandlers }) => {
   const { ref, visible } = useReveal(0.12);
   const chips = useRef(null);
-  const idx = Math.max(0, projectData.projects.findIndex((p) => p.name === selected));
-  const project = projectData.projects[idx];
+  const idx = Math.max(0, projects.findIndex((p) => p.name === selected));
+  const project = projects[idx];
   const pct = projectPercent(project);
   const stages = projectStages(project);
   const pick = (i) => {
-    const p = projectData.projects[i]; if (!p) return;
+    const p = projects[i]; if (!p) return;
     onSelect(p.name); vibrate();
-    chips.current?.children[i]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    centerInRow(chips.current?.children[i]);
   };
   const swipe = useSwipe({ onLeft: () => pick(idx + 1), onRight: () => pick(idx - 1) });
   const labels = { completed: "Completed", ongoing: "In progress", pending: "Pending" };
@@ -1107,7 +1336,7 @@ const ProgressChapter = ({ selected, onSelect, dragHandlers }) => {
             lede="Pick a project — the site model shows where it stands today." />
           <div className={`fade-up ${visible ? "in" : ""}`} style={{ "--d": ".2s" }}>
             <div className="chips" ref={chips} role="tablist" aria-label="Projects">
-              {projectData.projects.map((p, i) => (
+              {projects.map((p, i) => (
                 <button key={p.name} role="tab" aria-selected={i === idx} className={`chip glass ${i === idx ? "on" : ""}`} onClick={() => pick(i)}>
                   {p.name}{p.status === "Ongoing" && <span className="wa-dot" style={{ background: "var(--gold)", boxShadow: "0 0 0 3px rgba(220,189,108,.2)", width: 6, height: 6 }} />}
                 </button>
@@ -1249,7 +1478,7 @@ const StoriesChapter = ({ folderImages }) => {
       </div>
 
       {story.open && (
-        <div className="viewer" role="dialog" aria-modal="true" aria-label={`${folderLabel(story.folder)} stories`}
+        <div className="viewer" data-lenis-prevent role="dialog" aria-modal="true" aria-label={`${folderLabel(story.folder)} stories`}
           onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
           onMouseDown={() => finePointer && setPaused(true)} onMouseUp={() => finePointer && setPaused(false)}
           style={{ background: `rgba(0,0,0,${1 - Math.min(dragY / 400, 0.6)})` }}>
@@ -1334,7 +1563,7 @@ const GalleryChapter = ({ folderImages }) => {
 
   useEffect(() => {
     if (!lb.open) return;
-    thumbs.current?.children[lb.index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    centerInRow(thumbs.current?.children[lb.index]);
     const h = (e) => { if (e.key === "Escape") closeLb(); if (e.key === "ArrowRight") go(1); if (e.key === "ArrowLeft") go(-1); };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -1358,7 +1587,8 @@ const GalleryChapter = ({ folderImages }) => {
     const el = track.current; if (!el) return;
     const dist = Math.max(0, el.scrollWidth - window.innerWidth);
     const q = Math.min(1, Math.max(0, (p - 0.12) / 0.8));
-    el.style.transform = `translate3d(${(-q * dist).toFixed(1)}px, 0, 0)`;
+    const v = smooth.lenis ? Math.max(-6, Math.min(6, smooth.lenis.velocity * 0.12)) : 0;
+    el.style.transform = `translate3d(${(-q * dist).toFixed(1)}px, 0, 0) skewX(${(-v).toFixed(2)}deg)`;
     if (bar.current) bar.current.style.transform = `scaleX(${q})`;
     if (countRef.current) countRef.current.textContent = `${String(Math.min(cards.length, Math.floor(q * (cards.length - 1) + 1.5))).padStart(2, "0")} / ${String(cards.length).padStart(2, "0")}`;
   });
@@ -1369,7 +1599,7 @@ const GalleryChapter = ({ folderImages }) => {
     const dist = Math.max(1, el.scrollWidth - window.innerWidth);
     const card = el.firstElementChild ? el.firstElementChild.getBoundingClientRect().width + 20 : 400;
     const perPx = ((sec.offsetHeight - window.innerHeight) * 0.8) / dist;
-    window.scrollBy({ top: d * card * perPx, behavior: "smooth" });
+    scrollToY(window.scrollY + d * card * perPx, 1.1);
   };
 
   return (
@@ -1410,7 +1640,7 @@ const GalleryChapter = ({ folderImages }) => {
       </div>
 
       {lb.open && (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label={`${folderLabel(lb.folder)} photos`} {...swipe} onClick={closeLb}>
+        <div className="lightbox" data-lenis-prevent role="dialog" aria-modal="true" aria-label={`${folderLabel(lb.folder)} photos`} {...swipe} onClick={closeLb}>
           <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px var(--gutter)" }}>
             <div>
               <div className="serif" style={{ fontSize: "clamp(22px, 3vw, 30px)", lineHeight: 1 }}>{folderLabel(lb.folder)}</div>
@@ -1580,7 +1810,7 @@ const LocationsChapter = () => {
   const pick = (i) => {
     const n = Math.max(0, Math.min(zones.length - 1, i));
     setActive(n);
-    chipRow.current?.children[n]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    centerInRow(chipRow.current?.children[n]);
   };
   const swipe = useSwipe({ onLeft: () => { pick(active + 1); vibrate(); }, onRight: () => { pick(active - 1); vibrate(); } });
   const z = zones[active];
@@ -1730,11 +1960,11 @@ const FAQChapter = () => {
 };
 
 /* ─────────────────────────── 10 CONTACT ─────────────────────────── */
-const ContactChapter = () => {
+const ContactChapter = ({ projects }) => {
   const { ref, visible } = useReveal(0.12);
   let profileImg = null;
   try { profileImg = require("./data/Profile/my_img.jpeg"); } catch (e) {}
-  const footProjects = [["Sector 4", "Completed"], ["Sector 9", "Completed"], ["Sector 46", "Completed"], ["Sector 42", "Ongoing"], ["Reliance MET City", "NEW"]];
+  const footProjects = projects.map((p) => [p.name, p.status]);
 
   return (
     <section id="ch-contact" ref={ref} className="chapter" style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom))" }}>
@@ -1782,6 +2012,7 @@ const ContactChapter = () => {
 /* ─────────────────────────── APP ─────────────────────────── */
 export default function App() {
   const folderImages = useBackendMedia();
+  const projects = useSiteProjects();
   const reduced = useReducedMotion();
   const finePointer = useFinePointer();
   const [entered, setEntered] = useState(() => { try { return sessionStorage.getItem("s1-entered") === "1"; } catch (e) { return false; } });
@@ -1791,6 +2022,18 @@ export default function App() {
   const scene = useRef(null);
   const [sceneFailed, setSceneFailed] = useState(false);
   useLockBodyScroll(!entered);
+
+  // Smooth, eased scrolling for wheel/trackpad; phones keep their native momentum scrolling
+  useEffect(() => {
+    if (reduced) return undefined;
+    const lenis = new Lenis({ lerp: 0.075, wheelMultiplier: 0.9, smoothWheel: true, syncTouch: false });
+    smooth.lenis = lenis;
+    if (document.body.style.overflow === "hidden") lenis.stop();
+    let raf;
+    const loop = (t) => { lenis.raf(t); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); lenis.destroy(); smooth.lenis = null; };
+  }, [reduced]);
 
   // Start at the top when arriving (the gate expects the plot to be empty)
   useEffect(() => {
@@ -1837,7 +2080,7 @@ export default function App() {
     const apply = (st) => {
       const s = scene.current; if (!s) return;
       const ch = CHAPTERS[st.active];
-      const proj = projectData.projects.find((p) => p.name === selected) || projectData.projects[0];
+      const proj = projects.find((p) => p.name === selected) || projects[0];
       const p = st.active === 0 ? (entered ? st.ground : 0) : st.active === 1 ? 1 : st.active === 2 ? projectSceneP(proj) : 1;
       s.setProgress(p);
       if (ch.scene) s.setFraming(ch.scene);
@@ -1849,7 +2092,7 @@ export default function App() {
     const onVis = () => apply(store);
     document.addEventListener("visibilitychange", onVis);
     return () => { store.subs.delete(apply); document.removeEventListener("visibilitychange", onVis); };
-  }, [selected, entered, sceneFailed]);
+  }, [selected, entered, sceneFailed, projects]);
 
   // Chapter changes → sound mood + whoosh
   const lastActive = useRef(active);
@@ -1881,6 +2124,7 @@ export default function App() {
     onPointerUp: () => { drag.current = null; },
     onPointerCancel: () => { drag.current = null; },
     style: { touchAction: "pan-y" },
+    "data-cursor": "drag",
   };
 
   const enter = () => {
@@ -1903,20 +2147,21 @@ export default function App() {
       </div>
       <div className="grain" aria-hidden="true" />
 
+      <Cursor />
       {!entered && <EntryGate onEnter={enter} />}
       <Hud hidden={!entered} />
 
       <main>
         <GroundChapter entered={entered} dragHandlers={dragHandlers} />
-        <OverviewChapter onSelectProject={selectProject} />
-        <ProgressChapter selected={selected} onSelect={setSelected} dragHandlers={dragHandlers} />
+        <OverviewChapter projects={projects} onSelectProject={selectProject} />
+        <ProgressChapter projects={projects} selected={selected} onSelect={setSelected} dragHandlers={dragHandlers} />
         <StoriesChapter folderImages={folderImages} />
         <GalleryChapter folderImages={folderImages} />
         <TransformChapter />
         <LocationsChapter />
         <WhyChapter />
         <FAQChapter />
-        <ContactChapter />
+        <ContactChapter projects={projects} />
       </main>
       {entered && <ActionBarGate />}
     </div>
