@@ -1467,7 +1467,7 @@ const StoriesChapter = ({ folderImages }) => {
             <button key={f} className="story fade-up" style={{ "--d": `${0.1 * i}s` }} onClick={() => open(f)} aria-label={`Watch ${folderLabel(f)} stories`}>
               <div className="story-ring">
                 {key === "reliance met city" && <span className="tag tag-live story-new" style={{ background: "#0b0d12" }}>New</span>}
-                <div><img src={(folderImages[f] || [])[0] || projectData.images[0]} alt="" loading="lazy" /></div>
+                <div><img src={(folderImages[f] || [])[0] || projectData.images[0]} alt={`${folderLabel(f)} construction project, Gurugram`} loading="lazy" /></div>
               </div>
               <div className="story-name">{folderLabel(f)}</div>
               <div className="story-sub">{sectorSubtitles[key] || ""}</div>
@@ -1488,7 +1488,7 @@ const StoriesChapter = ({ folderImages }) => {
             </div>
             <div className="viewer-head">
               <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(255,255,255,.85)", flexShrink: 0 }}>
-                <img src={story.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={story.images[0]} alt={`${folderLabel(story.folder)} construction update`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="serif" style={{ fontSize: 18 }}>{folderLabel(story.folder)}</div>
@@ -1616,7 +1616,7 @@ const GalleryChapter = ({ folderImages }) => {
             const key = f.toLowerCase();
             return (
               <button key={f} className="gcard fade-up" style={{ "--d": `${0.08 * i}s` }} onClick={() => openLb(f)} aria-label={`Open ${folderLabel(f)} gallery, ${items.length} photos`}>
-                <img src={items[0]} alt="" loading="lazy" draggable={false} />
+                <img src={items[0]} alt={`${folderLabel(f)} construction gallery, Gurugram`} loading="lazy" draggable={false} />
                 <div className="gcard-top">
                   <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.85)" }}>{String(i + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")}</span>
                   <span className={`tag ${done ? "tag-done" : "tag-live"}`} style={{ background: "rgba(0,0,0,.45)" }}>{done ? "Completed" : key === "reliance met city" ? "New launch" : "Ongoing"}</span>
@@ -1660,7 +1660,7 @@ const GalleryChapter = ({ folderImages }) => {
           <div onClick={(e) => e.stopPropagation()}>
             <div className="thumbs" ref={thumbs}>
               {lb.items.map((src, i) => (
-                <button key={i} className={i === lb.index ? "on" : ""} onClick={() => setLb((s) => ({ ...s, index: i }))} aria-label={`Photo ${i + 1}`}><img src={src} alt="" loading="lazy" /></button>
+                <button key={i} className={i === lb.index ? "on" : ""} onClick={() => setLb((s) => ({ ...s, index: i }))} aria-label={`Photo ${i + 1}`}><img src={src} alt={`${folderLabel(lb.folder)} photo ${i + 1}`} loading="lazy" /></button>
               ))}
             </div>
             <div className="viewer-hint" style={{ position: "static", padding: "8px 0 12px" }}>{isMobile ? "Swipe to browse · Swipe down to close" : "← → browse · Esc close"}</div>

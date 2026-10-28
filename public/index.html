@@ -1,21 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN">
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
     <!-- Primary SEO -->
-    <title>ShineOneEstate — Plots, Flats & Floors in Gurugram | Trusted Real Estate</title>
-    <meta name="description" content="ShineOneEstate (Gurugram) — Trusted developers offering plots, flats, builder floors and construction services in Sectors 4, 9, 42 & 46. Transparent construction updates, verified materials, project photos & videos, and direct contact for site visits." />
-    <meta name="keywords" content="ShineOneEstate, Gurugram real estate, plots in Gurugram, flats in Gurugram, builder floors, construction company Gurugram, Sector 4 Gurugram, Sector 9 Gurugram, Sector 42 Gurugram, Sector 46 Gurugram" />
-    <meta name="robots" content="index, follow" />
+    <title>Real Estate &amp; Construction Company in Gurugram | Plots, Flats, Builder Floors — ShineOneEstate</title>
+    <meta name="description" content="ShineOneEstate is a Gurugram builder &amp; real estate developer — plots, flats, independent builder floors and residential construction in Sectors 4, 9, 42, 46 &amp; Reliance MET City. Daily site updates, certified materials, milestone-linked payments. Book a site visit." />
+    <meta name="keywords" content="ShineOneEstate, real estate company in Gurugram, construction company in Gurugram, builder in Gurugram, plots in Gurugram, flats in Gurugram, builder floors in Gurugram, house construction Gurugram, Sector 4 Gurugram, Sector 9 Gurugram, Sector 42 Gurugram, Sector 46 Gurugram, Reliance MET City" />
+    <meta name="author" content="ShineOneEstate" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://www.shineoneestate.co.in/" />
+
+    <!-- Local / geo -->
+    <meta name="geo.region" content="IN-HR" />
+    <meta name="geo.placename" content="Gurugram" />
+    <meta name="geo.position" content="28.4595;77.0266" />
+    <meta name="ICBM" content="28.4595, 77.0266" />
 
     <!-- Mobile / theme -->
     <meta name="theme-color" content="#0b0f18" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ShineOneEstate" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="format-detection" content="telephone=no" />
 
@@ -25,83 +33,310 @@
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Google+Sans+Code:wght@400;700&family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&display=swap" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:locale" content="en_US" />
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:locale" content="en_IN" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="ShineOneEstate — Plots, Flats & Floors in Gurugram" />
-    <meta property="og:description" content="Trusted developers in Gurugram offering plots, flats, floors and construction services. View projects in Sector 4, 9, 42 & 46 with photos, videos and transparent progress updates." />
+    <meta property="og:title" content="ShineOneEstate — Real Estate &amp; Construction in Gurugram" />
+    <meta property="og:description" content="Plots, flats, builder floors and residential construction in Gurugram. Projects in Sector 4, 9, 42, 46 &amp; Reliance MET City with transparent daily progress updates." />
     <meta property="og:url" content="https://www.shineoneestate.co.in/" />
     <meta property="og:site_name" content="ShineOneEstate" />
+    <meta property="og:image" content="https://res.cloudinary.com/dz4k2icvs/image/upload/w_1200,h_630,c_fill,q_auto,f_auto/v1774204104/ShineOne/sec%204/x3bmlplxrvgqfmzeyb1t.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ShineOneEstate construction project in Gurugram" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@ShineOneEstate" />
-    <meta name="twitter:title" content="ShineOneEstate — Plots, Flats & Floors in Gurugram" />
-    <meta name="twitter:description" content="Trusted real estate developer in Gurugram — projects in Sector 4, 9, 42 & 46. Schedule site visits, view galleries and check daily progress updates." />
+    <meta name="twitter:title" content="ShineOneEstate — Real Estate &amp; Construction in Gurugram" />
+    <meta name="twitter:description" content="Plots, flats, builder floors and construction in Gurugram. Site visits, galleries and daily progress updates." />
+    <meta name="twitter:image" content="https://res.cloudinary.com/dz4k2icvs/image/upload/w_1200,h_630,c_fill,q_auto,f_auto/v1774204104/ShineOne/sec%204/x3bmlplxrvgqfmzeyb1t.jpg" />
 
-    <!-- Favicons -->
-    <link rel="icon" type="image/png" href="/Screenshot 2026-02-14 at 7.57.05 PM.png" />
+    <!-- Icons / manifest -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="192x192" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Structured data (JSON-LD) for SEO -->
+    <!-- Structured data (JSON-LD): Organization, WebSite, RealEstateAgent + GeneralContractor, WebPage, FAQPage -->
     <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
     {
-      "@context": "https://schema.org",
-      "@graph": [
+      "@type": "Organization",
+      "@id": "https://www.shineoneestate.co.in/#org",
+      "name": "ShineOneEstate",
+      "url": "https://www.shineoneestate.co.in/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.shineoneestate.co.in/logo512.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://res.cloudinary.com/dz4k2icvs/image/upload/w_1200,h_630,c_fill,q_auto,f_auto/v1774204104/ShineOne/sec%204/x3bmlplxrvgqfmzeyb1t.jpg",
+      "contactPoint": [
         {
-          "@type": "Organization",
-          "@id": "https://www.shineoneestate.co.in/#org",
-          "name": "ShineOneEstate",
-          "url": "https://www.shineoneestate.co.in/",
-          "contactPoint": [{
-            "@type": "ContactPoint",
-            "telephone": "+91-9310994032",
-            "contactType": "sales",
-            "email": "parveen@shineoneestate.co.in",
-            "areaServed": "IN"
-          }]
+          "@type": "ContactPoint",
+          "telephone": "+91-9310994032",
+          "contactType": "sales",
+          "email": "parveen@shineoneestate.co.in",
+          "areaServed": "IN",
+          "availableLanguage": [
+            "en",
+            "hi"
+          ]
+        }
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.shineoneestate.co.in/#website",
+      "url": "https://www.shineoneestate.co.in/",
+      "name": "ShineOneEstate",
+      "inLanguage": "en-IN",
+      "publisher": {
+        "@id": "https://www.shineoneestate.co.in/#org"
+      }
+    },
+    {
+      "@type": [
+        "RealEstateAgent",
+        "GeneralContractor"
+      ],
+      "@id": "https://www.shineoneestate.co.in/#business",
+      "name": "ShineOneEstate",
+      "description": "Gurugram builder and real estate developer offering plots, flats, builder floors and residential construction with transparent daily progress updates.",
+      "url": "https://www.shineoneestate.co.in/",
+      "image": "https://res.cloudinary.com/dz4k2icvs/image/upload/w_1200,h_630,c_fill,q_auto,f_auto/v1774204104/ShineOne/sec%204/x3bmlplxrvgqfmzeyb1t.jpg",
+      "logo": "https://www.shineoneestate.co.in/logo512.png",
+      "telephone": "+91-9310994032",
+      "email": "parveen@shineoneestate.co.in",
+      "founder": {
+        "@type": "Person",
+        "name": "Parveen Chawla"
+      },
+      "priceRange": "₹₹₹",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Gurugram",
+        "addressRegion": "Haryana",
+        "addressCountry": "IN"
+      },
+      "areaServed": [
+        {
+          "@type": "City",
+          "name": "Gurugram"
         },
         {
-          "@type": "WebSite",
-          "@id": "https://www.shineoneestate.co.in/#website",
-          "url": "https://www.shineoneestate.co.in/",
-          "name": "ShineOneEstate",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://www.shineoneestate.co.in/?s={search_term_string}",
-            "query-input": "required name=search_term_string"
+          "@type": "Place",
+          "name": "Sector 4 Gurugram"
+        },
+        {
+          "@type": "Place",
+          "name": "Sector 9 Gurugram"
+        },
+        {
+          "@type": "Place",
+          "name": "Sector 42 Gurugram"
+        },
+        {
+          "@type": "Place",
+          "name": "Sector 46 Gurugram"
+        },
+        {
+          "@type": "Place",
+          "name": "Reliance MET City"
+        },
+        {
+          "@type": "Place",
+          "name": "Dwarka Expressway"
+        },
+        {
+          "@type": "Place",
+          "name": "Sohna Road"
+        }
+      ],
+      "knowsAbout": [
+        "Real estate in Gurugram",
+        "Residential construction",
+        "Builder floors",
+        "Plots in Gurugram"
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Real estate & construction services",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Residential Plots in Gurugram"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Flats & Apartments in Gurugram"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Independent Builder Floors in Gurugram"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Residential Construction Services in Gurugram"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Turnkey House Construction in Gurugram"
+            }
+          }
+        ]
+      },
+      "parentOrganization": {
+        "@id": "https://www.shineoneestate.co.in/#org"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.shineoneestate.co.in/#webpage",
+      "url": "https://www.shineoneestate.co.in/",
+      "name": "ShineOneEstate — Real Estate & Construction Company in Gurugram",
+      "isPartOf": {
+        "@id": "https://www.shineoneestate.co.in/#website"
+      },
+      "about": {
+        "@id": "https://www.shineoneestate.co.in/#business"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://res.cloudinary.com/dz4k2icvs/image/upload/w_1200,h_630,c_fill,q_auto,f_auto/v1774204104/ShineOne/sec%204/x3bmlplxrvgqfmzeyb1t.jpg"
+      },
+      "inLanguage": "en-IN"
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://www.shineoneestate.co.in/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What are the current ongoing projects?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We currently have two active projects — Sector 42, Gurugram (78% complete) and Reliance MET City (newly launched, foundation stage, handover June 2027)."
           }
         },
         {
-          "@type": "RealEstateAgent",
-          "@id": "https://www.shineoneestate.co.in/#agent",
-          "name": "ShineOneEstate",
-          "telephone": "+91-9310994032",
-          "email": "parveen@shineoneestate.co.in",
-          "areaServed": "Gurugram, Haryana, India",
-          "url": "https://www.shineoneestate.co.in/",
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Gurugram",
-            "addressRegion": "Haryana",
-            "addressCountry": "IN"
+          "@type": "Question",
+          "name": "What types of properties are available?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We offer Plots, Flats, Independent Floors, and full Construction services across Gurugram's sectors 4, 9, 42, and 46."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What materials and brands are used in construction?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We use premium certified materials — UltraTech Cement (ISO 9001:2015), Tata Tiscon Steel (BIS Certified), Kajaria Premium Tiles, Polycab wiring (ISI Mark), Astral pipes, and Dr. Fixit waterproofing. All materials come with quality certificates."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can I track construction progress?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You get daily construction logs with photos, weekly stories per sector, and real-time progress percentage updates on our website."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I book a site visit?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WhatsApp us at +91 93109 94032 or call directly. We arrange guided site visits on working days with our site manager."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the payment structure?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Payment is milestone-linked — tied to actual construction stages (Foundation, Structure, Finishing, etc.), so you pay as real work gets completed."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are the completed projects available for reference visits?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Our completed projects in Sector 4, 9, and 46 can be visited to see the quality of finish, materials, and workmanship firsthand."
           }
         }
       ]
     }
+  ]
+}
     </script>
 </head>
   <body style="background:#0C0F1A">
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <noscript>
+      <style>#seo-fallback{display:block!important}</style>
+    </noscript>
+    <div id="root">
+      <!--
+        Crawlable fallback content. Mirrors the copy rendered by the React app and
+        is replaced as soon as React mounts (createRoot clears #root).
+      -->
+      <main id="seo-fallback" style="max-width:860px;margin:0 auto;padding:48px 20px;color:#e8e8ea;font-family:Inter,Arial,sans-serif;line-height:1.7">
+        <h1>ShineOneEstate — Real Estate &amp; Construction Company in Gurugram</h1>
+        <p>ShineOneEstate builds and sells plots, flats, independent builder floors and offers full residential construction services across Gurugram, Haryana — in Sector 4, Sector 9, Sector 42, Sector 46 and Reliance MET City.</p>
+        <h2>Our Gurugram projects</h2>
+        <ul>
+          <li>Sector 4, Gurugram — completed, 5,700 sq. ft.</li>
+          <li>Sector 9, Gurugram — completed, 4,200 sq. ft.</li>
+          <li>Sector 46, Gurugram — completed, 4,500 sq. ft.</li>
+          <li>Sector 42, Gurugram — ongoing, 3,200 sq. ft., 78% complete</li>
+          <li>Reliance MET City — ongoing, 1,620 sq. ft., foundation stage, handover June 2027</li>
+        </ul>
+        <h2>Services</h2>
+        <ul>
+          <li>Residential plots in Gurugram</li>
+          <li>Flats &amp; apartments in Gurugram</li>
+          <li>Independent builder floors in Gurugram</li>
+          <li>Residential &amp; turnkey house construction in Gurugram</li>
+        </ul>
+        <h2>Frequently asked questions</h2>
+      <h3>What are the current ongoing projects?</h3>
+      <p>We currently have two active projects — Sector 42, Gurugram (78% complete) and Reliance MET City (newly launched, foundation stage, handover June 2027).</p>
+      <h3>What types of properties are available?</h3>
+      <p>We offer Plots, Flats, Independent Floors, and full Construction services across Gurugram's sectors 4, 9, 42, and 46.</p>
+      <h3>What materials and brands are used in construction?</h3>
+      <p>We use premium certified materials — UltraTech Cement (ISO 9001:2015), Tata Tiscon Steel (BIS Certified), Kajaria Premium Tiles, Polycab wiring (ISI Mark), Astral pipes, and Dr. Fixit waterproofing. All materials come with quality certificates.</p>
+      <h3>How can I track construction progress?</h3>
+      <p>You get daily construction logs with photos, weekly stories per sector, and real-time progress percentage updates on our website.</p>
+      <h3>Can I book a site visit?</h3>
+      <p>Yes. WhatsApp us at +91 93109 94032 or call directly. We arrange guided site visits on working days with our site manager.</p>
+      <h3>What is the payment structure?</h3>
+      <p>Payment is milestone-linked — tied to actual construction stages (Foundation, Structure, Finishing, etc.), so you pay as real work gets completed.</p>
+      <h3>Are the completed projects available for reference visits?</h3>
+      <p>Yes. Our completed projects in Sector 4, 9, and 46 can be visited to see the quality of finish, materials, and workmanship firsthand.</p>
+        <h2>Contact ShineOneEstate</h2>
+        <p>Parveen Chawla — <a href="tel:+919310994032" style="color:#e8e8ea">+91 93109 94032</a> · <a href="https://wa.me/919310994032" style="color:#e8e8ea">WhatsApp</a> · <a href="mailto:parveen@shineoneestate.co.in" style="color:#e8e8ea">parveen@shineoneestate.co.in</a></p>
+        <p>Gurugram, Haryana, India.</p>
+      </main>
+    </div>
   </body>
 </html>

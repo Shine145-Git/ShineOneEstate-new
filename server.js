@@ -14,8 +14,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 console.log("ENV CHECK:");
 console.log("CLOUD_NAME:", process.env.CLOUD_NAME);
-console.log("API_KEY:", process.env.API_KEY);
-console.log("API_SECRET:", process.env.API_SECRET);
 
 const app = express();
 app.use((req, res, next) => {
