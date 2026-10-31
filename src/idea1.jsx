@@ -243,9 +243,8 @@ const loadMedia = () => {
         const names = Object.keys(folders || {});
         // Every folder empty means the server isn't reading the right account: keep the fallback.
         if (!names.some((f) => folders[f].length > 0)) throw new Error("empty");
-        const merged = { ...CLOUDINARY_FOLDER_IMAGES };
-        names.forEach((folder) => { merged[folder] = folders[folder]; });
-        return merged;
+        // The server list is the truth: a folder switched off in Stashr must not come back from the built-in list.
+        return { ...folders };
       })
       .catch(() => null);
   }
