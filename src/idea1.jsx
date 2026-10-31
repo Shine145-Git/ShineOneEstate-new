@@ -646,7 +646,11 @@ const Styles = () => (
   .ba-head .h2 { font-size: clamp(2.2rem, min(5vw, 7.4vh), 4.2rem); }
   .ba-frame { position: absolute; inset: 0; overflow: hidden; background: #111;
     clip-path: inset(calc(var(--it) * (1 - var(--grow))) calc(var(--is) * (1 - var(--grow))) calc(var(--ib) * (1 - var(--grow))) round calc(28px * (1 - var(--grow)))); }
-  .ba-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(calc(1.14 - var(--grow) * .1 - var(--wipe) * .04)); }
+  .ba-layer { position: absolute; inset: 0; }
+  .ba-layer img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* Blurred copy fills the screen; the sharp photo sits on top at full height, uncropped. */
+  .ba-layer .ba-bg { object-fit: cover; filter: blur(28px) brightness(.62); transform: scale(1.2); }
+  .ba-layer .ba-fg { object-fit: contain; transform: scale(calc(1.04 - var(--grow) * .04)); filter: drop-shadow(0 10px 40px rgba(0,0,0,.45)); }
   .ba-after { clip-path: inset(0 calc((1 - var(--wipe)) * 100%) 0 0); }
   .ba-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0) 38%), linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,0) 26%); opacity: var(--grow); }
   .ba-sweep { position: absolute; top: 0; bottom: 0; left: calc(var(--wipe) * 100%); width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 28px 6px rgba(255,236,200,.55); opacity: calc(var(--grow) * min(1, (1 - var(--wipe)) * 12)); }
@@ -1691,8 +1695,18 @@ const TransformChapter = ({ folderImages }) => {
     <section id="ch-transform" ref={sec} className="ba-stage" aria-label="Before and after">
       <div className="ba-pin" ref={pin}>
         <div className="ba-frame">
-          {beforeImg && <img src={beforeImg} alt="Before — the site at the start of work" draggable={false} loading="lazy" />}
-          {afterImg && <img className="ba-after" src={afterImg} alt="After — the finished building" draggable={false} loading="lazy" />}
+          {beforeImg && (
+            <div className="ba-layer">
+              <img className="ba-bg" src={beforeImg} alt="" aria-hidden="true" draggable={false} />
+              <img className="ba-fg" src={beforeImg} alt="Before — the site at the start of work" draggable={false} loading="lazy" />
+            </div>
+          )}
+          {afterImg && (
+            <div className="ba-layer ba-after">
+              <img className="ba-bg" src={afterImg} alt="" aria-hidden="true" draggable={false} />
+              <img className="ba-fg" src={afterImg} alt="After — the finished building" draggable={false} loading="lazy" />
+            </div>
+          )}
           <div className="ba-shade" />
           <span className="ba-sweep" aria-hidden="true" />
           <span className="ba-tag glass after">After</span>
