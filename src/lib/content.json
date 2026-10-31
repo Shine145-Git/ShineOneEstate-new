@@ -1,0 +1,94 @@
+{
+  "siteUrl": "https://www.shineoneestate.co.in",
+  "siteName": "ShineOne Estate",
+  "contact": {
+    "person": "Parveen Chawla",
+    "role": "Founder · ShineOne Estate",
+    "phone": "+919310994032",
+    "phoneDisplay": "+91 93109 94032",
+    "whatsapp": "919310994032",
+    "email": "parveen@shineoneestate.co.in",
+    "city": "Gurugram, Haryana, India"
+  },
+  "projects": [
+    {
+      "key": "sec 4", "slug": "sector-4", "name": "Sector 4", "location": "Sector 4, Gurugram",
+      "status": "Completed", "area": "5700 Sq. Feet",
+      "type": "Family-friendly residential sector",
+      "description": "Calm, well-established neighbourhood with top schools, local markets and easy access to inner-Gurugram.",
+      "highlights": ["Top schools within 5–10 mins", "Local groceries & weekly markets", "Peaceful residential streets"]
+    },
+    {
+      "key": "sec 9", "slug": "sector-9", "name": "Sector 9", "location": "Sector 9, Gurugram",
+      "status": "Completed", "area": "4200 Sq. Feet",
+      "type": "Transit-oriented sector",
+      "description": "Rapidly improving connectivity with planned metro links and good road access — ideal for commuters.",
+      "highlights": ["Planned metro connectivity", "Quick road links to business hubs", "Growing service infrastructure"]
+    },
+    {
+      "key": "sec 46", "slug": "sector-46", "name": "Sector 46", "location": "Sector 46, Gurugram",
+      "status": "Completed", "area": "4500 Sq. Feet",
+      "type": "Community-focused sector",
+      "description": "An established locale with busy community markets, healthcare centres and family amenities nearby.",
+      "highlights": ["Active community markets", "Nearby clinics & pharmacies", "Strong rental demand"]
+    },
+    {
+      "key": "sec 42", "slug": "sector-42", "name": "Sector 42", "location": "Sector 42, Gurugram",
+      "status": "Ongoing", "area": "3200 Sq. Feet", "progress": 78, "eta": "June 2026",
+      "type": "Emerging residential & investment zone",
+      "description": "Located near the Dwarka Expressway corridor with new launches and strong appreciation potential.",
+      "highlights": ["Close to Dwarka Expressway", "New residential launches", "High appreciation potential"]
+    },
+    {
+      "key": "reliance met city", "slug": "reliance-met-city", "name": "Reliance MET City", "location": "Reliance MET City, Gurugram",
+      "status": "Ongoing", "area": "1620 Sq. Feet", "progress": 8, "stage": "Foundation", "eta": "June 2027", "isNew": true,
+      "type": "New project",
+      "description": "Our newest project in Reliance MET City, currently in the foundation stage.",
+      "highlights": []
+    }
+  ],
+  "staticRoutes": [
+    {
+      "path": "/",
+      "title": "ShineOne Estate | Real Estate & Construction Company in Gurugram — Plots, Flats, Builder Floors",
+      "description": "ShineOne Estate is a Gurugram builder & real estate developer — plots, flats, independent builder floors and residential construction in Sectors 4, 9, 42, 46 & Reliance MET City. Book a site visit.",
+      "h1": "ShineOne Estate — Real Estate & Construction Company in Gurugram"
+    },
+    {
+      "path": "/projects",
+      "title": "Projects in Gurugram — Sector 4, 9, 42, 46 & Reliance MET City | ShineOne Estate",
+      "description": "Completed and ongoing ShineOne Estate projects in Gurugram with live construction progress, photos and videos: Sector 4, Sector 9, Sector 42, Sector 46 and Reliance MET City.",
+      "h1": "Our projects in Gurugram"
+    },
+    {
+      "path": "/about",
+      "title": "About ShineOne Estate — Builder & Real Estate Developer in Gurugram",
+      "description": "ShineOne Estate builds homes across Gurugram with certified materials, milestone-linked payments and daily construction updates. Founded by Parveen Chawla.",
+      "h1": "About ShineOne Estate"
+    },
+    {
+      "path": "/services",
+      "title": "Plots, Builder Floors, Flats & House Construction in Gurugram | ShineOne Estate",
+      "description": "Residential plots, independent builder floors, flats and turnkey residential construction in Gurugram from ShineOne Estate.",
+      "h1": "Real estate & construction services in Gurugram"
+    },
+    {
+      "path": "/gallery",
+      "title": "Project Gallery — Construction Photos & Videos in Gurugram | ShineOne Estate",
+      "description": "Photos and videos from ShineOne Estate's construction sites and completed homes in Gurugram, organised by project.",
+      "h1": "Project gallery"
+    },
+    {
+      "path": "/locations",
+      "title": "Locations — Sector 4, 9, 42, 46 & Reliance MET City, Gurugram | ShineOne Estate",
+      "description": "The Gurugram sectors where ShineOne Estate builds: Sector 4, Sector 9, Sector 42, Sector 46 and Reliance MET City.",
+      "h1": "Where we build in Gurugram"
+    },
+    {
+      "path": "/contact",
+      "title": "Contact ShineOne Estate — Book a Site Visit in Gurugram",
+      "description": "Call, WhatsApp or email ShineOne Estate to book a site visit or ask about plots, builder floors and construction in Gurugram. +91 93109 94032.",
+      "h1": "Contact ShineOne Estate"
+    }
+  ]
+}
