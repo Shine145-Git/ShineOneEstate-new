@@ -195,17 +195,40 @@ const CLOUDINARY_FOLDER_IMAGES = {
   ],
 };
 
-// Photos and videos come from the We Three server, which lists the ShineOne/<folder> folders in
-// Cloudinary. Upload or delete them from the mobile app's Media tab and they show here within a
+// Photos and videos come from the Stashr server, which lists the ShineOne/<folder> folders in
+// Cloudinary. Upload or delete them from Stashr's Website photos page and they show here within a
 // minute or two. If the server can't be reached the last-known list above is shown instead.
-const MEDIA_API_URL = "https://we-three-api.onrender.com/api/public/shine/media";
+// The server list comes from the Stashr registry (app "shineoneestate"); change it there and this site follows, no redeploy.
+const REGISTRY_URL = "https://password-manager-server-xxdr.onrender.com/registry/shineoneestate";
+const FALLBACK_SERVERS = ["https://password-manager-server-xxdr.onrender.com"];
+let serversRequest = null;
+const loadServers = () => {
+  if (!serversRequest) {
+    serversRequest = fetch(REGISTRY_URL)
+      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .then(({ urls }) => (Array.isArray(urls) && urls.length ? urls : FALLBACK_SERVERS))
+      .catch(() => FALLBACK_SERVERS);
+  }
+  return serversRequest;
+};
+// Tries each registry server in order until one answers.
+const fetchFromServers = async (path) => {
+  let last = new Error("no server");
+  for (const base of await loadServers()) {
+    try {
+      const res = await fetch(base.replace(/\/+$/, "") + path);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) { last = e; }
+  }
+  throw last;
+};
 
 // Fetched once and shared by every chapter that shows photos.
 let mediaRequest = null;
 const loadMedia = () => {
   if (!mediaRequest) {
-    mediaRequest = fetch(MEDIA_API_URL)
-      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+    mediaRequest = fetchFromServers("/public/shine/media")
       .then(({ folders }) => {
         const names = Object.keys(folders || {});
         // Every folder empty means the server isn't reading the right account: keep the fallback.
@@ -229,13 +252,11 @@ const useBackendMedia = () => {
   return folderImages;
 };
 
-// Project status (progress %, stage, ETA) comes from the same server; edit it in the app's Media tab.
-const SITE_API_URL = "https://we-three-api.onrender.com/api/public/shine/site";
+// Project status (progress %, stage, ETA) comes from the same server; edit it in Stashr's Website photos page.
 let siteRequest = null;
 const loadSite = () => {
   if (!siteRequest) {
-    siteRequest = fetch(SITE_API_URL)
-      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+    siteRequest = fetchFromServers("/public/shine/site")
       .then(({ projects }) => (Array.isArray(projects) && projects.length
         ? projects.map((p) => ({ name: p.name, status: p.status, area: p.area, progress: p.progress, stage: p.stage || undefined, eta: p.eta || undefined }))
         : null))
