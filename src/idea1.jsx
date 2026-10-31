@@ -1948,9 +1948,11 @@ const FAQChapter = () => {
 };
 
 /* ─────────────────────────── 10 CONTACT ─────────────────────────── */
-const ContactChapter = ({ projects }) => {
+const ContactChapter = ({ projects, folderImages }) => {
   const { ref, visible } = useReveal(0.12);
-  const profileImg = null; // no photos stored in the repo; initials are shown
+  // Profile photo comes from the server folder "profile" (first photo); initials show until it loads.
+  const profileKey = Object.keys(folderImages || {}).find((k) => k.toLowerCase().trim() === "profile");
+  const profileImg = ((profileKey && folderImages[profileKey]) || []).find((u) => !isVideo(u)) || null;
   const footProjects = projects.map((p) => [p.name, p.status]);
 
   return (
@@ -2148,7 +2150,7 @@ export default function App() {
         <LocationsChapter />
         <WhyChapter />
         <FAQChapter />
-        <ContactChapter projects={projects} />
+        <ContactChapter projects={projects} folderImages={folderImages} />
       </main>
       {entered && <ActionBarGate />}
     </div>
