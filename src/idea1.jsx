@@ -199,13 +199,23 @@ const CLOUDINARY_FOLDER_IMAGES = {
 // Cloudinary. Upload or delete them from Stashr's Website photos page and they show here within a
 // minute or two. If the server can't be reached the last-known list above is shown instead.
 // The server list comes from the Stashr registry (app "shineoneestate"); change it there and this site follows, no redeploy.
-const REGISTRY_URL = "https://password-manager-server-xxdr.onrender.com/registry/shineoneestate";
-const FALLBACK_SERVERS = ["https://password-manager-server-xxdr.onrender.com"];
+// Both Stashr servers (new g305, then old xxdr) are tried for the registry itself and as the fallback photo servers.
+const STASHR_HOSTS = ["https://password-manager-server-g305.onrender.com", "https://password-manager-server-xxdr.onrender.com"];
+const FALLBACK_SERVERS = STASHR_HOSTS;
 let serversRequest = null;
 const loadServers = () => {
   if (!serversRequest) {
-    serversRequest = fetch(REGISTRY_URL)
-      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+    serversRequest = (async () => {
+      let last = new Error("no registry");
+      for (const host of STASHR_HOSTS) {
+        try {
+          const res = await fetch(`${host}/registry/shineoneestate`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return await res.json();
+        } catch (e) { last = e; }
+      }
+      throw last;
+    })()
       .then(({ urls }) => (Array.isArray(urls) && urls.length ? urls : FALLBACK_SERVERS))
       .catch(() => FALLBACK_SERVERS);
   }
