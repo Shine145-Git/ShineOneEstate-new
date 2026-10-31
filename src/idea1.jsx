@@ -138,11 +138,6 @@ const projectData = {
   name: "ShineOne Estate",
   tagline: "Plots · Flats · Floors · Construction — We Build Your Vision",
   location: "Gurugram — Sector 4 · Sector 9 · Sector 46 · Sector 42",
-  images: [
-    "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200",
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200",
-    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200",
-  ],
   projects: [
     { name: "Sector 4", status: "Completed", area: "5700 Sq. Feet" },
     { name: "Sector 9", status: "Completed", area: "4200 Sq. Feet" },
@@ -162,42 +157,9 @@ const projectData = {
   stories: [],
 };
 
-// Cloudinary-hosted images (uploaded to the ShineOne/<folder> folders)
-const CLOUDINARY_FOLDER_IMAGES = {
-  "sec 4": [
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204104/ShineOne/sec%204/x3bmlplxrvgqfmzeyb1t.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204104/ShineOne/sec%204/kv0phkvvwe90qtd7m8nd.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204104/ShineOne/sec%204/nwzrm8aft02hug8ffgwx.jpg",
-  ],
-  "sec 9": [
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204113/ShineOne/sec%209/iawrapcbhsjbloakmgqc.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774203251/ShineOne/sec%209/hlc3warkzcfqnpaejojl.jpg",
-  ],
-  "sec 46": [
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204131/ShineOne/sec%2046/gp5eotfutmg6ugmntxvo.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774203262/ShineOne/sec%2046/g7hkr5nbn44t0nphxqra.jpg",
-  ],
-  "sec 42": [
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271088/WhatsApp_Image_2026-09-05_at_22.53.10.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204068/ShineOne/sec%2042/rfgis7xkmsuf8ai62jfq.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204068/ShineOne/sec%2042/drj9tr1kd2d6bu5q7tpg.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204068/ShineOne/sec%2042/debtpchbfask0rwxkqmn.jpg",
-  ],
-  "reliance met city": [
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271100/WhatsApp_Image_2026-08-20_at_18.08.54.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271098/WhatsApp_Image_2026-09-18_at_11.32.44.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1790271098/WhatsApp_Image_2026-09-22_at_11.59.05.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204121/ShineOne/reliance%20met%20city/rkncgrn81zaljla6mdv7.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774204121/ShineOne/reliance%20met%20city/my4n3qhd4saf8fl9otsx.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774203272/ShineOne/reliance%20met%20city/xhwtd3enspryinl8ejkk.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774203272/ShineOne/reliance%20met%20city/zlo6m7kzyna2yzgl6oop.jpg",
-    "https://res.cloudinary.com/dz4k2icvs/image/upload/v1774118189/ShineOne/reliance%20met%20city/v5zuhij4z0uor7a2synf.jpg",
-  ],
-};
-
 // Photos and videos come from the Stashr server, which lists the ShineOne/<folder> folders in
 // Cloudinary. Upload or delete them from Stashr's Website photos page and they show here within a
-// minute or two. If the server can't be reached the last-known list above is shown instead.
+// minute or two. No photos are stored in this repo: if the server can't be reached, no photos are shown.
 // The server list comes from the Stashr registry (app "shineoneestate"); change it there and this site follows, no redeploy.
 // Both Stashr servers (new g305, then old xxdr) are tried for the registry itself and as the fallback photo servers.
 const STASHR_HOSTS = ["https://password-manager-server-g305.onrender.com", "https://password-manager-server-xxdr.onrender.com"];
@@ -252,7 +214,7 @@ const loadMedia = () => {
 };
 
 const useBackendMedia = () => {
-  const [folderImages, setFolderImages] = useState(CLOUDINARY_FOLDER_IMAGES);
+  const [folderImages, setFolderImages] = useState({});
   useEffect(() => {
     let cancelled = false;
     loadMedia().then((m) => { if (m && !cancelled) setFolderImages(m); });
@@ -1497,7 +1459,7 @@ const StoriesChapter = ({ folderImages }) => {
             <button key={f} className="story fade-up" style={{ "--d": `${0.1 * i}s` }} onClick={() => open(f)} aria-label={`Watch ${folderLabel(f)} stories`}>
               <div className="story-ring">
                 {key === "reliance met city" && <span className="tag tag-live story-new" style={{ background: "#0b0d12" }}>New</span>}
-                <div><img src={(folderImages[f] || [])[0] || projectData.images[0]} alt={`${folderLabel(f)} construction project, Gurugram`} loading="lazy" /></div>
+                <div><img src={(folderImages[f] || [])[0]} alt={`${folderLabel(f)} construction project, Gurugram`} loading="lazy" /></div>
               </div>
               <div className="story-name">{folderLabel(f)}</div>
               <div className="story-sub">{sectorSubtitles[key] || ""}</div>
@@ -1702,19 +1664,15 @@ const GalleryChapter = ({ folderImages }) => {
 };
 
 /* ─────────────────────────── 06 BEFORE / AFTER ─────────────────────────── */
-const TransformChapter = () => {
+const TransformChapter = ({ folderImages }) => {
   const sec = useRef(null);
   const pin = useRef(null);
   const pctRef = useRef(null);
   const [done, setDone] = useState(false);
 
-  let beforeImg, afterImg;
-  try { beforeImg = require("./data/beforeafter/before.jpeg"); } catch (e) {}
-  try { afterImg = require("./data/beforeafter/After.jpeg"); } catch (e) {}
-
-  // Fallback to stock images
-  if (!beforeImg) beforeImg = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900";
-  if (!afterImg) afterImg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900";
+  // Before/after photos come from the server folder "before after" (first photo = before, second = after).
+  const baKey = Object.keys(folderImages || {}).find((k) => k.toLowerCase().replace(/[^a-z]/g, "") === "beforeafter");
+  const [beforeImg, afterImg] = ((baKey && folderImages[baKey]) || []).filter((u) => !isVideo(u));
 
   usePinProgress(sec, (p) => {
     const el = pin.current; if (!el) return;
@@ -1730,8 +1688,8 @@ const TransformChapter = () => {
     <section id="ch-transform" ref={sec} className="ba-stage" aria-label="Before and after">
       <div className="ba-pin" ref={pin}>
         <div className="ba-frame">
-          <img src={beforeImg} alt="Before — the site at the start of work" draggable={false} loading="lazy" />
-          <img className="ba-after" src={afterImg} alt="After — the finished building" draggable={false} loading="lazy" />
+          {beforeImg && <img src={beforeImg} alt="Before — the site at the start of work" draggable={false} loading="lazy" />}
+          {afterImg && <img className="ba-after" src={afterImg} alt="After — the finished building" draggable={false} loading="lazy" />}
           <div className="ba-shade" />
           <span className="ba-sweep" aria-hidden="true" />
           <span className="ba-tag glass after">After</span>
@@ -1992,8 +1950,7 @@ const FAQChapter = () => {
 /* ─────────────────────────── 10 CONTACT ─────────────────────────── */
 const ContactChapter = ({ projects }) => {
   const { ref, visible } = useReveal(0.12);
-  let profileImg = null;
-  try { profileImg = require("./data/Profile/my_img.jpeg"); } catch (e) {}
+  const profileImg = null; // no photos stored in the repo; initials are shown
   const footProjects = projects.map((p) => [p.name, p.status]);
 
   return (
@@ -2164,7 +2121,7 @@ export default function App() {
   const selectProject = (name) => { setSelected(name); goToChapter(2); };
 
   const bgKey = CHAPTERS[active].bg;
-  const fallbackImg = (folderImages?.["Caraousel"] || folderImages?.["caraousel"] || projectData.images)[0];
+  const fallbackImg = (folderImages?.["Caraousel"] || folderImages?.["caraousel"] || [])[0];
 
   return (
     <div className="xp">
@@ -2173,7 +2130,7 @@ export default function App() {
         {["dawn", "dusk", "blueprint", "night", "ember", "close"].map((k) => <div key={k} className={`bg-${k} ${bgKey === k ? "on" : ""}`} />)}
       </div>
       <div className={`scene-host ${active >= SCENE_CHAPTERS ? "off" : ""}`} ref={host} aria-hidden="true">
-        {sceneFailed && <div className="scene-fallback" style={{ backgroundImage: `url("${fallbackImg}")` }} />}
+        {sceneFailed && <div className="scene-fallback" style={fallbackImg ? { backgroundImage: `url("${fallbackImg}")` } : undefined} />}
       </div>
       <div className="grain" aria-hidden="true" />
 
@@ -2187,7 +2144,7 @@ export default function App() {
         <ProgressChapter projects={projects} selected={selected} onSelect={setSelected} dragHandlers={dragHandlers} />
         <StoriesChapter folderImages={folderImages} />
         <GalleryChapter folderImages={folderImages} />
-        <TransformChapter />
+        <TransformChapter folderImages={folderImages} />
         <LocationsChapter />
         <WhyChapter />
         <FAQChapter />
