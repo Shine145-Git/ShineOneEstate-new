@@ -224,11 +224,14 @@ const useBackendMedia = () => {
 };
 
 // Project status (progress %, stage, ETA) comes from the same server; edit it in Stashr's Website photos page.
+const PHOTO_ONLY_FOLDERS = ["profile", "beforeafter", "caraousel", "carousel"];
 let siteRequest = null;
 const loadSite = () => {
   if (!siteRequest) {
     siteRequest = fetchFromServers("/public/shine/site")
-      .then(({ projects }) => (Array.isArray(projects) && projects.length
+      // Photo-only folders (profile picture, before/after, carousel) are not construction projects.
+      .then(({ projects }) => (Array.isArray(projects) ? projects.filter((p) => !PHOTO_ONLY_FOLDERS.includes(String(p.key || p.name).toLowerCase().replace(/[^a-z]/g, ""))) : []))
+      .then((projects) => (projects.length
         ? projects.map((p) => ({ name: p.name, status: p.status, area: p.area, progress: p.progress, stage: p.stage || undefined, eta: p.eta || undefined }))
         : null))
       .catch(() => null);
