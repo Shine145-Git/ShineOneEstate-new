@@ -5,7 +5,7 @@ import audio from "./experience/audioEngine";
 import SiteScene from "./experience/SiteScene";
 import { Link } from "react-router-dom";
 import { CONTACT, WA_URL, isVideo } from "./lib/site";
-import { useMedia, useSiteStatus } from "./services/stashr";
+import { useMedia, useSiteStatus, isPhotoOnly } from "./services/stashr";
 
 /* ─────────────────────────── UTILITIES ─────────────────────────── */
 const useWindowWidth = () => {
@@ -133,7 +133,11 @@ const FOLDER_LABELS = {
   "sec 42": "Sector 42",
   "reliance met city": "Reliance MET City",
 };
-const folderLabel = (f) => FOLDER_LABELS[String(f || "").toLowerCase().trim()] || f;
+const titleCase = (t) => String(t || "").replace(/\b[a-z]/g, (c) => c.toUpperCase());
+const folderLabel = (f) => FOLDER_LABELS[String(f || "").toLowerCase().trim()] || titleCase(f);
+// Folders added later in Stashr (e.g. Sector 27 Faridabad) that the built-in lists do not know about.
+const extraFolders = (folderImages, known) => Object.keys(folderImages || {}).filter((k) =>
+  !known.includes(k.toLowerCase().trim()) && !isPhotoOnly(k) && (folderImages[k] || []).length > 0);
 
 const projectData = {
   name: "ShineOne Estate",
@@ -1316,8 +1320,11 @@ const StoriesChapter = ({ folderImages }) => {
     "reliance met city": "New Launch",
   };
 
-  const folders = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]
-    .map((d) => Object.keys(folderImages).find((k) => k.toLowerCase() === d)).filter(Boolean);
+  const KNOWN_STORIES = ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"];
+  const folders = [
+    ...KNOWN_STORIES.map((d) => Object.keys(folderImages).find((k) => k.toLowerCase() === d)).filter(Boolean),
+    ...extraFolders(folderImages, KNOWN_STORIES),
+  ];
 
   const open = (folder) => {
     const imgs = folderImages[folder] || []; if (!imgs.length) return;
@@ -1480,6 +1487,7 @@ const GalleryChapter = ({ folderImages }) => {
   const cards = [
     ...["sec 4", "sec 9", "sec 46"].map((f) => ({ f: resolve(f), done: true })),
     ...["sec 42", "reliance met city"].map((f) => ({ f: resolve(f), done: false })),
+    ...extraFolders(folderImages, ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]).map((f) => ({ f, done: true })),
   ].filter((c) => c.f && (folderImages[c.f] || []).some((s) => !isVideo(s)));
 
   const openLb = (f) => { const items = (folderImages[f] || []).filter((s) => !isVideo(s)); setLb({ open: true, folder: f, items, index: 0 }); audio.whoosh(0.5); };
