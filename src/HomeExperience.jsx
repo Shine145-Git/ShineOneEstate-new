@@ -133,6 +133,12 @@ const FOLDER_LABELS = {
   "sec 42": "Sector 42",
   "reliance met city": "Reliance MET City",
 };
+// Live status (Completed / Ongoing / New ...) the Stashr server holds for a folder, if it lists one.
+const statusOf = (projects, folder) => {
+  const k = String(folder || "").toLowerCase().trim();
+  const p = (projects || []).find((x) => String(x.key || "").toLowerCase().trim() === k);
+  return p && p.status ? String(p.status) : "";
+};
 const titleCase = (t) => String(t || "").replace(/\b[a-z]/g, (c) => c.toUpperCase());
 const folderLabel = (f) => FOLDER_LABELS[String(f || "").toLowerCase().trim()] || titleCase(f);
 // Folders added later in Stashr (e.g. Sector 27 Faridabad) that the built-in lists do not know about.
@@ -170,7 +176,7 @@ const useBackendMedia = () => useMedia().folders;
 const useSiteProjects = () => {
   const { projects } = useSiteStatus();
   if (!projects || !projects.length) return projectData.projects;
-  return projects.map((p) => ({ name: p.name, status: p.status, area: p.area, progress: p.progress, stage: p.stage || undefined, eta: p.eta || undefined }));
+  return projects.map((p) => ({ key: p.key, name: p.name, status: p.status, area: p.area, progress: p.progress, stage: p.stage || undefined, eta: p.eta || undefined }));
 };
 
 /* ─────────────────────────── CHAPTERS & SCROLL STORE ─────────────────────────── */
@@ -1298,7 +1304,7 @@ const ProgressChapter = ({ projects, selected, onSelect, dragHandlers }) => {
 };
 
 /* ─────────────────────────── 04 STORIES ─────────────────────────── */
-const StoriesChapter = ({ folderImages }) => {
+const StoriesChapter = ({ folderImages, projects }) => {
   const isMobile = useIsMobile();
   const finePointer = useFinePointer();
   const { ref, visible } = useReveal(0.15);
@@ -1399,7 +1405,7 @@ const StoriesChapter = ({ folderImages }) => {
           return (
             <button key={f} className="story fade-up" style={{ "--d": `${0.1 * i}s` }} onClick={() => open(f)} aria-label={`Watch ${folderLabel(f)} stories`}>
               <div className="story-ring">
-                {key === "reliance met city" && <span className="tag tag-live story-new" style={{ background: "#0b0d12" }}>New</span>}
+                {(/^new/i.test(statusOf(projects, f)) || (key === "reliance met city" && !statusOf(projects, f))) && <span className="tag tag-live story-new" style={{ background: "#0b0d12" }}>New</span>}
                 <div><img src={(folderImages[f] || [])[0]} alt={`${folderLabel(f)} construction project, Gurugram`} loading="lazy" /></div>
               </div>
               <div className="story-name">{folderLabel(f)}</div>
@@ -1456,7 +1462,7 @@ const StoriesChapter = ({ folderImages }) => {
 };
 
 /* ─────────────────────────── 05 GALLERY ─────────────────────────── */
-const GalleryChapter = ({ folderImages }) => {
+const GalleryChapter = ({ folderImages, projects }) => {
   const isMobile = useIsMobile();
   const { ref, visible } = useReveal(0.05);
   const track = useRef(null);
@@ -1488,7 +1494,8 @@ const GalleryChapter = ({ folderImages }) => {
     ...["sec 4", "sec 9", "sec 46"].map((f) => ({ f: resolve(f), done: true })),
     ...["sec 42", "reliance met city"].map((f) => ({ f: resolve(f), done: false })),
     ...extraFolders(folderImages, ["sec 4", "sec 9", "sec 46", "sec 42", "reliance met city"]).map((f) => ({ f, done: true })),
-  ].filter((c) => c.f && (folderImages[c.f] || []).some((s) => !isVideo(s)));
+  ].filter((c) => c.f && (folderImages[c.f] || []).some((s) => !isVideo(s)))
+    .map((c) => { const st = statusOf(projects, c.f); return st ? { ...c, done: /complet/i.test(st), status: st } : c; });
 
   const openLb = (f) => { const items = (folderImages[f] || []).filter((s) => !isVideo(s)); setLb({ open: true, folder: f, items, index: 0 }); audio.whoosh(0.5); };
   const closeLb = () => setLb((s) => ({ ...s, open: false }));
@@ -1545,7 +1552,7 @@ const GalleryChapter = ({ folderImages }) => {
             lede={isMobile ? "Keep scrolling to move through each site — tap one to open its photos." : "Keep scrolling to move through each site — click one to open its photos."} />
         </div>
         <div className="gal-track" ref={track}>
-          {cards.map(({ f, done }, i) => {
+          {cards.map(({ f, done, status }, i) => {
             const items = (folderImages[f] || []).filter((s) => !isVideo(s));
             const key = f.toLowerCase();
             return (
@@ -1553,7 +1560,7 @@ const GalleryChapter = ({ folderImages }) => {
                 <img src={items[0]} alt={`${folderLabel(f)} construction gallery, Gurugram`} loading="lazy" draggable={false} />
                 <div className="gcard-top">
                   <span className="mono" style={{ fontSize: 11, color: "rgba(255,255,255,.85)" }}>{String(i + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")}</span>
-                  <span className={`tag ${done ? "tag-done" : "tag-live"}`} style={{ background: "rgba(0,0,0,.45)" }}>{done ? "Completed" : key === "reliance met city" ? "New launch" : "Ongoing"}</span>
+                  <span className={`tag ${done ? "tag-done" : "tag-live"}`} style={{ background: "rgba(0,0,0,.45)" }}>{status ? (/^new/i.test(status) ? "New launch" : status) : done ? "Completed" : key === "reliance met city" ? "New launch" : "Ongoing"}</span>
                 </div>
                 <div className="gcard-body">
                   <div className="mono" style={{ fontSize: 10.5, color: "rgba(255,255,255,.7)", marginBottom: 10 }}>{projectSubtitle[key] || ""}</div>
@@ -2097,8 +2104,8 @@ export default function App() {
         <GroundChapter entered={entered} dragHandlers={dragHandlers} />
         <OverviewChapter projects={projects} onSelectProject={selectProject} />
         <ProgressChapter projects={projects} selected={selected} onSelect={setSelected} dragHandlers={dragHandlers} />
-        <StoriesChapter folderImages={folderImages} />
-        <GalleryChapter folderImages={folderImages} />
+        <StoriesChapter folderImages={folderImages} projects={projects} />
+        <GalleryChapter folderImages={folderImages} projects={projects} />
         <TransformChapter folderImages={folderImages} />
         <LocationsChapter />
         <WhyChapter />
