@@ -794,6 +794,7 @@ const makeShards = (w, h, n = 13) => {
   });
 };
 
+// eslint-disable-next-line no-unused-vars -- kept so the gate can be switched back on
 const EntryGate = ({ onEnter }) => {
   const { w, h } = useViewport();
   const mobile = w < 768;
@@ -1947,7 +1948,7 @@ export default function App() {
   const projects = useSiteProjects();
   const reduced = useReducedMotion();
   const finePointer = useFinePointer();
-  const [entered, setEntered] = useState(() => { try { return sessionStorage.getItem("s1-entered") === "1"; } catch (e) { return false; } });
+  const [entered, setEntered] = useState(true); // the "draw a circle" entry gate is switched off; the page opens straight away
   const [selected, setSelected] = useState(projectData.projects.find((p) => p.status === "Ongoing")?.name || projectData.projects[0].name);
   const active = useStore((s) => s.active);
   const host = useRef(null);
@@ -2059,6 +2060,7 @@ export default function App() {
     "data-cursor": "drag",
   };
 
+  // eslint-disable-next-line no-unused-vars
   const enter = () => {
     try { sessionStorage.setItem("s1-entered", "1"); } catch (e) {}
     setEntered(true);
@@ -2080,7 +2082,7 @@ export default function App() {
       <div className="grain" aria-hidden="true" />
 
       <Cursor />
-      {!entered && <EntryGate onEnter={enter} />}
+      
       <Hud hidden={!entered} />
 
       <main>
