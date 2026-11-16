@@ -23,30 +23,31 @@ const getJson = async (url) => {
   } finally { if (timer) clearTimeout(timer); }
 };
 
+// Servers that are suspended answer 503 (without CORS headers), so every host is asked at once and the
+// first healthy answer wins; one dead server can no longer hold the site back.
+const firstOk = (tasks) => new Promise((resolve, reject) => {
+  let left = tasks.length, last = new Error("no server");
+  if (!left) reject(last);
+  tasks.forEach((run) => run().then(resolve, (e) => { last = e; if (--left === 0) reject(last); }));
+});
+const clean = (u) => String(u).replace(/\/+$/, "");
+
 let serversRequest = null;
 const loadServers = () => {
   if (!serversRequest) {
-    serversRequest = (async () => {
-      for (const host of STASHR_HOSTS) {
-        try {
-          const { urls } = await getJson(`${host}/registry/shineoneestate`);
-          if (Array.isArray(urls) && urls.length) return urls;
-        } catch (e) { /* try the next host */ }
-      }
-      return STASHR_HOSTS;
-    })();
+    serversRequest = firstOk(STASHR_HOSTS.map((host) => async () => {
+      const { urls } = await getJson(`${host}/registry/shineoneestate`);
+      if (!Array.isArray(urls) || !urls.length) throw new Error("empty registry");
+      return urls;
+    })).catch(() => [])
+      .then((urls) => [...new Set([...urls, ...STASHR_HOSTS].map(clean))]);
   }
   return serversRequest;
 };
 
-/** Tries each registry server in order until one answers. */
-export const fetchFromServers = async (path) => {
-  let last = new Error("no server");
-  for (const base of await loadServers()) {
-    try { return await getJson(base.replace(/\/+$/, "") + path); } catch (e) { last = e; }
-  }
-  throw last;
-};
+/** Asks every Stashr server at once and returns the first one that answers. */
+export const fetchFromServers = async (path) =>
+  firstOk((await loadServers()).map((base) => () => getJson(base + path)));
 
 // Folders that hold photos for one part of the page rather than a construction project.
 export const PHOTO_ONLY_FOLDERS = ["profile", "beforeafter", "caraousel", "carousel"];
