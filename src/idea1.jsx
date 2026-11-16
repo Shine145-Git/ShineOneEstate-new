@@ -161,8 +161,14 @@ const projectData = {
 // Cloudinary. Upload or delete them from Stashr's Website photos page and they show here within a
 // minute or two. No photos are stored in this repo: if the server can't be reached, no photos are shown.
 // The server list comes from the Stashr registry (app "shineoneestate"); change it there and this site follows, no redeploy.
-// Both Stashr servers (new g305, then old xxdr) are tried for the registry itself and as the fallback photo servers.
-const STASHR_HOSTS = ["https://password-manager-server-g305.onrender.com", "https://password-manager-server-xxdr.onrender.com"];
+// All 5 Stashr servers (g305, xxdr, 10od, home-automation, gk9p) are tried for the registry itself and as the fallback photo servers.
+const STASHR_HOSTS = [
+  "https://password-manager-server-g305.onrender.com",
+  "https://password-manager-server-xxdr.onrender.com",
+  "https://password-manager-server-10od.onrender.com",
+  "https://stashr-home-automation.onrender.com",
+  "https://stashr-home-automation-gk9p.onrender.com",
+];
 const FALLBACK_SERVERS = STASHR_HOSTS;
 let serversRequest = null;
 const loadServers = () => {

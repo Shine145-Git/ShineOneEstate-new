@@ -4,7 +4,13 @@
 // The server list comes from the Stashr registry (app "shineoneestate"); change it there, no redeploy needed.
 import { useEffect, useState } from "react";
 
-export const STASHR_HOSTS = ["https://password-manager-server-g305.onrender.com", "https://password-manager-server-xxdr.onrender.com"];
+export const STASHR_HOSTS = [
+  "https://password-manager-server-g305.onrender.com",
+  "https://password-manager-server-xxdr.onrender.com",
+  "https://password-manager-server-10od.onrender.com",
+  "https://stashr-home-automation.onrender.com",
+  "https://stashr-home-automation-gk9p.onrender.com",
+];
 const TIMEOUT_MS = 15000;
 
 const getJson = async (url) => {
