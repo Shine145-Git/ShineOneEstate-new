@@ -14,6 +14,7 @@ const ServicesPage = lazy(() => import('./pages/ServicesPage'));
 const GalleryPage = lazy(() => import('./pages/GalleryPage'));
 const LocationsPage = lazy(() => import('./pages/LocationsPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 /** Old links used HashRouter (/#/admin). Move them to the matching real path once, keeping history clean. */
@@ -56,6 +57,7 @@ export function AppRoutes() {
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/locations" element={<LocationsPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

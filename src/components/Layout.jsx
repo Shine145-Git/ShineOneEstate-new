@@ -99,7 +99,7 @@ function Footer() {
             </ul>
           </div>
         </div>
-        <div className="sx-footer-base"><span>© {new Date().getFullYear()} ShineOne Estate</span><span>Built with transparency and trust</span></div>
+        <div className="sx-footer-base"><span>© {new Date().getFullYear()} ShineOne Estate</span><span><Link to="/privacy-policy">Privacy Policy</Link> · Built with transparency and trust</span></div>
       </div>
     </footer>
   );
