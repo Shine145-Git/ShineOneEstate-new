@@ -4,7 +4,10 @@
 // The server list comes from the Stashr registry (app "shineoneestate"); change it there, no redeploy needed.
 import { useEffect, useState } from "react";
 
+// Main Stashr server (Oracle). It is asked first; the others are fallbacks used only if it fails.
+export const PRIMARY_STASHR_HOST = "https://api.130-210-11-74.sslip.io";
 export const STASHR_HOSTS = [
+  PRIMARY_STASHR_HOST,
   "https://password-manager-server-g305.onrender.com",
   "https://password-manager-server-xxdr.onrender.com",
   "https://password-manager-server-10od.onrender.com",
@@ -40,14 +43,20 @@ const loadServers = () => {
       if (!Array.isArray(urls) || !urls.length) throw new Error("empty registry");
       return urls;
     })).catch(() => [])
-      .then((urls) => [...new Set([...urls, ...STASHR_HOSTS].map(clean))]);
+      .then((urls) => [...new Set([PRIMARY_STASHR_HOST, ...urls, ...STASHR_HOSTS].map(clean))]);
   }
   return serversRequest;
 };
 
-/** Asks every Stashr server at once and returns the first one that answers. */
-export const fetchFromServers = async (path) =>
-  firstOk((await loadServers()).map((base) => () => getJson(base + path)));
+/** Asks the main (Oracle) server first; only if it fails are the fallback servers asked at once. */
+export const fetchFromServers = async (path) => {
+  const [primary, ...fallbacks] = await loadServers();
+  try {
+    return await getJson(primary + path);
+  } catch {
+    return firstOk(fallbacks.map((base) => () => getJson(base + path)));
+  }
+};
 
 // Folders that hold photos for one part of the page rather than a construction project.
 export const PHOTO_ONLY_FOLDERS = ["profile", "beforeafter", "caraousel", "carousel"];
